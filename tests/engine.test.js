@@ -186,3 +186,23 @@ test('softball and 50/70 fields plan every scenario', () => {
     }
   }
 });
+
+test('grounder to the second baseman: right fielder backs up 1st from foul territory, not from home plate', () => {
+  for (const at of [{ x: 30, y: 95 }, { x: 22, y: 76 }, { x: 28, y: 88 }]) {
+    const p = play({}, { kind: 'ground', at });
+    assert.equal(p.fielder, '2B');
+    const rf = end(p, 'RF');
+    assert.ok(rf.x > B.first.x, `RF is beyond 1st on the right side: ${JSON.stringify(rf)}`);
+    assert.ok(Math.hypot(rf.x, rf.y) > geo.base, `RF stays away from home plate: ${JSON.stringify(rf)}`);
+  }
+});
+
+test('on infield plays, outfielders never come in closer to home than the bases', () => {
+  for (const sc of Scenarios.ALL) {
+    const p = Engine.planPlay({ runners: sc.runners, outs: sc.outs, batter: sc.batter, leadoffs: sc.leadoffs }, sc.event);
+    for (const of of ['LF', 'CF', 'RF']) {
+      const e = end(p, of);
+      assert.ok(Math.hypot(e.x, e.y) >= geo.base, `${sc.name}: ${of} ends at ${JSON.stringify(e)}`);
+    }
+  }
+});

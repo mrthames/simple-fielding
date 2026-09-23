@@ -88,7 +88,6 @@ svg { display: block; }
 
 .stage { display: flex; flex-direction: column; min-width: 0; }
 .field-wrap {
-  scroll-margin-top: calc(60px + var(--safe-top));
   position: relative;
   background: var(--foul-grass);
   touch-action: none;
@@ -349,6 +348,12 @@ body.projector .field { max-height: 100%; height: 100%; }
 body.projector .play-title { font-size: 28px; padding: 12px 20px; }
 body.projector .spot-card { top: auto; bottom: 12px; font-size: 18px; }
 body.projector .icon-btn, body.projector .pill-btn { background: rgba(15, 27, 45, 0.6); }
+
+/* Below the side-by-side layout the page scrolls; a pinned header would sit on top of the field and
+   hide the play title, so it scrolls away with everything else. */
+@media (max-width: 899px) {
+  .topbar { position: relative; }
+}
 
 /* Phones: tighter header. */
 @media (max-width: 520px) {

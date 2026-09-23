@@ -55,6 +55,21 @@
     return { x: p.x, y: Math.max(p.y, geo.backstop * 0.7) };
   }
 
+  /*
+   * Where an outfielder stands to back up a base on an infield play. Not strictly "in line with the
+   * throw": a throw from the second baseman to 1st runs almost straight at home plate, and the right
+   * fielder does not run to home plate. Outfielders back up the corners from foul territory behind the
+   * bag, on their own side, and back up 2nd from behind it on the outfield grass.
+   */
+  function outfieldBaseBackup(geo, base, from) {
+    const k = geo.base / 60;
+    const b = geo.bases[base];
+    if (base === 'first') return { x: b.x + 30 * k, y: b.y - 4 * k };
+    if (base === 'third') return { x: b.x - 30 * k, y: b.y - 4 * k };
+    const p = behind(geo, b, from, 35 * k);
+    return p.y < b.y + 12 * k ? { x: b.x, y: b.y + 30 * k } : p;
+  }
+
   // A point in line between the ball and a base, `d` feet out from the base: where a cutoff stands.
   function lineUp(base, ball, d) {
     return along(base, ball, Math.min(d, dist(base, ball) - 10));
@@ -644,13 +659,13 @@
       if (plan.assignments[of]) continue;
       if (targets.includes(base) || (base === 'first')) {
         const from = base === targets[0] ? at : b[targets[0]];
-        assign(plan, of, 'backup', behind(geo, b[base], from, 40),
+        assign(plan, of, 'backup', outfieldBaseBackup(geo, base, from),
           `Run in and back up the throw to ${baseName(base)} base.`, { delay: 0.3 });
       } else if ((of === 'LF' && leftSide) || (of === 'CF')) {
         assign(plan, of, 'backup', behind(geo, at, geo.bases.home, 55),
           `Charge in to back up ${the(F)}.`, { delay: 0.2 });
       } else {
-        assign(plan, of, 'backup', behind(geo, b.third, geo.mound, 45),
+        assign(plan, of, 'backup', outfieldBaseBackup(geo, 'third', geo.mound),
           'Come in and back up 3rd base, in case of a bad throw.', { delay: 0.3 });
       }
     }

@@ -2,6 +2,17 @@
 
 ---
 
+## [2026-09-23] v0.1.1 — Right fielder no longer runs to home plate
+
+### Fixes
+- **Outfielders backing up a base on an infield play.** They stood "beyond the base, in line with the throw". A throw from the second baseman to 1st runs almost straight at home plate, so the right fielder ran to the plate. Outfielders now back up 1st and 3rd from foul territory behind the bag on their own side, and 2nd from the outfield grass behind it. Found testing on a phone.
+- **Play title hidden on phones.** The pinned header covered the top of the field once the page scrolled. Below the side-by-side layout, the header now scrolls with the page.
+
+### Tests
+- Regression test for the grounder to the second baseman, and a sweep across every library play: no outfielder ends up closer to home than the bases.
+
+---
+
 ## [2026-09-23] v0.1.0 — First playable
 
 **Pre-release.** The web app, the companion site, and the play engine.
