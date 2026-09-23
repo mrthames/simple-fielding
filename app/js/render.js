@@ -139,14 +139,15 @@
     makeActors() {
       this.actors = {};
       for (const pos of POSITIONS) {
-        const g = el('g', { class: 'player', 'data-pos': pos }, this.layers.players);
+        const outer = el('g', { class: 'player', 'data-pos': pos }, this.layers.players);
+        const g = el('g', { class: 'actor' }, outer);
         el('circle', { r: 11, class: 'hit' }, g);
         el('circle', { r: 7.5, class: 'ring' }, g);
         el('circle', { r: 6, class: 'body' }, g);
         const t = el('text', { class: 'label', y: 0.2 }, g);
         t.textContent = pos;
-        g.addEventListener('pointerup', (e) => { e.stopPropagation(); if (this.onPick) this.onPick(pos); });
-        this.actors[pos] = g;
+        outer.addEventListener('pointerup', (e) => { e.stopPropagation(); if (this.onPick) this.onPick(pos); });
+        this.actors[pos] = outer;
       }
       this.ballShadow = el('ellipse', { rx: 2.2, ry: 1.2, class: 'ball-shadow' }, this.layers.ball);
       this.ballEl = el('circle', { r: 2, class: 'ball' }, this.layers.ball);
@@ -181,12 +182,13 @@
     }
 
     makeRunner(id, label) {
-      const g = el('g', { class: 'runner' + (id === 'batter' ? ' batter' : '') }, this.layers.runners);
+      const outer = el('g', { class: 'runner' + (id === 'batter' ? ' batter' : '') }, this.layers.runners);
+      const g = el('g', { class: 'actor' }, outer);
       el('circle', { r: 5, class: 'body' }, g);
       const t = el('text', { class: 'label', y: 0.2 }, g);
       t.textContent = label;
-      this.runnerEls[id] = g;
-      return g;
+      this.runnerEls[id] = outer;
+      return outer;
     }
 
     place(node, p) { node.setAttribute('transform', `translate(${p.x.toFixed(2)},${(-p.y).toFixed(2)})`); }

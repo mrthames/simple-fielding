@@ -357,4 +357,8 @@ body.projector .icon-btn, body.projector .pill-btn { background: rgba(15, 27, 45
   .pill-btn span { display: none; }
   .pill-btn { padding: 0 10px; }
   .field { max-height: 62vh; }
+  /* Bigger players and runners on a small screen; the field itself stays to scale. */
+  .field .actor { transform: scale(1.35); }
 }
+
+body.projector .field .actor { transform: scale(1.2); }
