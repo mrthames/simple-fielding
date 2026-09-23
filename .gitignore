@@ -1,0 +1,32 @@
+# macOS / Windows
+.DS_Store
+Thumbs.db
+
+# Claude Code
+.claude/
+
+# Node
+node_modules/
+
+# Playwright
+test-results/
+playwright-report/
+
+# Assembled Pages site (built in CI)
+_site/
+
+# Native builds, once the iOS and Android shells exist
+build/
+DerivedData/
+xcuserdata/
+android/.gradle/
+android/app/build/
+android/local.properties
+*.jks
+keystore.properties
+
+# Credentials go nowhere
+.env
+.env.*
+*.pem
+*.key

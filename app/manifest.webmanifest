@@ -1,0 +1,15 @@
+{
+  "name": "Simple Fielding",
+  "short_name": "Fielding",
+  "description": "Drag the ball anywhere on the field and watch all nine fielders go where they belong.",
+  "start_url": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#123a8c",
+  "theme_color": "#123a8c",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "apple-touch-icon.png", "sizes": "180x180", "type": "image/png" }
+  ]
+}

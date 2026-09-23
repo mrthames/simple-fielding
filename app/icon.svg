@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Simple Fielding mark: a diamond drawn like a coach's play diagram.
+       The O is a fielder, the dashed chalk arrow is where they go, the X is the spot. -->
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#2563eb"/>
+      <stop offset="1" stop-color="#123a8c"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+  <!-- infield grass diamond -->
+  <path d="M256 426 L406 276 L256 126 L106 276 Z" fill="#22a05a"/>
+  <path d="M256 426 L406 276 L256 126 L106 276 Z" fill="none" stroke="#fff" stroke-width="14" stroke-linejoin="round"/>
+  <!-- bases -->
+  <rect x="388" y="258" width="36" height="36" rx="6" transform="rotate(45 406 276)" fill="#fff"/>
+  <rect x="238" y="108" width="36" height="36" rx="6" transform="rotate(45 256 126)" fill="#fff"/>
+  <rect x="88" y="258" width="36" height="36" rx="6" transform="rotate(45 106 276)" fill="#fff"/>
+  <path d="M232 404 h48 v22 l-24 22 l-24 -22 z" fill="#fff"/>
+  <!-- the play: O runs to X -->
+  <circle cx="176" cy="196" r="30" fill="none" stroke="#facc15" stroke-width="16"/>
+  <path d="M200 222 Q 250 300 322 254" fill="none" stroke="#facc15" stroke-width="14" stroke-linecap="round" stroke-dasharray="4 30"/>
+  <path d="M300 236 L330 250 L306 276" fill="none" stroke="#facc15" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M344 158 l44 44 M388 158 l-44 44" stroke="#fff" stroke-width="16" stroke-linecap="round"/>
+</svg>

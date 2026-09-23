@@ -1,0 +1,18 @@
+{
+  "name": "simple-fielding",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Simple Fielding — youth baseball and softball defensive positioning trainer",
+  "scripts": {
+    "start": "npx serve app -l 3344 --no-clipboard",
+    "test": "node --test tests/*.test.js && npx playwright test",
+    "test:engine": "node --test tests/*.test.js",
+    "test:e2e": "npx playwright test",
+    "icons": "node scripts/generate-icons.mjs"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.59.1",
+    "serve": "^14.2.6",
+    "sharp": "^0.34.5"
+  }
+}

@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#123a8c">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Simple Fielding">
+<meta name="description" content="Drag the ball anywhere on the field and watch all nine fielders go where they belong. Free, no ads, no accounts.">
+<title>Simple Fielding</title>
+<link rel="icon" type="image/svg+xml" href="icon.svg">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+<div class="app" id="app">
+
+  <header class="topbar">
+    <div class="brand">
+      <img src="icon.svg" alt="" class="brand-icon">
+      <span class="brand-name">Simple Fielding</span>
+    </div>
+    <div class="topbar-actions">
+      <button class="pill-btn" id="btn-library" type="button" aria-haspopup="dialog">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16M4 12h16M4 19h10"/></svg>
+        <span>Plays</span>
+      </button>
+      <button class="icon-btn" id="btn-projector" type="button" title="Projector mode" aria-label="Projector mode">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
+      </button>
+      <button class="icon-btn" id="btn-settings" type="button" title="Settings" aria-label="Settings" aria-haspopup="dialog">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <main class="stage">
+    <div class="field-wrap" id="field-wrap">
+      <svg id="field" class="field" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Baseball field"></svg>
+      <div class="field-hint" id="field-hint">
+        <span class="hint-ball"></span>
+        Drag the ball from home plate to where it's hit
+      </div>
+      <div class="play-title" id="play-title" hidden></div>
+      <div class="spot-card" id="spot-card" hidden></div>
+    </div>
+
+    <div class="transport" id="transport">
+      <button class="round-btn" id="btn-play" type="button" aria-label="Play">
+        <svg viewBox="0 0 24 24" class="i-play" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+        <svg viewBox="0 0 24 24" class="i-pause" aria-hidden="true"><path d="M7 5h4v14H7zM13 5h4v14h-4z"/></svg>
+        <svg viewBox="0 0 24 24" class="i-replay" aria-hidden="true"><path d="M12 5V2L7 6l5 4V7a5 5 0 1 1-5 5H5a7 7 0 1 0 7-7z"/></svg>
+      </button>
+      <input type="range" id="scrub" min="0" max="1000" value="0" aria-label="Play timeline">
+      <div class="seg" role="group" aria-label="Speed">
+        <button type="button" data-speed="0.5">½×</button>
+        <button type="button" data-speed="1" class="on">1×</button>
+      </div>
+      <button class="text-btn" id="btn-reset" type="button">Reset</button>
+    </div>
+  </main>
+
+  <aside class="panel" id="panel">
+    <section class="card situation">
+      <div class="card-head">
+        <h2>Situation</h2>
+        <button class="text-btn small" id="btn-clear" type="button">Clear bases</button>
+      </div>
+      <div class="sit-row">
+        <div class="mini-diamond" id="mini-diamond" aria-label="Runners on base">
+          <button type="button" class="mini-base b2" data-base="second" aria-label="Runner on 2nd"></button>
+          <button type="button" class="mini-base b3" data-base="third" aria-label="Runner on 3rd"></button>
+          <button type="button" class="mini-base b1" data-base="first" aria-label="Runner on 1st"></button>
+          <span class="mini-home"></span>
+        </div>
+        <div class="sit-controls">
+          <div class="ctl">
+            <span class="ctl-label">Outs</span>
+            <button type="button" class="outs" id="outs" aria-label="Outs">
+              <span></span><span></span>
+            </button>
+          </div>
+          <div class="ctl">
+            <span class="ctl-label">Batter</span>
+            <div class="seg small" role="group" aria-label="Batter hand" id="batter-seg">
+              <button type="button" data-batter="R" class="on">Righty</button>
+              <button type="button" data-batter="L">Lefty</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="sit-hint">Tap the bases to put runners on.</p>
+    </section>
+
+    <section class="card">
+      <h2>How is it hit?</h2>
+      <div class="chips" id="kind-chips">
+        <button type="button" data-kind="ground" class="on">Grounder</button>
+        <button type="button" data-kind="line">Line drive</button>
+        <button type="button" data-kind="fly">Fly ball</button>
+        <button type="button" data-kind="pop">Pop-up</button>
+        <button type="button" data-kind="bunt">Bunt</button>
+      </div>
+      <h3>What happens?</h3>
+      <div class="chips small" id="result-chips">
+        <button type="button" data-result="auto" class="on">Let the app decide</button>
+        <button type="button" data-result="out">Caught</button>
+        <button type="button" data-result="single">Single</button>
+        <button type="button" data-result="double">Double</button>
+        <button type="button" data-result="triple">Triple</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>No hit — other plays</h2>
+      <div class="chips" id="other-plays">
+        <button type="button" data-play="steal2">Steal 2nd</button>
+        <button type="button" data-play="steal3">Steal 3rd</button>
+        <button type="button" data-play="firstThirdSteal">1st &amp; 3rd steal</button>
+        <button type="button" data-play="passedBall">Passed ball</button>
+        <button type="button" data-play="primaryLead">Lead &amp; pickoff</button>
+        <button type="button" data-play="secondaryLead">Secondary lead</button>
+      </div>
+    </section>
+
+    <section class="card result" id="result" hidden>
+      <h2 id="result-title"></h2>
+      <p class="summary" id="result-summary"></p>
+      <ul class="notes" id="result-notes"></ul>
+      <h3>Everybody's job</h3>
+      <ol class="jobs" id="jobs"></ol>
+      <div class="legend">
+        <span class="lg role-field">Gets the ball</span>
+        <span class="lg role-cutoff">Cutoff / relay</span>
+        <span class="lg role-cover">Covers a base</span>
+        <span class="lg role-backup">Backs up</span>
+        <span class="lg role-hold">Stays ready</span>
+      </div>
+    </section>
+
+    <footer class="panel-foot">
+      Free, no ads, no accounts. Made by a Little League dad.
+      <a href="https://buymeacoffee.com/thames_" target="_blank" rel="noopener">Buy me a coffee ☕</a>
+    </footer>
+  </aside>
+</div>
+
+<!-- Play library -->
+<dialog class="sheet" id="library">
+  <div class="sheet-head">
+    <h2>Plays to practise</h2>
+    <button class="icon-btn" type="button" data-close aria-label="Close">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+    </button>
+  </div>
+  <div class="sheet-body" id="library-body"></div>
+</dialog>
+
+<!-- Settings -->
+<dialog class="sheet" id="settings">
+  <div class="sheet-head">
+    <h2>Settings</h2>
+    <button class="icon-btn" type="button" data-close aria-label="Close">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+    </button>
+  </div>
+  <div class="sheet-body">
+    <label class="field-row">
+      <span>Field</span>
+      <select id="league"></select>
+    </label>
+    <label class="field-row">
+      <span>Runners can lead off</span>
+      <input type="checkbox" id="leadoffs" class="switch">
+    </label>
+    <label class="field-row">
+      <span>Show paths</span>
+      <input type="checkbox" id="show-paths" class="switch" checked>
+    </label>
+    <p class="fine">Little League baseball (60 ft) doesn't allow leadoffs, so runners can't leave until the pitch reaches the batter. Softball runners leave when the pitch is released. Turn leadoffs on for 50/70, travel ball, or older divisions.</p>
+    <p class="fine">Keyboard: <kbd>Space</kbd> play/pause · <kbd>N</kbd> next play · <kbd>P</kbd> projector mode · <kbd>R</kbd> reset.</p>
+    <p class="fine">Simple Fielding is free and has no ads or accounts. It's built by a dad with kids in Little League.
+      <a href="https://buymeacoffee.com/thames_" target="_blank" rel="noopener">Buy me a coffee</a> to help keep it going.</p>
+    <p class="fine version">Version <span id="version"></span></p>
+  </div>
+</dialog>
+
+<script src="js/field.js"></script>
+<script src="js/engine.js"></script>
+<script src="js/scenarios.js"></script>
+<script src="js/render.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
