@@ -2092,7 +2092,9 @@
   window.addEventListener('hashchange', fromHash);
 
   // Test hook: lets the Playwright suite drive plays without synthesising drags.
-  window.SimpleFielding = { setMode, state, team, board, tester, openReport, buildReport, reportText, openBoard, closeBoard, runEvent, runScenario, hitTo, seekEnd() { if (state.plan) { stop(); endAsk(); state.t = state.plan.timeline.duration; view.seek(state.t); updateTransport(); } } };
+  window.SimpleFielding = { setMode, state, team, board, tester, openReport, buildReport, reportText, openBoard, closeBoard, runEvent, runScenario, hitTo, seekEnd() { if (state.plan) { stop(); endAsk(); state.t = state.plan.timeline.duration; view.seek(state.t); updateTransport(); } },
+    // Paused at time t (seconds): used by scripts/render-hero-video.mjs to film a play frame by frame.
+    seek(t) { if (state.plan) { stop(); endAsk(); state.t = Math.max(0, Math.min(t, state.plan.timeline.duration)); view.seek(state.t); updateTransport(); } } };
 
   window.TeamUI.init({ team, onChange: (t) => { T.save(window.localStorage, t); applyLabels(); } });
   renderParks();

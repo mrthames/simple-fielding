@@ -11,7 +11,8 @@
     "icons": "node scripts/generate-icons.mjs",
     "site": "node scripts/build-site.mjs",
     "site:og": "node scripts/build-site.mjs --og",
-    "hero": "node scripts/render-hero-anim.mjs"
+    "hero": "node scripts/render-hero-anim.mjs",
+    "hero:video": "node scripts/render-hero-video.mjs"
   },
   "devDependencies": {
     "@playwright/test": "1.59.1",

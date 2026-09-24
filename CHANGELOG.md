@@ -2,6 +2,13 @@
 
 ---
 
+## [2026-09-25] Website — the app on an iPad
+
+- **The homepage opens on the app itself**, in an iPad frame, playing the same single to left field: the toolbar, the field and everybody's job listed beside it. It's filmed frame by frame from the real app (`npm run hero:video`), so it always matches what the app does. It's a 390 KB looping video; visitors with reduce motion turned on see the final positions as a still.
+- **The field animation moved down** to "A whiteboard that moves", above the color key, and is re-baked with the current field (fence distances included).
+
+---
+
 ## [2026-09-25] Housekeeping — GitHub Pages retired
 
 - **GitHub Pages is retired**: simplefielding.com is the one home for the site and the app. The Pages workflow is removed and the Pages site is turned off.
