@@ -2,6 +2,12 @@
 
 ---
 
+## [2026-09-25] v0.35.2 — Lessons stay in 2D
+
+- **The 3D button is hidden during a lesson** and comes back when you leave it. A lesson's markers (where the ball is going, YOU, your guess and the right spot) are drawn on the 2D field. 3D and VR lessons will come as their own feature, where you point to where you'd run instead of dragging.
+
+---
+
 ## [2026-09-25] v0.35.1 — Where your progress is kept
 
 - **The fielding lessons say where your progress is kept**, at the bottom of the list. It's in this browser, on this device. Clearing the browser's cache and data for the website removes it, and so does closing a private or incognito window.

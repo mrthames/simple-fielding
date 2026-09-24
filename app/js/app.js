@@ -4,7 +4,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '0.35.1';
+  const VERSION = '0.35.2';
   const Field = window.Field;
   const BATTED = ['ground', 'line', 'fly', 'pop', 'bunt'];
   const { POSITIONS, NAMES, LEAGUES } = Field;
@@ -334,7 +334,8 @@
     if (!on) endAsk();
   }
   $('#btn-ask').addEventListener('click', () => setAskFirst(!state.askFirst));
-  $('#btn-3d').addEventListener('click', () => set3d(!on3d()));
+  // Lessons are 2D for now: their markers (the ball's target, YOU, your guess) are drawn on the 2D field.
+  $('#btn-3d').addEventListener('click', () => { if (!state.trainer) set3d(!on3d()); });
   $('#cam').addEventListener('change', (e) => { if (v3) { v3.setMode(e.target.value); v3.seek(state.t); } });
   // VR: the headset drives the frames, so playback advances from its loop. The trigger plays (or replays) the play.
   $('#btn-vr').addEventListener('click', async (e) => {

@@ -860,3 +860,11 @@ test('lessons: every play says what was hit and the situation; you can try a ste
   await expect(page.locator('#trainer-bar .tb-head')).toContainText('1 of 3');
   await expect(page.locator('#trainer-bar [data-stay]')).toBeVisible();
 });
+
+test('lessons are 2D: the 3D button is hidden during a lesson and back afterwards', async ({ page }) => {
+  await expect(page.locator('#btn-3d')).toBeVisible();
+  await page.evaluate(() => (window as any).SimpleFielding.lesson.start('bb-m-jobs'));
+  await expect(page.locator('#btn-3d')).toBeHidden();
+  await page.locator('#trainer-bar .tb-x').click();
+  await expect(page.locator('#btn-3d')).toBeVisible();
+});
