@@ -15,7 +15,7 @@
 
   const LEAGUES = ['littleLeague', 'intermediate', 'softball', 'softball10', 'junior90', 'highSchool', 'college', 'pro',
     'softball8', 'softball14', 'softballHS', 'softballCollege', 'softballPro'];
-  const KINDS = ['ground', 'line', 'fly', 'pop', 'bunt', 'steal2', 'steal3', 'firstThirdSteal', 'passedBall', 'primaryLead', 'secondaryLead', 'pitch', 'drawn', 'lookBack', 'delayedSteal', 'droppedThird'];
+  const KINDS = ['ground', 'line', 'fly', 'pop', 'bunt', 'steal2', 'steal3', 'firstThirdSteal', 'passedBall', 'primaryLead', 'secondaryLead', 'pitch', 'drawn', 'lookBack', 'delayedSteal', 'droppedThird', 'rundown'];
   const ACTIONS = ['return', 'hesitate', 'break', 'drift'];
   const DEPTHS = ['auto', 'normal', 'dp', 'in', 'cornersIn'];
   const D13 = ['auto', 'through', 'cut', 'pitcher', 'third'];
@@ -123,8 +123,9 @@
     if (pi >= 0) out.push(pi);
     const r = s.runners || {};
     out.push((r.first ? 1 : 0) | (r.second ? 2 : 0) | (r.third ? 4 : 0) | ((s.outs || 0) << 3) | (s.batter === 'L' ? 32 : 0) | (s.batter === 'S' ? 64 : 0) | (li >= 8 ? 128 : 0));
-    const ri = Math.max(0, RESULTS.indexOf(event.result));
-    out.push(ki | (ri << 4) | (event.slow ? 128 : 0));
+    // Kinds 0-15 fit in 4 bits. Later kinds borrow result code 7 (never a real result) as "add 16".
+    const ri = ki >= 16 ? 7 : Math.max(0, RESULTS.indexOf(event.result));
+    out.push((ki & 15) | (ri << 4) | (event.slow ? 128 : 0));
     if (event.kind === 'pitch') {
       // move (pickoff), which base, passed ball; then each runner on base: lead in feet and whether they go.
       const pk = Math.max(0, BASES.indexOf(event.pickoff));
@@ -136,6 +137,7 @@
       }
       if (event.result === 'passed' || event.result === 'dropped') { const bt = event.ballTo || { x: 10, y: -20 }; put16(out, bt.x); put16(out, bt.y); }
     }
+    if (event.kind === 'rundown') out.push(Math.max(0, BASES.indexOf(event.runner)));
     if (event.kind === 'lookBack') out.push(Math.max(0, BASES.indexOf(event.runner)) | (Math.max(0, ACTIONS.indexOf(event.action)) << 2));
     if (event.kind === 'drawn') packDrawn(out, event);
     if (moved.length) {
@@ -176,10 +178,10 @@
       if (park) situation.park = park;
       if (f & 32) situation.leadoffs = !!(f & 64);
       const kb = b[i++];
-      const kind = KINDS[kb & 15];
+      const kind = KINDS[(kb & 15) + (((kb >> 4) & 7) === 7 ? 16 : 0)];
       if (!kind || !league || situation.outs > 2) return null;
       const event = { kind };
-      const result = RESULTS[(kb >> 4) & 7];
+      const result = ((kb >> 4) & 7) === 7 ? undefined : RESULTS[(kb >> 4) & 7];
       if (result) event.result = result;
       if (kb & 128) event.slow = true;
       if (kind === 'pitch') {
@@ -194,6 +196,7 @@
         }
         if (m & 24) { event.ballTo = { x: get16(b, i), y: get16(b, i + 2) }; i += 4; }
       }
+      if (kind === 'rundown') event.runner = BASES[b[i++] & 3] || 'first';
       if (kind === 'lookBack') { const v = b[i++]; event.runner = BASES[v & 3] || 'first'; event.action = ACTIONS[(v >> 2) & 3]; }
       if (kind === 'drawn') { const u = unpackDrawn(b, i); event.steps = u.steps; i = u.i; }
       if (f & 128) {

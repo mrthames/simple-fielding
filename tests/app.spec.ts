@@ -629,3 +629,9 @@ test('defensive calls: the 1st & 3rd and bunt defense buttons change the play', 
   await page.locator('#kind-chips [data-kind="bunt"]').click();
   await expect(page.locator('#buntd-row')).toBeVisible();
 });
+
+test('rundown button plays a rundown with everyone\'s job', async ({ page }) => {
+  await page.locator('#other-plays [data-play="rundown"]').click();
+  await expect(page.locator('#play-title .pt-name')).toContainText('Rundown between 1st and 2nd');
+  await expect(page.locator('#jobs li')).toHaveCount(9);
+});

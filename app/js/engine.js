@@ -2416,12 +2416,80 @@
     return plan;
   }
 
+
+  /*
+   * A rundown (a pickle): a runner caught between two bases. The textbook way: the fielder with the ball runs hard at
+   * the runner and drives them back toward the base they came from; the fielder there steps up; one short throw, and
+   * the tag. Backups stand behind both bases. Built as timed steps, then given jobs.
+   */
+  const RUNDOWN = {
+    first: { front: 'SS', back: '1B', frontBackup: '2B', backBackup: 'P' },
+    second: { front: '3B', back: 'SS', frontBackup: 'P', backBackup: '2B' },
+    third: { front: 'C', back: '3B', frontBackup: 'P', backBackup: 'SS' },
+  };
+  function planRundown(geo, situation, event) {
+    const run = situation.runners;
+    const from = run[event.runner] ? event.runner : ['third', 'second', 'first'].find((x) => run[x]) || 'first';
+    const to = nextBase(from);
+    const b = geo.bases;
+    const A = b[from], B = to === 'home' ? { x: 0, y: 0 } : b[to];
+    const k = geo.base / 60;
+    const roles = RUNDOWN[from];
+    const ready = Field.readyPositions(geo, situation);
+    const pt = (f) => lerp(A, B, f);
+    const behind = (base, other, d) => along(other, base, dist(other, base) + d);
+    const T = geo.tempo;
+    // Where everyone is at each step.
+    const P0 = {};
+    for (const pos of POSITIONS) P0[pos] = { ...ready[pos] };
+    P0[roles.front] = pt(0.85);              // the ball is in the hands of the fielder at the base ahead
+    P0[roles.back] = { ...A };
+    const P1 = Object.assign({}, P0, {
+      [roles.front]: pt(0.45),                // runs hard at the runner, ball up
+      [roles.back]: pt(0.12),                 // steps off the bag toward the runner
+      [roles.frontBackup]: behind(B, A, 10 * k),
+      [roles.backBackup]: behind(A, B, 10 * k),
+    });
+    const P2 = Object.assign({}, P1, { [roles.front]: pt(0.36), [roles.back]: pt(0.2) });
+    const runner0 = pt(0.55), runner1 = pt(0.3), runner2 = pt(0.21);
+    const others = ['first', 'second', 'third'].filter((x) => run[x] && x !== from).map((x) => ({ id: x, label: 'R', x: b[x].x, y: b[x].y }));
+    const dur1 = clamp(dist(P0[roles.front], P1[roles.front]) / T.fielder, 0.8, 2.2);
+    const steps = [
+      { dur: 1, cap: '', players: P0, runners: [{ id: from, label: 'R', ...runner0 }, ...others], ball: { ...P0[roles.front] } },
+      { dur: dur1, cap: '', players: P1, runners: [{ id: from, label: 'R', ...runner1 }, ...others], ball: { ...P1[roles.front] } },
+      { dur: 0.45, cap: 'One throw', players: P2, runners: [{ id: from, label: 'R', ...runner2 }, ...others], ball: { ...P2[roles.back] } },
+      { dur: 0.4, cap: 'Out! (tag)', players: P2, runners: others, ball: { ...P2[roles.back] } },
+    ];
+    const plan = planDrawn(geo, situation, { steps });
+    plan.drawn = false;
+    plan.rundown = true;
+    plan.fielder = roles.front;
+    plan.target = from;
+    plan.title = `Rundown between ${baseName(from)} and ${baseName(to)}`;
+    plan.summary = `The runner is caught between ${baseName(from)} and ${baseName(to)}. ${The(roles.front)} runs hard at them with the ball up, driving them back toward ${baseName(from)}; ${the(roles.back)} steps up, and one short throw gets the tag.`;
+    const job = (pos, role, text) => { plan.assignments[pos] = Object.assign(plan.assignments[pos], { role, job: text }); };
+    for (const pos of POSITIONS) job(pos, 'hold', 'Cover your base and stay out of the running lane.');
+    job(roles.front, 'field', `Ball up where your teammate can see it. Run hard at the runner and drive them back toward ${baseName(from)}. When ${the(roles.back)} yells "Now!", one firm chest-high throw. Then get out of the lane.`);
+    job(roles.back, 'cover', `Step off the bag toward the runner, glove up as a target. Yell "Now!" when they're close, catch it and tag.`);
+    job(roles.frontBackup, 'backup', `Back up ${baseName(to)} in case the runner turns around and the ball comes back.`);
+    job(roles.backBackup, 'backup', `Back up ${baseName(from)} behind the fielder there.`);
+    plan.jobs = POSITIONS.map((p) => plan.assignments[p]).sort((a, b2) => ROLE_ORDER.indexOf(a.role) - ROLE_ORDER.indexOf(b2.role));
+    plan.notes = [
+      'Run them back toward the base they came from: if the tag misses, they end up where they started, not a base ahead.',
+      'Ball up, run hard, and make one throw. Fake throws fool your own teammate more than the runner.',
+      'After you throw, get out of the running lane (or take the back of the line): a fielder in the path without the ball is obstruction.',
+    ];
+    plan.runners = [{ id: from, from, to: from, out: true }, ...others.map((o) => ({ id: o.id, from: o.id, to: o.id }))];
+    return plan;
+  }
+
   function planPlay(situation, event) {
     const s = Object.assign({ runners: {}, outs: 0, batter: 'R', league: 'littleLeague' }, situation);
     s.runners = Object.assign({ first: false, second: false, third: false }, s.runners);
     const geo = Field.geometry(s.league, s.park);
     if (s.leadoffs === undefined) s.leadoffs = geo.league.leadoffs;
     if (event.kind === 'drawn') return planDrawn(geo, s, event);
+    if (event.kind === 'rundown') return planRundown(geo, s, event);
     const batted = event.at && ['ground', 'line', 'fly', 'pop', 'bunt'].includes(event.kind);
     const plan = batted ? planBattedBall(geo, s, event) : planSituationPlay(geo, s, event);
     finish(plan);

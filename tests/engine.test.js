@@ -357,3 +357,18 @@ test('defensive calls: 1st & 3rd (through, cut, to the pitcher, to 3rd) and bunt
   const std = Engine.planPlay({ league: 'littleLeague', runners: on('first', 'second'), outs: 0 }, { kind: 'bunt', at: { x: -14, y: 26 } });
   assert.equal(std.target, 'first');
 });
+
+test('rundowns: the fielder with the ball drives the runner back, one throw, the tag', () => {
+  for (const r of ['first', 'second', 'third']) {
+    const p = Engine.planPlay({ runners: { [r]: true }, outs: 0 }, { kind: 'rundown', runner: r });
+    assert.match(p.title, /^Rundown between/);
+    assert.equal(p.jobs.length, 9);
+    assert.ok(p.timeline.events.some((e) => e.type === 'out'));
+    const run = p.timeline.tracks['runner:' + r];
+    const g = Field.geometry('littleLeague');
+    const from = r === 'first' ? g.bases.first : r === 'second' ? g.bases.second : g.bases.third;
+    // The runner ends up closer to the base they came from than where they started.
+    const d0 = Math.hypot(run[0].x - from.x, run[0].y - from.y), d1 = Math.hypot(run[2].x - from.x, run[2].y - from.y);
+    assert.ok(d1 < d0, r);
+  }
+});

@@ -4,7 +4,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '0.19.1';
+  const VERSION = '0.20.0';
   const Field = window.Field;
   const BATTED = ['ground', 'line', 'fly', 'pop', 'bunt'];
   const { POSITIONS, NAMES, LEAGUES } = Field;
@@ -194,7 +194,7 @@
     const need = {
       steal2: r.first && !r.second, steal3: r.second && !r.third, firstThirdSteal: r.first && r.third && !r.second,
       passedBall: r.first || r.second || r.third, primaryLead: r.first || (softball && (r.second || r.third)), secondaryLead: r.first,
-      delayedSteal: r.first && r.third, droppedThird: true,
+      delayedSteal: r.first && r.third, droppedThird: true, rundown: r.first || r.second || r.third,
     };
     for (const b of $$('#other-plays button')) {
       b.classList.toggle('dim', !need[b.dataset.play]);
@@ -206,7 +206,7 @@
     return {
       steal2: 'Put a runner on 1st (and nobody on 2nd)', steal3: 'Put a runner on 2nd (and nobody on 3rd)',
       firstThirdSteal: 'Put runners on 1st and 3rd', passedBall: 'Put a runner on base',
-      primaryLead: 'Put a runner on 1st', secondaryLead: 'Put a runner on 1st', delayedSteal: 'Put runners on 1st and 3rd',
+      primaryLead: 'Put a runner on 1st', secondaryLead: 'Put a runner on 1st', delayedSteal: 'Put runners on 1st and 3rd', rundown: 'Put a runner on base (the lead runner gets caught)',
     }[play];
   }
 
@@ -871,6 +871,7 @@
       if (play === 'passedBall' && !(r.first || r.second || r.third)) r.third = true;
       if ((play === 'primaryLead' && !(LEAGUES[state.league].sport === 'softball' && (r.second || r.third))) || play === 'secondaryLead') r.first = true;
       if (play === 'delayedSteal') { r.first = true; r.third = true; }
+      if (play === 'rundown' && !(r.first || r.second || r.third)) r.first = true;
       renderSituation();
       runEvent({ kind: play });
       scrollToResultOnPhone();

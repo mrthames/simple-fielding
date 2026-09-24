@@ -89,6 +89,14 @@
       ],
     },
     {
+      name: 'Rundowns',
+      items: [
+        { name: 'Rundown between 1st and 2nd', runners: on('first'), outs: 0, event: { kind: 'rundown', runner: 'first' } },
+        { name: 'Rundown between 2nd and 3rd', runners: on('second'), outs: 1, event: { kind: 'rundown', runner: 'second' } },
+        { name: 'Rundown between 3rd and home', runners: on('third'), outs: 1, event: { kind: 'rundown', runner: 'third' } },
+      ],
+    },
+    {
       name: 'Passed balls',
       items: [
         { name: 'Passed ball, runner on 3rd', runners: on('third'), outs: 0, event: { kind: 'passedBall' } },

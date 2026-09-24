@@ -2,6 +2,20 @@
 
 ---
 
+## [2026-09-25] v0.20.0 — Rundowns
+
+- **Rundowns** between 1st and 2nd, 2nd and 3rd, or 3rd and home. The textbook way:
+  - The fielder with the ball runs hard at the runner, ball up, and drives them back toward the base they came from.
+  - The fielder at that base steps up and yells "Now!".
+  - One short throw, then the tag.
+  - Backups stand behind both bases.
+  - Everyone's job is spelled out, with notes on why you run them back, why fake throws fool your own teammate, and getting out of the lane after you throw (obstruction).
+- New **Rundown** button and a **Rundowns** group in the play list.
+- Share links fit more kinds of play. Older links still open exactly as before.
+- The homepage describes what's new: every level, real ballparks, the builder, saving and sharing, softball, infield depth, rundowns and 3D.
+
+---
+
 ## [2026-09-25] v0.19.1 — TV captions
 
 - **Projector mode on a wide screen** (a TV, or a mirrored iPad or laptop via AirPlay or a Chrome Cast tab) shows the play's summary and its first teaching note in the margin beside the field, so the room gets the lesson as well as the animation. Tap a player and their job card shows there instead.
