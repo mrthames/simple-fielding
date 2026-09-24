@@ -4,7 +4,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '0.34.0';
+  const VERSION = '0.35.0';
   const Field = window.Field;
   const BATTED = ['ground', 'line', 'fly', 'pop', 'bunt'];
   const { POSITIONS, NAMES, LEAGUES } = Field;
@@ -1869,11 +1869,35 @@
     $('#learn-home').hidden = false;
     $('#learn-intro').hidden = true;
   }
+  // Little pictures of what's on the field, for the orientation: drawn the way the field draws them.
+  const G = '<rect width="40" height="40" rx="8" fill="#4ea457"/>';
+  const ring = (c) => `${G}<circle cx="20" cy="20" r="10" fill="#1A6BFF" stroke="${c}" stroke-width="4"/><circle cx="20" cy="20" r="6.5" fill="#1A6BFF" stroke="#fff" stroke-width="1.4"/>`;
+  const ICONS = {
+    target: `${G}<circle cx="20" cy="20" r="11" fill="none" stroke="#fff" stroke-width="2" stroke-dasharray="4 3"/>`,
+    through: `${G}<path d="M6 30 L30 12" stroke="#fff" stroke-width="2" stroke-dasharray="1 4" stroke-linecap="round"/><circle cx="30" cy="12" r="6" fill="none" stroke="#fff" stroke-width="2" stroke-dasharray="1 3" stroke-linecap="round"/>`,
+    you: `${G}<circle cx="20" cy="24" r="11" fill="none" stroke="#ffd60a" stroke-width="3"/><circle cx="20" cy="24" r="7" fill="#1A6BFF" stroke="#fff" stroke-width="1.4"/><text x="20" y="10" text-anchor="middle" font-size="8" font-weight="900" fill="#ffd60a" font-family="system-ui">YOU</text>`,
+    fielder: `${G}<circle cx="20" cy="20" r="8" fill="#1A6BFF" stroke="#fff" stroke-width="1.6"/><text x="20" y="23" text-anchor="middle" font-size="7.5" font-weight="900" fill="#fff" font-family="system-ui">SS</text>`,
+    runner: `${G}<circle cx="20" cy="20" r="7" fill="#FF3B30" stroke="#fff" stroke-width="1.4"/><text x="20" y="23" text-anchor="middle" font-size="8" font-weight="900" fill="#fff" font-family="system-ui">B</text>`,
+    field: ring('#FFCC00'), cutoff: ring('#FF9500'), cover: ring('#34C759'), backup: ring('#AF52DE'), hold: ring('#C7C7CC'),
+    route: `${G}<path d="M8 32 L32 8" stroke="#34C759" stroke-width="2.4" stroke-dasharray="4 3"/><circle cx="32" cy="8" r="3.5" fill="none" stroke="#34C759" stroke-width="1.6"/>`,
+    answer: `${G}<circle cx="13" cy="27" r="6" fill="rgba(52,199,89,.3)" stroke="#34c759" stroke-width="2"/><path d="M13 27 L28 12" stroke="#fff" stroke-width="1.4" stroke-dasharray="2 2"/><circle cx="28" cy="12" r="6" fill="none" stroke="#34c759" stroke-width="2" stroke-dasharray="3 2"/>`,
+    look: `${G}<path d="M12 28 L32 14 A 12 12 0 0 0 26 8 Z" fill="rgba(255,255,255,.35)"/><circle cx="12" cy="28" r="6" fill="#1A6BFF" stroke="#fff" stroke-width="1.4"/>`,
+  };
   function showIntro(l) {
     const box = $('#learn-intro');
     box.innerHTML = '';
     const h = document.createElement('h3'); h.textContent = `${l.stage.title} · ${l.title}`; box.appendChild(h);
-    for (const t of l.intro) { const p = document.createElement('p'); p.textContent = t; box.appendChild(p); }
+    for (const t of l.intro) {
+      const p = document.createElement('p');
+      if (typeof t === 'string') p.textContent = t;
+      else {
+        // { icon, text }: a picture of the thing on the field, and what it means.
+        p.className = 'learn-key';
+        p.innerHTML = `<svg viewBox="0 0 40 40" aria-hidden="true">${ICONS[t.icon] || ''}</svg><span></span>`;
+        p.querySelector('span').textContent = t.text;
+      }
+      box.appendChild(p);
+    }
     const plays = l.steps.filter((s) => s.type === 'play').length, qs = l.steps.length - plays;
     const meta = document.createElement('p'); meta.className = 'learn-meta';
     meta.textContent = [plays ? `${plays} play${plays > 1 ? 's' : ''}` : '', qs ? `${qs} question${qs > 1 ? 's' : ''}` : ''].filter(Boolean).join(' and ') + (learnPos !== 'all' ? ` · as the ${Field.PLAYERS[learnPos]} where it applies` : '');
@@ -1917,16 +1941,36 @@
     }
     return Math.min(first + 0.05, tl.duration);
   }
+  // What happened, in a coach's words: "A ground ball up the middle." (A pitch play: its title, "Stealing 2nd".)
+  function describePlay(plan, ev) {
+    const KIND = { ground: 'A ground ball', line: 'A line drive', fly: 'A fly ball', pop: 'A pop-up', bunt: 'A bunt' };
+    if (!KIND[ev.kind] || !ev.at) return plan.title + '.';
+    const at = plan.ball.landing || ev.at;
+    const a = Math.atan2(at.y, at.x) * 180 / Math.PI - 45;       // 0 = the 1st-base line, 90 = the 3rd-base line
+    const d = Math.hypot(at.x, at.y);
+    let where;
+    if (a < -2 || a > 92) where = a < -2 ? 'foul, on the 1st-base side' : 'foul, on the 3rd-base side';
+    else if (ev.kind === 'bunt' || d < 0.45 * geo.base) where = a < 30 ? 'toward the 1st-base line' : a > 60 ? 'toward the 3rd-base line' : 'right back toward the pitcher';
+    else if (d < geo.infieldEdge) where = a < 30 ? 'to the right side' : a > 60 ? 'to the left side' : 'up the middle';
+    else where = (ev.kind === 'ground' ? 'through the infield ' : '') + (a < 22.5 ? 'to right field' : a < 38 ? 'to right-center' : a < 52 ? 'to center field' : a < 67.5 ? 'to left-center' : 'to left field');
+    const what = plan.situation && plan.situation.batter === 'S' && ev.kind === 'ground' ? 'A slap' : KIND[ev.kind];
+    return `${what} ${where}.`;
+  }
   function runStep(retry) {
     const T = state.trainer;
     const s = T.steps[T.idx];
+    stop();
+    T.seq = (T.seq || 0) + 1;              // a new step: any pending replay of the last one is stale
     T.first = !retry;
     tbar.hidden = false;
+    // A way back to the step before, on every step after the first. (Only a step's first try counts toward the score.)
+    const back = T.idx > 0 ? '<div class="tb-nav"><button type="button" class="text-btn small" data-back>‹ Back</button></div>' : '';
+    const wireBack = () => { const b = tbar.querySelector('[data-back]'); if (b) b.addEventListener('click', prevStep); };
     const head = `<span class="tb-head">${escapeHtml(T.lesson.title)} · ${T.idx + 1} of ${T.steps.length}<button type="button" class="tb-x" aria-label="End the lesson">✕</button></span>`;
     if (s.type === 'choice') {
       T.waiting = false;
       if (state.plan) { stop(); showReady(); }
-      tbar.innerHTML = `${head}<p class="tb-q"></p><div class="tb-options"></div>`;
+      tbar.innerHTML = `${head}<p class="tb-q"></p><div class="tb-options tb-choices"></div>${back}`;
       tbar.querySelector('.tb-q').textContent = s.q;
       s.options.forEach((o) => {
         const b = document.createElement('button');
@@ -1934,6 +1978,7 @@
         b.addEventListener('click', () => answerChoice(o));
         tbar.querySelector('.tb-options').appendChild(b);
       });
+      wireBack();
       return;
     }
     const level = s.level || T.lesson.stage.level;
@@ -1962,8 +2007,14 @@
     T.waiting = true;
     document.body.classList.add('tr-waiting');
     view.actors[s.pos].classList.add('trainee');
-    tbar.innerHTML = `${head}<p class="tb-q">You're the <strong>${escapeHtml(Field.PLAYERS[s.pos])}</strong>. Where do you go?</p>
-      <p class="tb-hint">Drag yourself the way you'd run, or:</p><div class="tb-options"><button type="button" data-stay>Stay here</button></div>`;
+    const you = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    you.setAttribute('class', 'you-tag'); you.setAttribute('y', String(-8 * (view.us || 1))); you.textContent = 'YOU';
+    view.actors[s.pos].appendChild(you);
+    const hasTarget = !!(state.plan.ball && (state.plan.ball.landing || state.plan.ball.at));
+    tbar.innerHTML = `${head}<p class="tb-what"><strong>${escapeHtml(describePlay(state.plan, ev))}</strong> <span>${escapeHtml($('#sit-strip').textContent)}</span></p>
+      <p class="tb-q">You're the <strong>${escapeHtml(Field.PLAYERS[s.pos])}</strong>. Where do you go?</p>
+      <p class="tb-hint">${hasTarget ? 'The dotted white circle is where the ball is going. ' : ''}Drag yourself the way you'd run, or:</p><div class="tb-options"><button type="button" data-stay>Stay here</button></div>${back}`;
+    wireBack();
     tbar.querySelector('[data-stay]').addEventListener('click', () => answerPlay(T.start));
   }
   const VERDICT = { right: 'Yes!', close: 'Close: good read.', miss: 'Not quite.' };
@@ -1971,10 +2022,11 @@
     const T = state.trainer;
     tbar.innerHTML = `<span class="tb-head">${escapeHtml(T.lesson.title)} · ${T.idx + 1} of ${T.steps.length}</span>
       <p class="tb-verdict ${grade}">${VERDICT[grade]}</p><p class="tb-why"></p>
-      <div class="tb-options">${canRetry && grade !== 'right' ? '<button type="button" data-retry>Try again</button>' : ''}<button type="button" class="primary" data-next>${T.idx + 1 < T.steps.length ? 'Next ›' : 'Finish'}</button></div>`;
+      <div class="tb-options">${T.idx > 0 ? '<button type="button" data-back>‹ Back</button>' : ''}<button type="button" data-retry>${grade === 'right' ? '↺ Try it again' : 'Try again'}</button><button type="button" class="primary" data-next>${T.idx + 1 < T.steps.length ? 'Next ›' : 'Finish'}</button></div>`;
     tbar.querySelector('.tb-why').textContent = text;
-    const r = tbar.querySelector('[data-retry]');
-    if (r) r.addEventListener('click', () => runStep(true));
+    tbar.querySelector('[data-retry]').addEventListener('click', () => runStep(true));
+    const bk = tbar.querySelector('[data-back]');
+    if (bk) bk.addEventListener('click', prevStep);
     tbar.querySelector('[data-next]').addEventListener('click', nextStep);
   }
   function score(grade) {
@@ -1990,13 +2042,15 @@
     T.waiting = false;
     document.body.classList.remove('tr-waiting');
     view.actors[T.pos].classList.remove('trainee');
+    for (const n of view.svg.querySelectorAll('.you-tag')) n.remove();
     const grade = TR.grade(T.start, T.want, guess, geo.base / 60);
     score(grade);
     view.showQuiz(guess, T.want, grade);
     const job = state.plan.assignments[T.pos].job;
     feedback(grade, job, true);
     // Then watch it: the play runs on from the freeze, with the routes showing and your player spotlit.
-    setTimeout(() => { if (state.trainer === T && state.plan) { view.setShowPaths(true); setSpotlight(T.pos); play(); } }, 700);
+    const seq = T.seq;
+    setTimeout(() => { if (state.trainer === T && T.seq === seq && state.plan) { view.setShowPaths(true); setSpotlight(T.pos); play(); } }, 700);
   }
   function answerChoice(o) {
     const T = state.trainer;
@@ -2004,6 +2058,13 @@
     score(grade);
     const right = T.steps[T.idx].options.find((x) => x.right);
     feedback(grade, o.right ? (o.why || '') : `${o.why || ''} The answer: ${right.t}.`.trim(), true);
+  }
+  function prevStep() {
+    const T = state.trainer;
+    if (!T || T.idx === 0) return;
+    stop();
+    T.idx--;
+    runStep(true);
   }
   function nextStep() {
     const T = state.trainer;
@@ -2025,6 +2086,7 @@
     const T = state.trainer;
     if (!T) return;
     if (T.pos && view.actors[T.pos]) view.actors[T.pos].classList.remove('trainee');
+    for (const n of view.svg.querySelectorAll('.you-tag')) n.remove();
     state.trainer = null;
     tbar.hidden = true;
     document.body.classList.remove('training', 'tr-waiting');

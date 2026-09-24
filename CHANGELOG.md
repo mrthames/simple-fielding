@@ -2,6 +2,23 @@
 
 ---
 
+## [2026-09-25] v0.35.0 — Start here, and a way back
+
+- **"Start here: How lessons work"** opens both courses. It shows a small picture of everything on the field and what it means:
+  - the dotted white circle is where the ball is going
+  - the finer dotted line is where it ends up if it gets through
+  - your player: a gold ring with "YOU" over it
+  - teammates are blue, runners red, and B is the batter
+  - the role colors: yellow, orange, green, purple and gray
+  - routes, and where players are looking
+  - after you answer: your guess (green, yellow or red) and the right spot
+  Then three quick questions and an easy play.
+- **Every play says what happened and the situation** before it asks where you go. For example: "A ground ball to the left side. 0 outs · Nobody on", "A slap toward the 3rd-base line", "A bunt toward the 1st-base line", "Stealing 2nd. 0 outs · Runner on 1st". The question tells you whether the ball is on the ground or in the air, and where it's headed.
+- **Go back, or try a step again.** Every result has "Try it again" (even when you got it right) and "‹ Back" to the step before; questions and plays have "‹ Back" too. Only your first try at each step counts toward the lesson's score.
+- **Your player stands out:** a gold ring and a "YOU" tag, so it can't be mistaken for the ball's dotted white circle.
+
+---
+
 ## [2026-09-25] v0.34.0 — Fielding lessons
 
 - **Learn**, a new button at the top, holds fielding lessons in **two separate courses, baseball and softball**. Each is a ladder of stages as a player moves up:

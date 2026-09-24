@@ -65,10 +65,55 @@
     ] : []),
   });
 
+  // Start here: what everything on the field means, before the first lesson. The same for both tracks, with that
+  // track's own easy play at the end.
+  const orientation = (id, level) => ({
+    id: 'start', title: 'Start here', ages: 'everyone', level,
+    lessons: [{
+      id, title: 'How lessons work', positions: ALL,
+      intro: [
+        'Each lesson is a few plays. You\'re one of the fielders. The play starts, then stops right when you\'d have to decide where to go. Here\'s what you\'ll see.',
+        { icon: 'target', text: 'A dotted white circle is where the ball is going.' },
+        { icon: 'through', text: 'A finer dotted line and circle: where the ball ends up if it gets past the infield.' },
+        { icon: 'you', text: 'You: the player with the gold ring and "YOU" over them. Drag yourself the way you\'d run. If your job is to stay put, tap "Stay here".' },
+        { icon: 'fielder', text: 'Blue circles are your teammates on defense, with their position on them.' },
+        { icon: 'runner', text: 'Red circles are runners. B is the batter, running to first.' },
+        { icon: 'field', text: 'After you answer, the play finishes and every job shows in color. Yellow: gets the ball.' },
+        { icon: 'cutoff', text: 'Orange: the cutoff or relay, lined up for the throw.' },
+        { icon: 'cover', text: 'Green: covers a base.' },
+        { icon: 'backup', text: 'Purple: backs somebody up.' },
+        { icon: 'hold', text: 'Gray: stays ready where they are.' },
+        { icon: 'route', text: 'A dotted line in a player\'s color is where they run.' },
+        { icon: 'look', text: 'The soft light wedge shows where a player is looking.' },
+        { icon: 'answer', text: 'Your guess is a filled circle: green if you\'re right, yellow if close, red if not. The dashed green circle is the right spot.' },
+        'You don\'t have to be exact. Heading the right way is what counts. You can go back or try any step again.',
+      ],
+      steps: [
+        q('What does the dotted white circle show?', [
+          right('Where the ball is going', 'Yes. Watch it: it tells you whether the ball is coming to you.'),
+          wrong('Where I should run', 'That\'s yours to figure out! The dotted circle is where the ball is going.'),
+          wrong('Where the batter is', 'The batter is the red B. The dotted circle is where the ball is going.'),
+        ]),
+        q('Which player are you?', [
+          wrong('The one with a red circle', 'Red circles are the runners.'),
+          right('The one with the gold ring and "YOU"', 'Yes: drag that one.'),
+          wrong('Whoever is closest to the ball', 'Not always! You\'re the one with the gold ring and "YOU".'),
+        ]),
+        q('After the play, a player has a green ring. What\'s their job?', [
+          wrong('Gets the ball', 'That\'s yellow.'),
+          right('Covers a base', 'Yes: green covers a base.'),
+          wrong('Backs somebody up', 'That\'s purple.'),
+        ]),
+        play('Grounder to short, nobody on', 'SS'),
+      ],
+    }],
+  });
+
   const TRACKS = {
     baseball: {
       title: 'Baseball',
       stages: [
+        orientation('bb-start', 'littleLeague'),
         {
           id: 'bb-tball', title: 'T-ball', ages: '4-6', level: 'littleLeague',
           lessons: [
@@ -414,6 +459,7 @@
     softball: {
       title: 'Softball',
       stages: [
+        orientation('sb-start', 'softball10'),
         {
           id: 'sb-8u', title: '8U', ages: '6-8', level: 'softball8',
           lessons: [

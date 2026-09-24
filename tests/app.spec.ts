@@ -842,3 +842,21 @@ test('fielding lessons: pick a track and position, answer by dragging your playe
   await page.locator('#btn-learn').click();
   await expect(page.locator('.learn-item.done', { hasText: 'Ball, base, backup' })).toHaveCount(1);
 });
+
+test('lessons: every play says what was hit and the situation; you can try a step again or go back', async ({ page }) => {
+  await page.evaluate(() => (window as any).SimpleFielding.lesson.start('bb-t-alligator'));
+  await expect(page.locator('#trainer-bar .tb-what')).toContainText('A ground ball to the left side.');
+  await expect(page.locator('#trainer-bar .tb-what')).toContainText('0 outs');
+  await page.locator('#trainer-bar [data-stay]').click();
+  await page.locator('#trainer-bar [data-next]').click();
+  // Step 2 is a question; answer it right, then try it again: the question and its options come back.
+  await page.locator('#trainer-bar .tb-choices button', { hasText: 'Down on the ground' }).click();
+  await expect(page.locator('#trainer-bar .tb-verdict')).toHaveText('Yes!');
+  await page.locator('#trainer-bar [data-retry]').click();
+  await expect(page.locator('#trainer-bar .tb-q')).toContainText('Where is your glove');
+  await expect(page.locator('#trainer-bar .tb-choices button')).toHaveCount(3);
+  // And back to step 1.
+  await page.locator('#trainer-bar [data-back]').click();
+  await expect(page.locator('#trainer-bar .tb-head')).toContainText('1 of 3');
+  await expect(page.locator('#trainer-bar [data-stay]')).toBeVisible();
+});

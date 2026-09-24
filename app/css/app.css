@@ -934,7 +934,8 @@ body.nohit #hit-card:hover, body.nohit #hit-card:focus-within { opacity: 1; }
 .tb-options button { border: 0; border-radius: 10px; padding: 10px 14px; background: #e9eef6; color: #0f1b2d; font-weight: 700; font-size: 15px; text-align: left; }
 .tb-options button.primary { background: var(--brand); color: #fff; }
 /* Your player, in a lesson: a pulsing ring, so you know who to drag. */
-.player.trainee .ring { stroke: #fff; animation: trainee 1s ease-in-out infinite alternate; }
+.player.trainee .ring { stroke: #ffd60a !important; stroke-width: calc(2.6 * var(--u, 1)); animation: trainee 1s ease-in-out infinite alternate; }
+.you-tag { fill: #ffd60a; font-weight: 900; font-size: calc(3.4 * var(--u, 1)); text-anchor: middle; paint-order: stroke; stroke: rgba(0, 0, 0, .55); stroke-width: calc(1.2 * var(--u, 1)); pointer-events: none; }
 @keyframes trainee { from { stroke-opacity: .35; } to { stroke-opacity: 1; } }
 body.training .field-hint, body.training #field-next, body.training .sit-strip, body.training #play-title { display: none !important; }
 /* In a lesson the bar shows the job, so the job card and, while you decide, the job list stay out of sight. */
@@ -948,3 +949,11 @@ body.tr-waiting #result { visibility: hidden; }
 }
 /* While you decide, nobody's role color shows: it would hint at your own job. */
 body.tr-waiting .player:not(.trainee) .ring { stroke: transparent !important; }
+
+.learn-key { display: flex; gap: 12px; align-items: center; margin: 8px 0; }
+.learn-key svg { flex: none; width: 40px; height: 40px; }
+.tb-nav { margin-top: 6px; }
+.tb-nav .text-btn { padding: 4px 0; color: #44546b; font-weight: 700; }
+.tb-choices button { width: 100%; }
+.tb-what { margin: 6px 0 0; font-size: 15px; color: #0f1b2d; }
+.tb-what span { color: #44546b; white-space: nowrap; }
