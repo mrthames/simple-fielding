@@ -888,3 +888,6 @@ body.projector .fs-exit {
 body.board-on, body.projector { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
 body.board-on .field-wrap, body.projector .field-wrap { overscroll-behavior: none; }
 .mp-row [data-act="up"], .mp-row [data-act="down"] { width: 30px; font-size: 12px; }
+body.nohit #hit-card { opacity: .55; }
+body.nohit #hit-card:hover, body.nohit #hit-card:focus-within { opacity: 1; }
+.vr-btn { border: 0; border-radius: 8px; padding: 5px 10px; background: #a855f7; color: #fff; font-weight: 800; }

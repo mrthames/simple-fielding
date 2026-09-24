@@ -4,7 +4,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '0.24.0';
+  const VERSION = '0.25.0';
   const Field = window.Field;
   const BATTED = ['ground', 'line', 'fly', 'pop', 'bunt'];
   const { POSITIONS, NAMES, LEAGUES } = Field;
@@ -119,6 +119,7 @@
         document.body.classList.add('view3d');
         v3.show(true);
         $('#cam-bar').hidden = false;
+        window.Field3D.vrSupported().then((ok) => { $('#btn-vr').hidden = !ok; });
         sync3d();
       } catch (e) {
         toast('3D needs WebGL, which this browser has turned off.');
@@ -280,6 +281,8 @@
     catch (e) { state.entry = window.PlayLog.entry(plan, situation(), ev, VERSION); }
     state.lastEvent = event;
     state.playName = (opts && opts.name) || null;
+    // A play that isn't a hit: the hit choices don't apply to it, so they're dimmed.
+    document.body.classList.toggle('nohit', !(event.at && BATTED.includes(event.kind)));
     state.savedId = (opts && opts.savedId) || null;
     markQuick(-1);
     view.load(plan);
@@ -329,6 +332,26 @@
   $('#btn-ask').addEventListener('click', () => setAskFirst(!state.askFirst));
   $('#btn-3d').addEventListener('click', () => set3d(!on3d()));
   $('#cam').addEventListener('change', (e) => { if (v3) { v3.setMode(e.target.value); v3.seek(state.t); } });
+  // VR: the headset drives the frames, so playback advances from its loop. The trigger plays (or replays) the play.
+  $('#btn-vr').addEventListener('click', async (e) => {
+    e.preventDefault();
+    if (!v3) return;
+    stop();   // the headset's loop drives playback while you're in VR
+    try {
+      await v3.enterVR((dt) => {
+        if (!state.playing || !state.plan) return;
+        state.t = Math.min(state.plan.timeline.duration, state.t + dt * state.speed);
+        view.seek(state.t);
+        if (state.t >= state.plan.timeline.duration) { state.playing = false; updateTransport(); }
+      }, () => {
+        if (!state.plan) return;
+        endAsk();
+        if (state.t >= state.plan.timeline.duration) state.t = 0;
+        state.playing = !state.playing;
+        updateTransport();
+      });
+    } catch (err) { toast("Couldn't start VR on this device."); }
+  });
   // Next: through My plays when a saved play is open (a playlist for the team meeting), otherwise the play list.
   function nextPlay(step = 1) {
     const mine = window.Share.list(localStorage);

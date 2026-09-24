@@ -2,6 +2,18 @@
 
 ---
 
+## [2026-09-25] v0.25.0 — VR (first version), and dimmed hit choices
+
+- **Enter VR** (in the 3D view, only where the browser supports headsets: Quest's browser, or a PC browser with SteamVR).
+  - The field is life-size and you stand in it. By default you're behind home plate. Pick a player in the View menu first to ride along with them.
+  - Your head does the looking.
+  - The controller's trigger plays or replays the play.
+  - The iPad and other screens are unchanged.
+  - **Not yet tested in a headset**: this is the first version, and it needs a try on real hardware.
+- **Hit choices dim** while a steal, pickoff or other non-hit play is on screen, since they don't apply to it. They still work if you pick one.
+
+---
+
 ## [2026-09-25] v0.24.0 — My plays is a playlist
 
 - **Next play steps through My plays** when a saved play is open. Save tonight's plays, open the first, and click through them in order, in projector mode or on the iPad. The open play is highlighted in the list. Shift+→ and Shift+← (or N) step with a keyboard.

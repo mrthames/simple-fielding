@@ -606,6 +606,8 @@ test('3D view: turns on, offers player cameras, follows the timeline, and turns 
   await expect(page.locator('canvas.field3d')).toBeVisible();
   await expect(page.locator('#cam option[value="player:SS"]')).toHaveCount(1);
   await expect(page.locator('#cam option[value="runner:first"]')).toHaveCount(1);
+  // No headset in the test browser: the VR button stays hidden.
+  await expect(page.locator('#btn-vr')).toBeHidden();
   await page.selectOption('#cam', 'player:SS');
   await page.evaluate(() => (window as any).SimpleFielding.seekEnd());
   await page.locator('#btn-3d').click();

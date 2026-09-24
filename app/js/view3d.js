@@ -350,7 +350,55 @@
       this.camera.updateProjectionMatrix();
     }
 
+    // ---------------------------------------------------------------------------------------- VR (WebXR)
+    // In a headset the world is life-size (feet → meters) and you stand in it: behind home plate, or riding along
+    // with the player the camera picker names. Your head does the looking. The trigger plays the play.
+    static async vrSupported() {
+      try { return !!(navigator.xr && await navigator.xr.isSessionSupported('immersive-vr')); } catch (e) { return false; }
+    }
+    async enterVR(onFrame, onSelect) {
+      const session = await navigator.xr.requestSession('immersive-vr', { optionalFeatures: ['local-floor', 'bounded-floor'] });
+      const r = this.renderer;
+      r.xr.enabled = true;
+      r.xr.setReferenceSpaceType('local-floor');
+      await r.xr.setSession(session);
+      this.inVR = true;
+      this.world = this.world || new this.THREE.Group();
+      if (this.field.parent !== this.world) { this.scene.remove(this.field); this.world.add(this.field); this.scene.add(this.world); }
+      this.world.scale.setScalar(0.3048);
+      session.addEventListener('select', () => onSelect && onSelect());
+      session.addEventListener('end', () => {
+        this.inVR = false;
+        r.setAnimationLoop(null);
+        r.xr.enabled = false;
+        this.world.scale.setScalar(1);
+        this.world.position.set(0, 0, 0);
+        this.resize();
+      });
+      let last = null;
+      r.setAnimationLoop((time) => {
+        const dt = last === null ? 0 : Math.min(0.1, (time - last) / 1000);
+        last = time;
+        if (onFrame) onFrame(dt);
+        this.placeVR();
+        r.render(this.scene, this.camera);
+      });
+    }
+    // Put the viewer where the mode says: the world moves so that spot is at your feet.
+    placeVR() {
+      if (!this.world || !this.geo) return;
+      let spot = { x: 0, y: -14 };                       // behind home plate, like an umpire
+      if (this.mode === 'overhead') spot = { x: 0, y: this.geo.fence * 0.2 };
+      const pose = this.pose && this.pose[this.mode];
+      if (pose) spot = pose.p;
+      const s = 0.3048;
+      this.world.position.set(-spot.x * s, 0, spot.y * s);
+      // Hide the figure you're riding with, so you're not inside it.
+      for (const pos of POSITIONS) if (this.actors && this.actors[pos]) this.actors[pos].visible = this.mode !== 'player:' + pos;
+    }
+
     render() {
+      if (this.inVR) return;   // the headset's loop renders
       if (!this.geo || !this.canvas.isConnected || this.canvas.style.display === 'none') return;
       this.updateCamera();
       // Riding with a player: hide their own figure so it doesn't block the view.
