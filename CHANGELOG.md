@@ -2,6 +2,15 @@
 
 ---
 
+## [2026-09-24] Website — the hero plays the play
+
+- **The homepage hero is now animated**: the single to left field plays out (the ball, the left fielder, the cutoff, the covers and backups), holds on the final positions, and loops.
+- **Baked at build time, not the live app.** `scripts/render-hero-anim.mjs` runs the app's engine once and converts the play's timeline into CSS keyframes. The homepage loads no JavaScript for it; the markup is about 7 KB gzipped, crisp at any size, and inlined, because Chromium doesn't run animations inside an SVG loaded with `<img>`.
+- Holds still for visitors with "reduce motion" turned on. Clicking it opens the app.
+- Replaces the still image and its script.
+
+---
+
 ## [2026-09-24] v0.5.1 — A gear for Settings
 
 ### Fix

@@ -77,6 +77,7 @@ npm test                # engine tests + Playwright UI tests
 npm run icons           # regenerate PNG icons from app/icon.svg and app/icon-dark.svg
 npm run site            # rebuild the guides, sitemap and robots.txt (checks every play against the engine)
 npm run site:og         # ...and re-render the share images
+npm run hero            # re-bake the homepage hero animation from the engine
 ```
 
 ## Testing on a device
