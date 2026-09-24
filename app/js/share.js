@@ -15,7 +15,8 @@
 
   const LEAGUES = ['littleLeague', 'intermediate', 'softball', 'softball10', 'junior90', 'highSchool', 'college', 'pro',
     'softball8', 'softball14', 'softballHS', 'softballCollege', 'softballPro'];
-  const KINDS = ['ground', 'line', 'fly', 'pop', 'bunt', 'steal2', 'steal3', 'firstThirdSteal', 'passedBall', 'primaryLead', 'secondaryLead', 'pitch', 'drawn'];
+  const KINDS = ['ground', 'line', 'fly', 'pop', 'bunt', 'steal2', 'steal3', 'firstThirdSteal', 'passedBall', 'primaryLead', 'secondaryLead', 'pitch', 'drawn', 'lookBack', 'delayedSteal', 'droppedThird'];
+  const ACTIONS = ['return', 'hesitate', 'break', 'drift'];
   const BASES = ['first', 'second', 'third'];
   const POS = ['P', 'C', '1B', '2B', 'SS', '3B', 'LF', 'CF', 'RF'];
   const RESULTS = [undefined, 'out', 'single', 'double', 'triple'];
@@ -124,14 +125,15 @@
     if (event.kind === 'pitch') {
       // move (pickoff), which base, passed ball; then each runner on base: lead in feet and whether they go.
       const pk = Math.max(0, BASES.indexOf(event.pickoff));
-      out.push((event.move === 'pickoff' ? 1 : 0) | (pk << 1) | (event.result === 'passed' ? 8 : 0));
+      out.push((event.move === 'pickoff' ? 1 : 0) | (pk << 1) | (event.result === 'passed' ? 8 : 0) | (event.result === 'dropped' ? 16 : 0));
       for (const base of BASES) {
         if (!r[base]) continue;
         const x = (event.runners && event.runners[base]) || {};
         out.push(Math.max(0, Math.min(127, Math.round(x.lead || 0))) | (x.go ? 128 : 0));
       }
-      if (event.result === 'passed') { const bt = event.ballTo || { x: 10, y: -20 }; put16(out, bt.x); put16(out, bt.y); }
+      if (event.result === 'passed' || event.result === 'dropped') { const bt = event.ballTo || { x: 10, y: -20 }; put16(out, bt.x); put16(out, bt.y); }
     }
+    if (event.kind === 'lookBack') out.push(Math.max(0, BASES.indexOf(event.runner)) | (Math.max(0, ACTIONS.indexOf(event.action)) << 2));
     if (event.kind === 'drawn') packDrawn(out, event);
     if (moved.length) {
       out.push(moved.length);
@@ -175,22 +177,23 @@
       if (kind === 'pitch') {
         const m = b[i++];
         if (m & 1) { event.move = 'pickoff'; event.pickoff = BASES[(m >> 1) & 3] || 'first'; } else event.move = 'pitch';
-        if (m & 8) event.result = 'passed'; else if (!(m & 1)) event.result = 'caught';
+        if (m & 8) event.result = 'passed'; else if (m & 16) event.result = 'dropped'; else if (!(m & 1)) event.result = 'caught';
         event.runners = {};
         for (const base of BASES) {
           if (!situation.runners[base]) continue;
           const x = b[i++];
           event.runners[base] = { lead: x & 127, go: !!(x & 128) };
         }
-        if (m & 8) { event.ballTo = { x: get16(b, i), y: get16(b, i + 2) }; i += 4; }
+        if (m & 24) { event.ballTo = { x: get16(b, i), y: get16(b, i + 2) }; i += 4; }
       }
+      if (kind === 'lookBack') { const v = b[i++]; event.runner = BASES[v & 3] || 'first'; event.action = ACTIONS[(v >> 2) & 3]; }
       if (kind === 'drawn') { const u = unpackDrawn(b, i); event.steps = u.steps; i = u.i; }
       if (f & 128) {
         const n = b[i++];
         situation.start = {};
         for (let j = 0; j < n; j++) { const p = POS[b[i]]; if (p) situation.start[p] = { x: get16(b, i + 1), y: get16(b, i + 3) }; i += 5; }
       }
-      if (KINDS.indexOf(kind) <= 4) {
+      if (KINDS.indexOf(kind) <= 4 || kind === 'droppedThird') {
         if (b.length < i + 5) return null;
         event.at = { x: get16(b, i), y: get16(b, i + 2) }; i += 4;
         const fl = b[i++];

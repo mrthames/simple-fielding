@@ -246,7 +246,8 @@ test('S6: bunt fielded by the third baseman with a runner on 1st — the catcher
 test('S7: softball look-back — based on the lead runner, and the pitcher holds the ball', () => {
   const p = soft(on('second'), { kind: 'primaryLead' });
   assert.equal(p.target, 'second');
-  assert.equal(p.throws.length, 0);
+  // The only throw is the catcher's return to the pitcher; the pitcher holds it.
+  assert.equal(p.throws.filter((t) => t.to !== 'mound').length, 0);
   assert.ok(runner(p, 'second'));
   assert.ok(!runner(p, 'first'));
 });

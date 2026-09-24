@@ -4,8 +4,9 @@
 (function () {
   'use strict';
 
-  const VERSION = '0.13.0';
+  const VERSION = '0.14.0';
   const Field = window.Field;
+  const BATTED = ['ground', 'line', 'fly', 'pop', 'bunt'];
   const { POSITIONS, NAMES, LEAGUES } = Field;
   const $ = (s) => document.querySelector(s);
   const $$ = (s) => Array.from(document.querySelectorAll(s));
@@ -87,9 +88,11 @@
     for (const b of $$('#result-chips button')) b.classList.toggle('on', b.dataset.result === state.result);
     // Other plays only make sense with the right runners on.
     const r = state.runners;
+    const softball = LEAGUES[state.league].sport === 'softball';
     const need = {
       steal2: r.first && !r.second, steal3: r.second && !r.third, firstThirdSteal: r.first && r.third && !r.second,
-      passedBall: r.first || r.second || r.third, primaryLead: r.first, secondaryLead: r.first,
+      passedBall: r.first || r.second || r.third, primaryLead: r.first || (softball && (r.second || r.third)), secondaryLead: r.first,
+      delayedSteal: r.first && r.third, droppedThird: true,
     };
     for (const b of $$('#other-plays button')) {
       b.classList.toggle('dim', !need[b.dataset.play]);
@@ -101,7 +104,7 @@
     return {
       steal2: 'Put a runner on 1st (and nobody on 2nd)', steal3: 'Put a runner on 2nd (and nobody on 3rd)',
       firstThirdSteal: 'Put runners on 1st and 3rd', passedBall: 'Put a runner on base',
-      primaryLead: 'Put a runner on 1st', secondaryLead: 'Put a runner on 1st',
+      primaryLead: 'Put a runner on 1st', secondaryLead: 'Put a runner on 1st', delayedSteal: 'Put runners on 1st and 3rd',
     }[play];
   }
 
@@ -115,7 +118,7 @@
     renderSituation();
     if (state.pm === 'build') { renderBuild(); showReady(); return; }
     // Flip between variations of the same hit: re-run it with the new runners or outs.
-    if (state.lastEvent && state.lastEvent.at) rerunHit();
+    if (state.lastEvent && state.lastEvent.at && BATTED.includes(state.lastEvent.kind)) rerunHit();
     else showReady();
   }
 
@@ -126,12 +129,12 @@
     const building = state.pm === 'build';
     view.showReady(window.Field.readyPositions(geo, situation()), state.runners,
       building && state.build.what !== 'hit' ? buildLeads() : null,
-      building && state.build.what === 'pitch' && state.build.result === 'passed' ? (state.build.ballTo || DEFAULT_BALL_TO()) : null);
+      building && state.build.what === 'pitch' && (state.build.result === 'passed' || state.build.result === 'dropped') ? (state.build.ballTo || DEFAULT_BALL_TO()) : null);
     svg.classList.toggle('building', building);
     const hint = $('#field-hint .fh-text');
     if (hint) hint.textContent = !building || state.build.what === 'hit' ? "Drag the ball from home plate to where it's hit"
       : state.build.what === 'pickoff' ? 'Set the lead, then press Set play'
-      : state.build.result === 'passed' ? 'Tap where the ball ends up, then Set play'
+      : state.build.result === 'passed' || state.build.result === 'dropped' ? 'Tap where the ball ends up, then Set play'
       : 'Set the runners, then press Set play';
     $('#field-hint').classList.toggle('top', building && state.build.what !== 'hit');
     view.showRollHandle(null);
@@ -157,7 +160,7 @@
     if (board.on) closeBoard();
     clearInkOnNewPlay();
     const ev = Object.assign({}, event);
-    if (ev.at && state.result !== 'auto' && !ev.result) ev.result = state.result;
+    if (ev.at && BATTED.includes(ev.kind) && state.result !== 'auto' && !ev.result) ev.result = state.result;
     // A grounder at an infielder called a hit: it gets through, on the same line into the outfield.
     if (ev.kind === 'ground' && ev.at && !ev.through && /^(single|double|triple)$/.test(ev.result || '')) {
       const d = Math.hypot(ev.at.x, ev.at.y);
@@ -697,7 +700,7 @@
     } else if (!d.moved && state.pm === 'build' && !state.plan && state.build.what !== 'hit') {
       // Building a pitch play: a tap near or behind the plate says where a passed ball ends up.
       if (state.build.what === 'pitch' && d.at.y < 25) {
-        state.build.result = 'passed';
+        if (state.build.result !== 'dropped') state.build.result = 'passed';
         state.build.ballTo = { x: Math.round(d.at.x * 2) / 2, y: Math.round(Math.max(d.at.y, geo.backstop + 2) * 2) / 2 };
         saveBuild(); renderBuild(); showReady();
       }
@@ -752,7 +755,8 @@
       if (play === 'steal3') { r.second = true; r.third = false; }
       if (play === 'firstThirdSteal') { r.first = true; r.third = true; r.second = false; }
       if (play === 'passedBall' && !(r.first || r.second || r.third)) r.third = true;
-      if (play === 'primaryLead' || play === 'secondaryLead') r.first = true;
+      if ((play === 'primaryLead' && !(LEAGUES[state.league].sport === 'softball' && (r.second || r.third))) || play === 'secondaryLead') r.first = true;
+      if (play === 'delayedSteal') { r.first = true; r.third = true; }
       renderSituation();
       runEvent({ kind: play });
       scrollToResultOnPhone();
@@ -762,13 +766,13 @@
   // Changing the hit type or result re-runs the last batted ball, so a coach can compare.
   function rerunHit() {
     const e = state.lastEvent;
-    if (!e || !e.at) return;
+    if (!e || !e.at || !BATTED.includes(e.kind)) return;
     if (state.kind === 'ground' && e.through) runEvent({ kind: 'ground', at: e.at, through: e.through });
     else runEvent({ kind: state.kind, at: e.at });
   }
   function rerun() {
     if (!state.lastEvent) return;
-    if (state.lastEvent.at) rerunHit();
+    if (state.lastEvent.at && BATTED.includes(state.lastEvent.kind)) rerunHit();
     else runEvent(state.lastEvent);
   }
 
@@ -875,7 +879,7 @@
       $('#leadoffs').checked = true;
     }
     const ev = Object.assign({}, sc.event);
-    if (ev.at) {
+    if (ev.at && BATTED.includes(ev.kind)) {
       ev.at = sc.abs ? scaleAbs(ev.at) : scaleSpot(ev.at);
       state.kind = ev.kind;
       state.result = ev.result || 'auto';
@@ -1058,6 +1062,7 @@
     // 8U: no stealing, no leads, no pickoffs. The steal card and the builder's steal and pickoff options go away.
     document.body.classList.toggle('no-steals', rules.stealing === 'none');
     document.body.classList.toggle('softball', sport === 'softball');
+    document.body.classList.toggle('no-dropped', rules.droppedThird === false);
     // Softball has no leadoffs (runners leave on the release), and the look-back rule replaces pickoffs.
     $('#leadoffs-row').hidden = sport === 'softball';
     const lead = $('#other-plays [data-play="primaryLead"]');
@@ -1430,7 +1435,7 @@
     for (const base of ['first', 'second', 'third']) if (state.runners[base]) runners[base] = { lead: buildRunner(base).lead, go: b.what === 'pitch' && buildRunner(base).go };
     return b.what === 'pickoff'
       ? { kind: 'pitch', move: 'pickoff', pickoff: state.runners[b.pickoff] ? b.pickoff : Object.keys(runners)[0], runners }
-      : { kind: 'pitch', move: 'pitch', result: b.result, ballTo: b.result === 'passed' ? (b.ballTo || DEFAULT_BALL_TO()) : undefined, runners };
+      : { kind: 'pitch', move: 'pitch', result: b.result, ballTo: b.result === 'passed' || b.result === 'dropped' ? (b.ballTo || DEFAULT_BALL_TO()) : undefined, runners };
   }
   function renderBuild() {
     const b = state.build;
@@ -1438,7 +1443,7 @@
     for (const x of $$('#build-what button')) x.classList.toggle('on', x.dataset.what === b.what);
     for (const x of $$('#build-result button')) x.classList.toggle('on', x.dataset.res === b.result);
     $('#build-pitch').hidden = b.what !== 'pitch';
-    $('#build-passed-tip').hidden = b.result !== 'passed';
+    $('#build-passed-tip').hidden = b.result !== 'passed' && b.result !== 'dropped';
     $('#build-pickoff').hidden = b.what !== 'pickoff';
     $('#build-hit-tip').hidden = b.what !== 'hit';
     document.body.classList.toggle('build-hit', b.what === 'hit');
@@ -1567,13 +1572,13 @@
     state.outs = s.outs;
     state.batter = s.batter;
     if (typeof s.leadoffs === 'boolean') { state.leadoffs = s.leadoffs; $('#leadoffs').checked = s.leadoffs; }
-    if (d.event.at) { state.kind = d.event.kind; state.result = d.event.result || 'auto'; }
+    if (d.event.at && BATTED.includes(d.event.kind)) { state.kind = d.event.kind; state.result = d.event.result || 'auto'; }
     if (d.event.kind === 'pitch' || s.start) {
       const e = d.event;
       state.build.start = s.start || {};
       if (e.kind === 'pitch') {
         state.build.what = e.move === 'pickoff' ? 'pickoff' : 'pitch';
-        state.build.result = e.result === 'passed' ? 'passed' : 'caught';
+        state.build.result = e.result === 'passed' || e.result === 'dropped' ? e.result : 'caught';
         state.build.pickoff = e.pickoff || 'first';
         state.build.ballTo = e.ballTo || null;
         state.build.runners = JSON.parse(JSON.stringify(e.runners || {}));

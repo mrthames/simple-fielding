@@ -581,3 +581,18 @@ test('softball levels: the list, the slapper, and 8U coach pitch', async ({ page
   await page.locator('#sport-seg [data-sport="softball"]').click();
   expect(await page.evaluate(() => (window as any).SimpleFielding.state.league)).toBe('softball8');
 });
+
+test('dropped third strike, delayed steal and look-back plays', async ({ page }) => {
+  await page.locator('#other-plays [data-play="droppedThird"]').click();
+  await expect(page.locator('#play-title .pt-name')).toContainText('Dropped third strike');
+  await page.locator('#sport-seg [data-sport="softball"]').click();
+  await page.locator('#other-plays [data-play="delayedSteal"]').click();
+  await expect(page.locator('#play-title .pt-name')).toContainText('delayed steal');
+  await page.locator('#quick-list .lib-item', { hasText: 'stops: out by rule' }).click();
+  await expect(page.locator('#result-title')).toContainText('Look-back');
+  // Builder: strike three in the dirt.
+  await page.locator('#panel-mode [data-pm="build"]').click();
+  await page.locator('#build-result [data-res="dropped"]').click();
+  await page.locator('#build-go').click();
+  expect(await page.evaluate(() => (window as any).SimpleFielding.state.plan.title)).toContain('Dropped third strike');
+});

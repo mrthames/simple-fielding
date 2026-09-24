@@ -229,8 +229,14 @@ the project notes.
   short is an out from 14U up, and a slapper beats it.
 - **No pitcher pickoffs** in softball: the catcher's back-pick and the look-back rule take their place.
 - **Cutoff home:** about 30 ft in front of the plate.
-- Not yet: look-back variations, the delayed steal, the dropped third strike, and bunt defenses with runners on 1st and
-  2nd (standard and rotation).
+- **Look-back:** once the pitcher has the ball in the circle, a runner off the base goes straight back or goes. Stopping
+  is an out by rule (USA Softball and NFHS allow one stop; NCAA none). Pitchers hold the ball: a throw, or in college a
+  fake, frees the runner.
+- **Delayed steal (1st & 3rd):** the runner on 1st breaks on the catcher's throw back to the pitcher. The pitcher looks
+  3rd back first, then throws to 2nd (the shortstop covers).
+- **Dropped third strike:** the batter can run when 1st is open or with two outs. The first baseman calls "Inside!" or
+  "Outside!" so the throw misses the runner; bases loaded with two outs, the catcher steps on home.
+- Not yet: bunt defenses with runners on 1st and 2nd (standard and rotation).
 
 ## Softball
 

@@ -1117,6 +1117,8 @@
       return pickoffPlay(geo, situation, base, leadOf(base));
     }
 
+    // Strike three in the dirt.
+    if (event.result === 'dropped') return setLeads(planSituationPlay(geo, situation, { kind: 'droppedThird', at: event.ballTo }));
     // The pitch gets away.
     if (event.result === 'passed') {
       const plan = planSituationPlay(geo, situation, { kind: 'passedBall', ballTo: event.ballTo, go: rs });
@@ -1232,8 +1234,11 @@
     return plan;
   }
 
+  const PITCH_TIME_OF = (geo) => geo.tempo.delivery;
   function planSituationPlay(geo, situation, event) {
     if (event.kind === 'pitch') return planPitch(geo, situation, event);
+    // Softball has no pickoffs from the pitcher: the "lead" play is the look-back rule.
+    if (event.kind === 'primaryLead' && geo.league.sport === 'softball') event = { kind: 'lookBack', action: 'return' };
     const ready = Field.readyPositions(geo, situation);
     const plan = newPlan(geo, situation, ready);
     const b = geo.bases;
@@ -1389,6 +1394,119 @@
       case 'none': {
         plan.title = 'Nobody on base';
         plan.summary = 'Put a runner on to set this up.';
+        break;
+      }
+      case 'lookBack': {
+        // Softball: the pitch is caught and thrown back to the pitcher in the circle. The runner off the base has to
+        // decide at once: go back, or go. The pitcher holds the ball and makes her decide.
+        const base = run[event.runner] ? event.runner : ['third', 'second', 'first'].find((x) => run[x]) || 'first';
+        const action = event.action || 'return';
+        const L = (geo.tempo.lead[base] || 8) + 2;
+        plan.fielder = 'P';
+        plan.target = base;
+        plan.lookBack = true;
+        assign(plan, 'C', action === 'break' ? 'cover' : 'field', action === 'break' ? HOME_TAG : { x: 0, y: -3 },
+          action === 'break' ? 'Throw it back to the pitcher, then get right back to the plate. ' + TAG_TEXT : 'Catch the pitch and throw it right back to the pitcher in the circle.', { delay: 0 });
+        plan.throws.push({ fromPos: 'C', to: 'mound', toPos: 'P' });
+        const cover = { first: '1B', second: 'SS', third: '3B' }[base];
+        assign(plan, cover, 'cover', b[base], `Get to ${baseName(base)} base in case the pitcher needs to throw.`, { delay: 0.2 });
+        const pJob = 'Ball in the circle: face the runner and HOLD the ball. Don\'t fake a throw (in college a fake frees her); make her go back or go.';
+        plan.runners = [];
+        if (action === 'return') {
+          plan.title = `Look-back — the runner on ${baseName(base)} goes back`;
+          plan.summary = 'The pitcher gets the ball in the circle and holds it. The runner goes straight back to the base, which is exactly what the rule asks.';
+          assign(plan, 'P', 'field', { x: 0, y: geo.mound.y - 2 }, pJob, { delay: 0 });
+          plan.runners.push({ id: base, from: base, to: base, leadStart: L, secondary: 2 });
+        } else if (action === 'hesitate') {
+          plan.title = `Look-back — the runner stops off ${baseName(base)}: out`;
+          plan.summary = 'Once the pitcher has the ball in the circle, a runner off the base must go back or go at once. She stops, and the umpire calls her out. No throw needed.';
+          assign(plan, 'P', 'field', { x: 0, y: geo.mound.y - 2 }, pJob + ' If she stops and freezes, don\'t throw: the umpire calls her out.', { delay: 0 });
+          plan.runners.push({ id: base, from: base, to: base, leadStart: L, hesitate: true });
+        } else if (action === 'break' && base === 'third') {
+          plan.title = 'Look-back — the runner on 3rd breaks for home';
+          plan.summary = 'The runner on 3rd breaks as the pitcher gets the ball. The pitcher throws home, and the catcher tags her.';
+          assign(plan, 'P', 'field', { x: 0, y: geo.mound.y - 2 }, 'She broke! Throw home right away — a firm throw to the catcher\'s glove side.', { delay: 0 });
+          plan.throws.push({ fromPos: 'P', to: 'home', toPos: 'C' });
+          plan.runners.push({ id: 'third', from: 'third', to: 'home', leadStart: L, start: 'afterFirstCatch', commit: true });
+          assign(plan, 'SS', 'backup', behind(geo, b.third, geo.mound, 12), 'Back up 3rd in case she turns back into a rundown.', { delay: 0.3 });
+        } else {
+          plan.title = `Look-back — the runner drifts off ${baseName(base)}`;
+          plan.summary = 'The runner on 1st drifts toward 2nd. The pitcher runs right at her, eyes on the runner on 3rd, and doesn\'t throw unless that runner is back on the bag.';
+          assign(plan, 'P', 'field', { x: 12, y: geo.mound.y + 6 }, 'Run right at her with the ball — but keep your eyes on the runner on 3rd. Make her commit; don\'t throw unless 3rd is covered and that runner is back.', { delay: 0, path: [{ x: 0, y: geo.mound.y - 2 }, { x: 12, y: geo.mound.y + 6 }] });
+          plan.runners.push({ id: base, from: base, to: base, leadStart: L, secondary: 6 });
+          if (run.third) assign(plan, '3B', 'cover', b.third, 'Stay on 3rd — the runner there is what the pitcher is watching.', { delay: 0.2 });
+        }
+        for (const x of ['first', 'second', 'third']) if (run[x] && !plan.runners.find((r) => r.id === x)) plan.runners.push({ id: x, from: x, to: x });
+        plan.notes.push('Look-back rule: once the pitcher has the ball in the circle, a runner off the base must go straight back or go. USA Softball and NFHS let her stop once; NCAA doesn\'t let her stop at all. The exact wording varies, so check your league.');
+        plan.notes.push('Pitchers: hold the ball and face the runner. A throw, or in college even a fake, frees her to run.');
+        plan.pitch = true;
+        break;
+      }
+      case 'delayedSteal': {
+        // 1st & 3rd: the runner on 1st breaks when the catcher throws the ball back to the pitcher.
+        plan.title = '1st & 3rd — delayed steal';
+        plan.summary = 'The catcher throws the ball back to the pitcher, and the runner on 1st breaks as it leaves her hand. The pitcher catches it, looks the runner on 3rd back, then throws to 2nd.';
+        plan.fielder = 'P';
+        plan.target = 'second';
+        assign(plan, 'C', 'field', { x: 0, y: -3 }, 'Throw it back to the pitcher — and be ready for the runner on 1st to break as you release it.', { delay: 0 });
+        assign(plan, 'P', 'field', { x: 0, y: geo.mound.y - 2 }, 'Catch it and look at the runner on 3rd first. If she\'s back, throw to 2nd; if she\'s off, run at her.', { delay: 0 });
+        assign(plan, 'SS', 'cover', b.second, 'Cover 2nd when the runner on 1st breaks. Catch and tag.', { delay: 0.3 });
+        assign(plan, '2B', 'backup', behind(geo, b.second, geo.mound, 14), 'Back up the throw to 2nd.', { delay: 0.3 });
+        assign(plan, '3B', 'cover', b.third, 'Stay on 3rd and keep that runner close.', { delay: 0.2 });
+        assign(plan, 'CF', 'backup', behind(geo, b.second, geo.mound, 45), 'Charge in to back up 2nd.', { delay: 0.3 });
+        plan.throws.push({ fromPos: 'C', to: 'mound', toPos: 'P' });
+        // She looks the runner on 3rd back before she throws.
+        plan.throws.push({ fromPos: 'P', to: 'second', wait: 0.45 });
+        plan.runners = [{ id: 'first', from: 'first', to: 'second', start: 'onFirstThrow', commit: true, leadStart: Math.max(6, geo.tempo.lead.first || 8) }];
+        if (run.third) plan.runners.push({ id: 'third', from: 'third', to: 'third' });
+        if (run.second) plan.runners.push({ id: 'second', from: 'second', to: 'second' });
+        plan.notes.push('The delayed steal works when the defense relaxes on the throw back. Catchers: look at the runner on 1st before you throw it back. Pitchers: catch it facing the infield.');
+        plan.pitch = true;
+        break;
+      }
+      case 'droppedThird': {
+        // Strike three isn't caught cleanly. The batter can run if 1st is open (or there are two outs), where the
+        // league plays the rule.
+        const at = event.at && Number.isFinite(event.at.x) ? { x: clamp(event.at.x, -40, 40), y: clamp(event.at.y, geo.backstop + 2, 10) } : { x: 3, y: -6 };
+        const live = geo.rules.droppedThird !== false && (!run.first || situation.outs === 2);
+        plan.fielder = 'C';
+        plan.passed = true;
+        plan.ball = { kind: 'passed', at, fieldPoint: at, caught: false };
+        assign(plan, 'P', 'hold', { x: -6 * k, y: 20 * k }, 'Get off to the 3rd-base side, out of the catcher\'s throwing lane.', { delay: 0.2 });
+        if (!live) {
+          plan.title = 'Dropped third strike — the batter is out';
+          plan.summary = geo.rules.droppedThird === false
+            ? 'This league doesn\'t play the dropped third strike: the batter is out.'
+            : 'With 1st base occupied and less than two outs, the batter is out even though the catcher dropped it. Don\'t throw — watch the runners.';
+          assign(plan, 'C', 'field', at, 'Pick it up and look at the runners. Don\'t throw to 1st: the batter is out.', { delay: 0.1 });
+          plan.runners = [];
+          for (const x of ['first', 'second', 'third']) if (run[x]) plan.runners.push({ id: x, from: x, to: x });
+          plan.notes.push('A dropped third strike only lets the batter run when 1st is open, or with two outs.');
+        } else if (run.first && run.second && run.third && situation.outs === 2) {
+          plan.title = 'Dropped third strike, bases loaded, two outs';
+          plan.summary = 'Everybody is forced. The catcher picks it up and steps on home for the third out.';
+          plan.target = 'home';
+          assign(plan, 'C', 'field', at, 'Get the ball and step on home plate — that\'s the force for the third out.', { delay: 0.1 });
+          plan.throws.push({ fromPos: 'C', to: 'home', step: true });
+          plan.runners = [{ id: 'batter', from: 'home', to: 'first', forced: true, start: PITCH_TIME_OF(geo) + 0.3 }];
+          for (const x of ['third', 'second', 'first']) plan.runners.push({ id: x, from: x, to: nextBase(x), forced: true, start: PITCH_TIME_OF(geo) + 0.3 });
+        } else {
+          const inside = at.y > -8;
+          plan.title = 'Dropped third strike — throw to 1st';
+          plan.summary = `The catcher blocks it, picks it up and throws to 1st. The first baseman sets up on the ${inside ? 'inside (fair side)' : 'outside (foul side)'} of the bag so the throw doesn't hit the runner.`;
+          plan.target = 'first';
+          assign(plan, 'C', 'field', at, `Pick it up, and listen for the first baseman: "${inside ? 'Inside!' : 'Outside!'}" Step that way and throw.`, { delay: 0.1 });
+          const spot = inside ? { x: b.first.x - 1.2, y: b.first.y + 1.6 } : { x: b.first.x + 1.6, y: b.first.y - 1.2 };
+          assign(plan, '1B', 'cover', spot, `Get to the bag and yell "${inside ? 'Inside!' : 'Outside!'}" — give the catcher a target clear of the runner.`, { delay: 0.1 });
+          assign(plan, 'RF', 'backup', behind(geo, b.first, at, 35), 'Charge in and back up the throw to 1st.', { delay: 0.2 });
+          assign(plan, '2B', 'backup', lerp(b.first, b.second, 0.3), 'Cheat toward 1st to back up the throw.', { delay: 0.2 });
+          plan.throws.push({ fromPos: 'C', to: 'first' });
+          plan.runners = [{ id: 'batter', from: 'home', to: 'first', forced: true, start: PITCH_TIME_OF(geo) + 0.3 }];
+          for (const x of ['first', 'second', 'third']) if (run[x]) plan.runners.push({ id: x, from: x, to: x });
+          if (situation.outs === 2 && run.first) plan.notes.push('With two outs, the batter can run even with 1st occupied: every runner is forced. The easiest out might be a force somewhere else.');
+        }
+        plan.notes.push('Dropped third strike: if the catcher doesn\'t catch strike three cleanly, the batter can run to 1st — when 1st is open, or with two outs.');
+        plan.pitch = true;
         break;
       }
       case 'passedBall': {
@@ -1624,6 +1742,7 @@
     let t = tBallAtFielder;
     let from = { x: ball[ball.length - 1].x, y: ball[ball.length - 1].y };
     let firstThrowCatch = null;
+    let firstThrowRelease = null;
     const outsMade = [];
     for (const th of plan.throws) {
       const legs = [];
@@ -1637,6 +1756,7 @@
       const tgtPos = th.toPos || coverAt(plan, th.to);
       const tgt = th.to === 'home' ? { x: 0, y: 1.5 } : th.to === 'mound' ? { x: geo.mound.x, y: geo.mound.y - 2 } : b[th.to];
       legs.push({ to: tgt, pos: tgtPos, base: th.to === 'mound' ? null : th.to });
+      if (th.wait) t += th.wait;
       for (const [li, leg] of legs.entries()) {
         const thrower = li === 0 ? th.fromPos : legs[li - 1].pos;
         if (th.step && leg.base) {
@@ -1664,6 +1784,7 @@
           ball.push({ t: (t + tt) / 2, ...lerp(from, leg.to, 0.5), h: 4 + dist(from, leg.to) / 18 });
           ball.push({ t: tt, x: leg.to.x, y: leg.to.y, h: 4 });
           events.push({ t, type: 'throw', from: { ...from }, to: { ...leg.to }, tEnd: tt });
+          if (firstThrowRelease === null) firstThrowRelease = t;
           t = tt;
         }
         if (firstThrowCatch === null) firstThrowCatch = t;
@@ -1727,11 +1848,29 @@
       else if (softball && !plan.pitchOnly && r.from !== 'home' && !r.tagUp) lead = TP.lead[r.from];
       const leadPos = r.from === 'home' ? startPos : along(b[r.from], baseAt(nextBase(r.from)), lead);
       keys.push({ t: 0, x: leadPos.x, y: leadPos.y, o: 1 });
-      let t0 = r.start === undefined ? (slapper ? runnerStart - 0.15 : runnerStart) : r.start === 'afterFirstThrow' ? (firstThrowCatch || 1) - 0.6 : r.start;
+      let t0 = r.start === undefined ? (slapper ? runnerStart - 0.15 : runnerStart) : r.start === 'afterFirstThrow' ? (firstThrowCatch || 1) - 0.6
+        : r.start === 'afterFirstCatch' ? (firstThrowCatch || 1) + 0.1
+        : r.start === 'onFirstThrow' ? (firstThrowRelease || 1)
+        : r.start;
       if (r.tagUp) {
         // Back to the bag, wait for the catch, then go.
         keys.push({ t: runnerStart, x: b[r.from].x, y: b[r.from].y, o: 1 });
         t0 = tBallAtFielder;
+      }
+      if (r.hesitate) {
+        // Look-back: she's off the base when the pitcher gets the ball, stops, and is out by rule.
+        const bag = b[r.from];
+        const off = along(bag, baseAt(nextBase(r.from)), (r.leadStart || lead) + 2);
+        const tBall = firstThrowCatch || PITCH_TIME + 0.8;
+        keys.push({ t: PITCH_TIME * 0.5, x: off.x, y: off.y, o: 1 });
+        keys.push({ t: tBall + 0.4, x: off.x + 0.5, y: off.y + 0.5, o: 1 });
+        const cut = tBall + 0.9;
+        keys.push({ t: cut, x: off.x + 0.5, y: off.y + 0.5, o: 1 });
+        keys.push({ t: cut + 0.6, x: off.x + 0.5, y: off.y + 0.5, o: 0 });
+        events.push({ t: cut, type: 'out', text: 'Out! (look-back)', at: { ...off } });
+        runnerTracks[r.id] = keys;
+        r.out = true;
+        continue;
       }
       if (r.secondary) {
         // Shuffle further off as the pitch comes in, read the catch, then get back. A throw behind them is an
@@ -2028,7 +2167,8 @@
     const geo = Field.geometry(s.league, s.park);
     if (s.leadoffs === undefined) s.leadoffs = geo.league.leadoffs;
     if (event.kind === 'drawn') return planDrawn(geo, s, event);
-    const plan = event.at ? planBattedBall(geo, s, event) : planSituationPlay(geo, s, event);
+    const batted = event.at && ['ground', 'line', 'fly', 'pop', 'bunt'].includes(event.kind);
+    const plan = batted ? planBattedBall(geo, s, event) : planSituationPlay(geo, s, event);
     finish(plan);
     plan.timeline = buildTimeline(plan);
     plan.jobs = POSITIONS.map((p) => plan.assignments[p])

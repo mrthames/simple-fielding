@@ -2,6 +2,25 @@
 
 ---
 
+## [2026-09-25] v0.14.0 — Look-back, delayed steal, dropped third strike
+
+- **Softball look-back plays.** The catcher returns the ball to the pitcher in the circle, and the runner off the base:
+  - goes straight back
+  - stops, and is **out by rule** with no throw
+  - breaks for home, and the pitcher throws home
+  - drifts off 1st with a runner on 3rd, while the pitcher runs at her with eyes on 3rd
+  Each shows a note that the rule's wording differs between USA Softball / NFHS and NCAA. The softball "Look-back rule" button now plays the look-back itself.
+- **1st & 3rd delayed steal.** The runner on 1st breaks as the catcher throws back to the pitcher, and the pitcher looks the runner on 3rd back before throwing to 2nd. The clock decides.
+- **Dropped third strike**, baseball and softball:
+  - **1st open, or two outs:** the catcher throws to 1st. The first baseman calls "Inside!" or "Outside!" depending on where the ball went.
+  - **Bases loaded, two outs:** the catcher steps on home.
+  - **1st occupied with fewer than two outs:** the batter is simply out ("don't throw").
+  - Leagues that don't play the rule (8U, many 10U) hide it.
+- **Builder:** a new pitch result, **Strike 3 in the dirt**. Tap where the ball ends up.
+- **New softball plays:** 4 look-back, 1 delayed steal and 4 dropped third strike situations. All of it carries through share links.
+
+---
+
 ## [2026-09-25] v0.13.0 — Every fastpitch level
 
 - **Five new softball fields:**

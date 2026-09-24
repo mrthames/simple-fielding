@@ -803,3 +803,5 @@ body.softball #batter-seg button { font-size: 13px; padding: 0 7px; }
 .panel { overflow-x: hidden; }
 /* The first-run hint sits to the left so it never covers the color key. */
 @media (min-width: 900px) { .field-hint:not(.top) { left: 12px; transform: none; } }
+body.no-dropped #other-plays [data-play="droppedThird"], body.no-dropped #build-result [data-res="dropped"] { display: none; }
+body:not(.softball) #other-plays [data-play="delayedSteal"] { display: none; }
