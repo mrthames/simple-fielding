@@ -2,6 +2,16 @@
 
 ---
 
+## [2026-09-25] v0.19.0 — "Cut 2", and the lefty's head start
+
+- **"Cut 2"** (13U–14U and up, baseball and softball). On a single with a runner scoring from 2nd and 1st base open behind them, the batter rounds 1st and takes off for 2nd on the throw home.
+  - If the throw would beat the runner, it goes home and the batter takes 2nd.
+  - If the runner is going to score easily, the catcher yells **"Cut 2!"**, and the cutoff catches the throw and fires to 2nd to try to get the batter.
+  - The clock decides both.
+- **Left-handed hitters** stand in the 1st-base-side box and get out of it a step sooner (13U–14U and up).
+
+---
+
 ## [2026-09-25] v0.18.0 — Defensive calls: 1st & 3rd, and bunt defense
 
 - **1st & 3rd defense** (in the Steals card): **Auto · Through · Cut · To P · To 3rd**.

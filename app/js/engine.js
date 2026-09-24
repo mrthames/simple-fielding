@@ -508,7 +508,10 @@
     let target;
     if (bases === 1) {
       target = run.second ? 'home' : run.first ? 'third' : 'second';
-      r.push({ id: 'batter', from: 'home', to: 'first' });
+      // Older levels: with the throw going home and 1st open behind them, the batter takes 2nd on the throw.
+      const onThrow = geo.older && target === 'home' && !run.first;
+      r.push(onThrow ? { id: 'batter', from: 'home', to: 'second', onThrow: true } : { id: 'batter', from: 'home', to: 'first' });
+      if (onThrow) plan.cut2 = true;
       if (run.first) r.push({ id: 'first', from: 'first', to: target === 'third' ? 'third' : 'second' });
       if (run.second) r.push({ id: 'second', from: 'second', to: 'home' });
       if (run.third) r.push({ id: 'third', from: 'third', to: 'home' });
@@ -1958,7 +1961,7 @@
       const legs = [];
       // Youth throws go through the cutoff, who catches and throws on. From high school up, a single cutoff
       // lets a good throw go through (the catcher says nothing); only a relay on an extra-base hit handles it.
-      const letThrough = geo.older && th.via && ['LF', 'CF', 'RF'].includes(th.fromPos) && plan.assignments[th.via] && plan.assignments[th.via].role === 'cutoff';
+      const letThrough = geo.older && !th.cut && th.via && ['LF', 'CF', 'RF'].includes(th.fromPos) && plan.assignments[th.via] && plan.assignments[th.via].role === 'cutoff';
       if (th.via && !letThrough) {
         const a = plan.assignments[th.via];
         legs.push({ to: a.to, pos: th.via });
@@ -2049,7 +2052,9 @@
       else if (path.length) r.to = path[path.length - 1];
 
       const slapper = r.from === 'home' && plan.situation.batter === 'S';
-      const startPos = r.from === 'home' ? (slapper ? { x: 2.5, y: 0 } : { x: -3, y: -1 }) : b[r.from];
+      // A left-handed hitter stands in the 1st-base-side box and gets out of it a step sooner (older levels).
+      const lefty = r.from === 'home' && !slapper && plan.situation.batter === 'L' && geo.older;
+      const startPos = r.from === 'home' ? (slapper ? { x: 2.5, y: 0 } : lefty ? { x: 3, y: -1 } : { x: -3, y: -1 }) : b[r.from];
       const keys = [];
       let lead = 0;
       if (r.leadStart !== undefined) lead = r.leadStart;
@@ -2058,7 +2063,7 @@
       else if (softball && !plan.pitchOnly && r.from !== 'home' && !r.tagUp) lead = TP.lead[r.from];
       const leadPos = r.from === 'home' ? startPos : along(b[r.from], baseAt(nextBase(r.from)), lead);
       keys.push({ t: 0, x: leadPos.x, y: leadPos.y, o: 1 });
-      let t0 = r.start === undefined ? (slapper ? runnerStart - 0.15 : runnerStart) : r.start === 'afterFirstThrow' ? (firstThrowCatch || 1) - 0.6
+      let t0 = r.start === undefined ? (slapper ? runnerStart - 0.15 : lefty ? runnerStart - 0.1 : runnerStart) : r.start === 'afterFirstThrow' ? (firstThrowCatch || 1) - 0.6
         : r.start === 'afterFirstCatch' ? (firstThrowCatch || 1) + 0.1
         : r.start === 'onFirstThrow' ? (firstThrowRelease || 1)
         : r.start;
@@ -2185,6 +2190,15 @@
         keys.push({ t: tt, x: q.x, y: q.y, o: 1 });
         reachAt[base] = tt;
         cur = q;
+        // Taking 2nd on the throw: round 1st (a turn of about 12 ft), and go when the outfielder throws.
+        if (r.onThrow && base === 'first' && firstThrowRelease !== null) {
+          const turn = along(q, baseAt('second'), 12 * (geo.base / 60));
+          const tTurn = tt + 12 * (geo.base / 60) / (RS * 1.12);
+          keys.push({ t: tTurn, x: turn.x, y: turn.y, o: 1 });
+          tt = Math.max(tTurn, firstThrowRelease + 0.1);
+          keys.push({ t: tt, x: turn.x, y: turn.y, o: 1 });
+          cur = turn;
+        }
       }
       runnerTracks[r.id] = keys;
 
@@ -2194,11 +2208,12 @@
         continue;
       }
       // The batter on a clean hit reaches the base the hit is worth.
-      if (r.id === 'batter' && plan.classification === 'outfieldHit') { taken.add(r.to); continue; }
+      if (r.id === 'batter' && plan.classification === 'outfieldHit' && !r.onThrow) { taken.add(r.to); continue; }
 
       const ballThere = path.length ? outsMade.find((x) => x.base === r.to) : null;
       if (!ballThere) { if (r.to !== 'home') taken.add(r.to); continue; }
       const tRun = reachAt[r.to];
+      if (r.to === 'home' && r.id !== 'batter') plan.homeMargin = Math.min(plan.homeMargin === undefined ? Infinity : plan.homeMargin, ballThere.t - tRun);
       const canHold = !r.forced && !r.commit;
       const needed = r.forced ? 0.05 : TP.tagTime;       // how far ahead the ball must be for an out
       // From 13U-14U up: never make the first or third out at 3rd; with two outs, force the defense at home.
@@ -2411,6 +2426,22 @@
     const plan = batted ? planBattedBall(geo, s, event) : planSituationPlay(geo, s, event);
     finish(plan);
     plan.timeline = buildTimeline(plan);
+    // "Cut 2": the runner is going to score easily, so the catcher has the cutoff catch it and throw the batter
+    // out at 2nd instead.
+    if (plan.cut2 && plan.homeMargin !== undefined && plan.homeMargin > 0.35 && plan.throws[0] && plan.throws[0].via) {
+      const cutPos = plan.throws[0].via;
+      plan.throws = [{ fromPos: plan.throws[0].fromPos, via: cutPos, to: 'second', cut: true }];
+      plan.target = 'second';
+      for (const r of plan.runners) { delete r.out; delete r.safe; delete r.held; }
+      const bat = plan.runners.find((r) => r.id === 'batter');
+      if (bat) bat.to = 'second';
+      plan.title += ' — "Cut 2!"';
+      plan.summary = `The runner is going to score easily, so the catcher yells "Cut 2!" ${The(cutPos)} catches the throw and fires to 2nd to try to get the batter, who took off for 2nd on the throw.`;
+      plan.assignments[cutPos].job = 'Line up for the throw home — and listen: on "Cut 2!", catch it and throw to 2nd.';
+      plan.assignments.C.job = 'The run is going to score: yell "Cut 2! Cut 2!" so the cutoff throws the batter out at 2nd.';
+      plan.notes.unshift('"Cut 2": when the throw home is too late, the catcher has the cutoff catch it and throw to 2nd. The batter who took off for 2nd on the throw is the out you can still get.');
+      plan.timeline = buildTimeline(plan);
+    }
     plan.jobs = POSITIONS.map((p) => plan.assignments[p])
       .sort((a, b) => ROLE_ORDER.indexOf(a.role) - ROLE_ORDER.indexOf(b.role));
     return plan;

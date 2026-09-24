@@ -118,3 +118,14 @@ test('review fixes: reach from hang time, infield range past the dirt, cut play,
   const d = Engine.planPlay({ runners: {}, outs: 0, league: 'junior90' }, { kind: 'line', at: { x: -205, y: 222 }, result: 'double' });
   assert.ok(!d.homeRun);
 });
+
+test('"Cut 2": the batter takes 2nd on a throw home; when the run will score easily, the cutoff throws to 2nd', () => {
+  let saw = false;
+  for (const at of [{ x: 30, y: 230 }, { x: -10, y: 255 }, { x: -120, y: 220 }]) {
+    const p = Engine.planPlay({ league: 'pro', runners: { second: true }, outs: 2, leadoffs: true }, { kind: 'ground', at, result: 'single' });
+    const bat = p.runners.find((r) => r.id === 'batter');
+    assert.equal(bat.to, 'second', 'the batter goes on the throw');
+    if (/Cut 2/.test(p.title)) { saw = true; assert.equal(p.target, 'second'); assert.ok(p.throws[0].cut); }
+  }
+  assert.ok(saw, 'at least one of these calls "Cut 2"');
+});
