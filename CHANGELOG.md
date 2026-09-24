@@ -2,6 +2,22 @@
 
 ---
 
+## [2026-09-25] v0.16.0 — 3D, and seeing the play through a player's eyes
+
+- **3D view** (the **3D** button on the control bar). The same play, timeline and field in 3D: the park's real wall shape with its distances, the mound or the pitching circle, bases, foul poles, and the coach on the rubber at 8U.
+  - Players stand on rings in their job's color.
+  - Your team's names float above the players.
+  - The ball flies with its real arc.
+- **Cameras:**
+  - **Behind home plate**
+  - **Overhead**
+  - **Be the player:** ride with any fielder or runner at eye height, looking where the engine says they're looking. See the cutoff turn from the outfielder to the base, or a runner find the third-base coach.
+- **Play, pause, the ½× speed and the timeline slider** all work in 3D. Drag left or right on the 3D view to scrub.
+- **Hitting a new ball** and the **whiteboard** stay in 2D. Opening the whiteboard switches back.
+- **Loads only when you turn 3D on.** 3D uses Three.js (MIT license), bundled with the app so it also works offline and in the native apps later. The choice is remembered.
+
+---
+
 ## [2026-09-25] v0.15.1 — Fixes from the fastpitch review
 
 A review by a D-I softball defensive coach and a 10U/12U rec and travel coach ran over 16,000 plays across the new softball levels.

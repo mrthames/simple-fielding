@@ -4,7 +4,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '0.15.1';
+  const VERSION = '0.16.0';
   const Field = window.Field;
   const BATTED = ['ground', 'line', 'fly', 'pop', 'bunt'];
   const { POSITIONS, NAMES, LEAGUES } = Field;
@@ -45,6 +45,99 @@
 
   const tester = { on: store.get('tester', false), url: store.get('testerUrl', '') };
   const view = new window.FieldView($('#field'));
+
+  // ------------------------------------------------------------------------------------ 3D
+  // A second renderer for the same plans. It follows everything the 2D view is told to do, whenever it's on.
+  let v3 = null;
+  let lastLabels = null;
+  const on3d = () => !!(v3 && document.body.classList.contains('view3d'));
+  function sync3d() {
+    if (!on3d()) return;
+    if (state.plan) { v3.load(state.plan); v3.seek(state.t); }
+    else v3.showReady(window.Field.readyPositions(geo, situation()), state.runners);
+    renderCams();
+  }
+  for (const name of ['load', 'seek', 'showReady', 'setGeometry', 'setLabels']) {
+    const orig = view[name].bind(view);
+    view[name] = (...args) => {
+      const out = orig(...args);
+      if (name === 'setLabels') lastLabels = args[0];
+      if (on3d()) {
+        if (name === 'setLabels') v3.setLabels(args[0]);
+        else if (name === 'setGeometry') { v3.setGeometry(args[0]); sync3d(); }
+        else if (name === 'showReady') v3.showReady(args[0], args[1]);
+        else if (name === 'load') { v3.load(args[0]); renderCams(); }
+        else v3.seek(args[0]);
+      }
+      return out;
+    };
+  }
+  function loadThree(cb) {
+    if (window.THREE) return cb();
+    const s = document.createElement('script');
+    s.src = 'vendor/three.min.js';
+    s.onload = cb;
+    s.onerror = () => toast("Couldn't load the 3D view.");
+    document.head.appendChild(s);
+  }
+  function renderCams() {
+    if (!v3) return;
+    const sel = $('#cam');
+    const cur = v3.mode;
+    sel.innerHTML = '';
+    const add = (parent, v, t) => { const o = document.createElement('option'); o.value = v; o.textContent = t; parent.appendChild(o); };
+    add(sel, 'broadcast', 'Behind home plate');
+    add(sel, 'overhead', 'Overhead');
+    const og = document.createElement('optgroup');
+    og.label = 'Be the player';
+    for (const r of v3.riders()) add(og, r.key, r.label);
+    sel.appendChild(og);
+    sel.value = [...sel.querySelectorAll('option')].some((o) => o.value === cur) ? cur : 'broadcast';
+    if (sel.value !== cur) v3.setMode(sel.value);
+  }
+  function set3d(on) {
+    $('#btn-3d').setAttribute('aria-pressed', String(on));
+    store.set('view3d', on);
+    if (!on) {
+      document.body.classList.remove('view3d');
+      $('#cam-bar').hidden = true;
+      if (v3) v3.show(false);
+      return;
+    }
+    if (board.on) closeBoard();
+    loadThree(() => {
+      try {
+        if (!v3) {
+          v3 = new window.Field3D($('#field-wrap'));
+          if (lastLabels) v3.setLabels(lastLabels);
+          v3.setGeometry(geo);
+          wire3dScrub(v3.canvas);
+        }
+        document.body.classList.add('view3d');
+        v3.show(true);
+        $('#cam-bar').hidden = false;
+        sync3d();
+      } catch (e) {
+        toast('3D needs WebGL, which this browser has turned off.');
+        $('#btn-3d').setAttribute('aria-pressed', 'false');
+      }
+    });
+  }
+  // Drag left or right on the 3D view to scrub the play, like the 2D field.
+  function wire3dScrub(canvas) {
+    let d = null;
+    canvas.addEventListener('pointerdown', (e) => { if (!state.plan) return; stop(); endAsk(); d = { x: e.clientX, t: state.t, id: e.pointerId }; canvas.setPointerCapture(e.pointerId); });
+    canvas.addEventListener('pointermove', (e) => {
+      if (!d || e.pointerId !== d.id) return;
+      const dur = state.plan.timeline.duration;
+      state.t = Math.max(0, Math.min(dur, d.t + (e.clientX - d.x) / canvas.clientWidth * dur * 1.2));
+      view.seek(state.t);
+      updateTransport();
+    });
+    const end = () => { d = null; };
+    canvas.addEventListener('pointerup', end);
+    canvas.addEventListener('pointercancel', end);
+  }
   let geo;
 
   // The coach's team: names on the field and in the job list. Stored on this device only.
@@ -224,6 +317,8 @@
     if (!on) endAsk();
   }
   $('#btn-ask').addEventListener('click', () => setAskFirst(!state.askFirst));
+  $('#btn-3d').addEventListener('click', () => set3d(!on3d()));
+  $('#cam').addEventListener('change', (e) => { if (v3) { v3.setMode(e.target.value); v3.seek(state.t); } });
   $('#field-next').addEventListener('click', () => runScenario(state.scenarioIndex + 1));
 
   function renderResult(plan) {
@@ -364,6 +459,7 @@
 
   function openBoard() {
     if (board.on) return;
+    if (on3d()) set3d(false);
     stop();
     setSpotlight(null);
     const snap = view.snapshot();
@@ -1781,5 +1877,6 @@
   renderSituation();
   renderBuild();
   showReady();
+  if (store.get('view3d', false)) set3d(true);
   fromHash();
 })();

@@ -813,3 +813,18 @@ body:not(.softball) #other-plays [data-play="delayedSteal"] { display: none; }
 .look.runner { fill: rgba(255, 120, 110, .28); }
 body.board-on .layer-looks { display: none; }
 body.no-steals #build-result [data-res="passed"], body.no-steals #build-result [data-res="dropped"] { display: none; }
+
+/* ---------------------------------------------------------------- 3D */
+.field3d { position: absolute; inset: 0; display: block; touch-action: none; cursor: ew-resize; }
+body.view3d #field { visibility: hidden; }
+body.view3d .field-hint, body.view3d .sit-strip { display: none !important; }
+.cam-bar {
+  position: absolute; left: 50%; top: 12px; transform: translateX(-50%); z-index: 2;
+  display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-radius: 12px;
+  background: rgba(11, 28, 58, .85); color: #fff; font-weight: 700; font-size: 14px;
+}
+.cam-bar[hidden] { display: none; }
+.cam-bar select { font: inherit; font-weight: 600; padding: 4px 6px; border-radius: 8px; border: 0; }
+.view3d-btn[aria-pressed="true"] { background: var(--chip-on); color: #fff; border-radius: var(--r); padding: 6px 10px; }
+body.view3d .play-title { top: 58px; }
+@media (max-width: 899px) { .cam-bar { top: auto; bottom: 8px; font-size: 12px; } body.view3d .play-title { top: 8px; } }

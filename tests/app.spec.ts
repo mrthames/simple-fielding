@@ -596,3 +596,19 @@ test('dropped third strike, delayed steal and look-back plays', async ({ page })
   await page.locator('#build-go').click();
   expect(await page.evaluate(() => (window as any).SimpleFielding.state.plan.title)).toContain('Dropped third strike');
 });
+
+test('3D view: turns on, offers player cameras, follows the timeline, and turns off', async ({ page }) => {
+  await page.locator('#quick-list .lib-item', { hasText: 'Single to left, runner on 1st' }).click();
+  await page.locator('#btn-3d').click();
+  const ok = await page.waitForFunction(() => document.body.classList.contains('view3d') || !!document.querySelector('#toast:not([hidden])'), null, { timeout: 15000 });
+  void ok;
+  if (!(await page.evaluate(() => document.body.classList.contains('view3d')))) test.skip(true, 'no WebGL in this browser');
+  await expect(page.locator('canvas.field3d')).toBeVisible();
+  await expect(page.locator('#cam option[value="player:SS"]')).toHaveCount(1);
+  await expect(page.locator('#cam option[value="runner:first"]')).toHaveCount(1);
+  await page.selectOption('#cam', 'player:SS');
+  await page.evaluate(() => (window as any).SimpleFielding.seekEnd());
+  await page.locator('#btn-3d').click();
+  await expect(page.locator('canvas.field3d')).toBeHidden();
+  await expect(page.locator('#field')).toBeVisible();
+});

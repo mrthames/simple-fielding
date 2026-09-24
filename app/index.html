@@ -62,6 +62,7 @@
         <span class="fk role-backup">Backs up</span>
       </div>
       <div class="toast" id="toast" role="status" hidden></div>
+      <label class="cam-bar" id="cam-bar" hidden><span>View</span><select id="cam"></select></label>
       <div class="scrub-hint" id="scrub-hint" hidden aria-hidden="true">
         <span>◀ drag to scrub ▶</span>
         <span class="scrub-track"><span id="scrub-hint-fill"></span></span>
@@ -76,6 +77,7 @@
         <svg viewBox="0 0 24 24" class="i-replay" aria-hidden="true"><path d="M12 5V2L7 6l5 4V7a5 5 0 1 1-5 5H5a7 7 0 1 0 7-7z"/></svg>
       </button>
       <input type="range" id="scrub" min="0" max="1000" value="0" aria-label="Play timeline">
+      <button class="text-btn view3d-btn" id="btn-3d" type="button" aria-pressed="false" title="See the play in 3D, or through a player's eyes">3D</button>
       <button class="text-btn ask-btn" id="btn-ask" type="button" aria-pressed="false" title="Stop at the hit and hide the paths, so you can ask the team first">Ask<span class="wide-only"> first</span></button>
       <div class="seg" role="group" aria-label="Speed">
         <button type="button" data-speed="0.5">½×</button>
@@ -500,6 +502,7 @@
 <script src="js/scenarios.js"></script>
 <script src="js/team.js"></script>
 <script src="js/render.js"></script>
+<script src="js/view3d.js"></script>
 <script src="js/teamui.js"></script>
 <script src="js/playlog.js"></script>
 <script src="js/share.js"></script>
