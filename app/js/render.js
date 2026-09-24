@@ -95,7 +95,7 @@
       const gx = G / Math.SQRT2;
       el('path', { d: `M0,0 L${-gx},${-gx} A${G},${G} 0 0 1 ${gx},${-gx} Z`, fill: 'url(#mow)' }, svg);
 
-      // Infield dirt: an arc centred on the mound, closed by the foul lines.
+      // Infield dirt: an arc centered on the mound, closed by the foul lines.
       const R = g.infieldEdge - g.mound.y;
       const m = g.mound.y;
       // Where the arc meets the line y = x:  x^2 + (x - m)^2 = R^2

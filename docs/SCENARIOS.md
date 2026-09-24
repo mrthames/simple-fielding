@@ -54,7 +54,7 @@ Positions: **P** pitcher · **C** catcher · **1B** first base · **2B** second 
 | Runner on 3rd only | 2nd | as for nobody on | | The run scores easily; keep the batter at 1st |
 
 The youth convention used here is that 1B cuts off throws home from center and right, and 3B from left.
-Some programmes use the pitcher as the cutoff instead. The app doesn't, because at this age the pitcher
+Some programs use the pitcher as the cutoff instead. The app doesn't, because at this age the pitcher
 backing up home stops more runs.
 
 ## 3. Doubles and triples — relays
@@ -139,5 +139,5 @@ when runners start to move.
 
 ## Not yet in the app
 
-Rundowns (pickles), infield-in positioning, and bunt defences beyond the basic one (the wheel play, for
+Rundowns (pickles), infield-in positioning, and bunt defenses beyond the basic one (the wheel play, for
 example). A quiz mode ("Where does the shortstop go?") and a coach's play-drawing tool are planned.

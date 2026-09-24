@@ -170,7 +170,7 @@ test('passed ball with a runner on 3rd: catcher chases, pitcher covers home', ()
   assert.ok(near(end(p, 'P'), B.home, 4));
 });
 
-test('home run and foul grounder are recognised', () => {
+test('home run and foul grounder are recognized', () => {
   assert.equal(play({}, { kind: 'fly', at: { x: 0, y: 260 } }).classification, 'homeRun');
   assert.equal(play({}, { kind: 'ground', at: { x: 40, y: 20 } }).classification, 'foulGround');
 });

@@ -1,5 +1,5 @@
 // Draws the baseball used across the app, website and icon: the same ball as the Simple Pitch Counter
-// logo (white face, light-grey rim, red chevron stitches), rebuilt as a vector.
+// logo (white face, light-gray rim, red chevron stitches), rebuilt as a vector.
 //   node scripts/make-baseball.mjs  →  app/img/baseball.svg
 import { writeFileSync } from 'node:fs';
 

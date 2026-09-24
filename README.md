@@ -16,12 +16,12 @@ A companion to [Simple Pitch Counter](https://github.com/mrthames/simple-pitch-c
 - **Drag to hit.** Pick a grounder, line drive, fly ball, pop-up or bunt, then drag the ball to where it goes.
   Drop it on a fielder and it's caught or fielded; drop it in a gap and it's a hit. A tap anywhere on the field
   works too, which is easier with a mouse on a projector.
-- **The defence works itself out.** An engine derives each fielder's job from the situation: runners, outs,
+- **The defense works itself out.** An engine derives each fielder's job from the situation: runners, outs,
   batter's side and field size. It isn't a fixed library of canned plays. Override the result (caught, single,
   double, triple) to compare.
 - **Smooth 2D animation** of fielders, runners and the ball: flight arcs, bounces, throws through the cutoff,
   and "Out!" calls. It has a scrubber, half speed, replay, and chalk-line paths you can turn on or off.
-- **Plain-words jobs** for all nine positions, colour-coded by role: gets the ball, cutoff/relay, covers, backs
+- **Plain-words jobs** for all nine positions, color-coded by role: gets the ball, cutoff/relay, covers, backs
   up, stays ready. Tap a player or a job to spotlight it.
 - **Other plays:** steal of 2nd (coverage by batter hand), steal of 3rd, the 1st & 3rd double steal, passed ball
   or wild pitch, primary lead and pickoff, secondary lead and back-pick, and the softball look-back rule.

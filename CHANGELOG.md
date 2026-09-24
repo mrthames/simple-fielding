@@ -2,6 +2,13 @@
 
 ---
 
+## [2026-09-23] v0.4.1 — American English
+
+### Fix
+- The play library said "Plays to practise". It's an American app: now "Plays to practice". The same sweep fixed "colour", "defence", "centre", "programmes" and "grey" across the app, the website, the coaching reference and the docs.
+
+---
+
 ## [2026-09-23] v0.4.0 — Tester reports and a play log
 
 ### For testing
@@ -51,14 +58,14 @@
 ### Whiteboard
 - A **Whiteboard** button freezes whatever is on the field, whether a play mid-animation or the starting positions. You can then change it by hand.
 - **Move:** drag any fielder, runner or the ball anywhere. Tap a base to add or remove a runner.
-- **Pen** and **Arrow:** freehand chalk, and arrows that follow the curve you draw. Five colours and an eraser.
+- **Pen** and **Arrow:** freehand chalk, and arrows that follow the curve you draw. Five colors and an eraser.
 - **Apple Pencil and styluses:** the Pencil always draws and a finger always moves, so there's no tool switching. Pressure sets the line width. Touches are ignored while the Pencil is down, for palm rejection. Coalesced pointer events keep strokes smooth.
 - **Undo / redo** (also Ctrl/⌘+Z), **Clear** the drawing, **Reset** everyone to where they started.
 - The drawing stays on top of the play after **Done**, so you can replay the animation under it, until the next play runs.
 - Keyboard: `W` whiteboard, `M` move, `D` pen, `A` arrow, `E` eraser.
 
 ### Look
-- Matches Simple Pitch Counter: its navy header, iOS system colours (blue, green, amber, purple, red), 12 and 18 px corner radii, and the system font. The app is light-only, like Simple Pitch Counter.
+- Matches Simple Pitch Counter: its navy header, iOS system colors (blue, green, amber, purple, red), 12 and 18 px corner radii, and the system font. The app is light-only, like Simple Pitch Counter.
 - **The baseball** from the Simple Pitch Counter logo, redrawn as a vector (`app/img/baseball.svg`), is now the ball you drag and the ball in flight.
 - **New icon:** a flat-art infield on the navy, with the ball's path chalked toward left field. Light and dark versions, 1024 px store masters, and layers for Apple's Icon Composer (Liquid Glass) plus a monochrome version for tinted and themed icons (`marketing/icon-layers/`).
 - The website uses the same palette.
@@ -94,7 +101,7 @@
 - A play engine that works out every fielder's job — who fields it, the cutoff or the relay and the trailer, base coverage, backups — for ground balls, singles, extra-base hits, fly balls and tag-ups, infield and foul pop-ups, bunts, steals of 2nd and 3rd, the 1st & 3rd double steal, passed balls, primary and secondary leads, and the softball look-back rule.
 - Smooth 2D animation of fielders, runners and the ball, with throws routed through the cutoff, and "Out!" and "Caught!" calls.
 - Playback: play/pause/replay, a scrubber, half speed, and a switch for the paths.
-- A job list in plain words for all nine positions, colour-coded by role. Tap a player or a job to spotlight it.
+- A job list in plain words for all nine positions, color-coded by role. Tap a player or a job to spotlight it.
 - A play library with 45 plays in 8 groups; `N` or → moves to the next.
 - Fields: Little League baseball 60 ft (no leadoffs), 50/70 (leadoffs), fastpitch softball. A leadoff setting.
 - Projector mode, keyboard shortcuts, light and dark panels, and an installable web app manifest.

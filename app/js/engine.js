@@ -5,7 +5,7 @@
  * a non-batted play such as a steal), it works out what every fielder should do, and then turns that
  * into a timeline the renderer can animate.
  *
- * The defence is derived from a handful of principles rather than looked up in a table of charts:
+ * The defense is derived from a handful of principles rather than looked up in a table of charts:
  *
  *   1. Somebody fields the ball — whoever is nearest, with priority rules for fly balls and pop-ups.
  *   2. The throw goes to the base the lead runner is trying to reach.
@@ -390,7 +390,7 @@
 
   function nearestOutfielder(ready, at) {
     const F = nearest(['LF', 'CF', 'RF'], ready, at);
-    // Centre field has priority: if CF can get there nearly as easily, CF takes it.
+    // Center field has priority: if CF can get there nearly as easily, CF takes it.
     if (F !== 'CF' && dist(ready.CF, at) - dist(ready[F], at) < 12) return 'CF';
     return F;
   }
@@ -940,7 +940,7 @@
           assign(plan, 'RF', 'backup', behind(geo, b.first, geo.mound, 45), 'Charge in to back up the pickoff throw.', { delay: 0.2 });
           plan.runners = [{ id: 'first', from: 'first', to: 'first', leadStart: 11 }];
           plan.notes.push('Primary lead: the lead a runner takes before the pitch. The pitcher can throw over, step off, or hold the ball to keep it short.');
-          if (!leads) plan.notes.push('Leadoffs aren\'t allowed in 60 ft Little League baseball — switch the league to 50/70 to practise this.');
+          if (!leads) plan.notes.push('Leadoffs aren\'t allowed in 60 ft Little League baseball — switch the league to 50/70 to practice this.');
         }
         plan.throws.push({ fromPos: 'P', to: 'first' });
         plan.pickoff = true;

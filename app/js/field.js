@@ -1,7 +1,7 @@
 /*
  * Field geometry.
  *
- * Everything is in feet. Home plate is the origin, +y points out to centre field, +x toward the
+ * Everything is in feet. Home plate is the origin, +y points out to center field, +x toward the
  * first-base side. The foul lines are the two 45-degree diagonals, so a ball is fair when |x| <= y.
  *
  * Plain script, no modules: WebViews load the app from file://, where ES modules are blocked.
