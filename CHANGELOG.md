@@ -2,6 +2,13 @@
 
 ---
 
+## [2026-09-25] v0.32.0 — Base paths and mowing
+
+- **Base paths run parallel all the way**, in 2D and 3D. The dirt is an even 3 ft either side of each line. Outside the line, it runs from the plate past the bag to where the infield dirt ends. Before, the infield grass started further out at home plate, so the dirt narrowed toward the bases, and there was no dirt outside the line past the bag.
+- **Mowed grass in 3D**: a checkerboard of lighter and darker squares running with the foul lines. The 2D infield grass is striped now too, like the outfield.
+
+---
+
 ## [2026-09-25] v0.31.0 — Every play says what actually happens
 
 An audit ran every play in the library at every level (810 in all), checking that each play's name and summary agree with who's out and who's safe. It found:

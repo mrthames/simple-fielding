@@ -117,15 +117,22 @@
       // Where the arc meets the line y = x:  x^2 + (x - m)^2 = R^2
       const xi = (m + Math.sqrt(2 * R * R - m * m)) / 2;
       el('path', { d: `M0,6 L${-xi},${-xi} A${R},${R} 0 0 1 ${xi},${-xi} Z`, fill: 'var(--dirt)' }, svg);
+      // The base paths: dirt an even 3 ft either side of each line. Outside, it runs from the plate past the bag
+      // to where the infield dirt ends, the same width all the way.
+      const path = 3, pd = path * Math.SQRT2;
+      for (const sg of [-1, 1]) {
+        const o = { x: sg * path / Math.SQRT2, y: -path / Math.SQRT2 };
+        const strip = [{ x: 0, y: 0 }, { x: sg * xi, y: xi }, { x: sg * xi + o.x, y: xi + o.y }, { x: o.x, y: o.y }];
+        el('path', { d: 'M' + strip.map(P).join(' L') + ' Z', fill: 'var(--dirt)' }, svg);
+      }
       const softball = g.league.sport === 'softball';
-      // Infield grass. Baseball has a grass infield inside the base paths; softball infields are
-      // usually all dirt ("skinned"), so the grass only starts past the base paths.
+      // Infield grass. Baseball has a grass infield inside the base paths, its edge an even 3 ft from each line;
+      // softball infields are usually all dirt ("skinned"), so the grass only starts past the base paths.
       if (!softball) {
-        const inset = 9 * k;
         const grass = [
-          { x: 0, y: inset * 1.3 }, { x: s - inset, y: s }, { x: 0, y: 2 * s - inset }, { x: -(s - inset), y: s },
+          { x: 0, y: pd }, { x: s - pd, y: s }, { x: 0, y: 2 * s - pd }, { x: -(s - pd), y: s },
         ];
-        el('path', { d: 'M' + grass.map(P).join(' L') + ' Z', fill: 'var(--grass-a)' }, svg);
+        el('path', { d: 'M' + grass.map(P).join(' L') + ' Z', fill: 'url(#mow)' }, svg);
       }
       // Home plate circle, base cut-outs.
       el('circle', { cx: 0, cy: 0, r: 13 * k, fill: 'var(--dirt)' }, svg);

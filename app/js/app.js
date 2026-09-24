@@ -4,7 +4,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '0.31.0';
+  const VERSION = '0.32.0';
   const Field = window.Field;
   const BATTED = ['ground', 'line', 'fly', 'pop', 'bunt'];
   const { POSITIONS, NAMES, LEAGUES } = Field;

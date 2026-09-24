@@ -90,7 +90,23 @@
       // Foul ground, the warning track, fair grass.
       this.flat([{ x: -F * 1.6, y: -F * 0.6 }, { x: F * 1.6, y: -F * 0.6 }, { x: F * 1.6, y: F * 1.4 }, { x: -F * 1.6, y: F * 1.4 }], 0x2f6f32, -0.05);
       this.flat(wall(0), 0xb98a57, 0);
-      this.flat(wall(Math.max(10, 10 * geo.fence / 200)), 0x3f8f3a, 0.02);
+      // Mowing: a checkerboard of lighter and darker grass, squares running with the foul lines, as on a
+      // groundskeeper's field. One small texture, repeated.
+      if (!this.mowMat) {
+        const c = document.createElement('canvas');
+        c.width = c.height = 64;
+        const g2 = c.getContext('2d');
+        g2.fillStyle = '#47963f'; g2.fillRect(0, 0, 64, 64);
+        g2.fillStyle = '#3b8535'; g2.fillRect(0, 0, 32, 32); g2.fillRect(32, 32, 32, 32);
+        const tex = new THREE.CanvasTexture(c);
+        tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+        tex.magFilter = THREE.NearestFilter;
+        tex.anisotropy = Math.min(8, this.renderer.capabilities.getMaxAnisotropy());
+        tex.repeat.set(1 / 36, 1 / 36);      // 18 ft squares
+        tex.center.set(0, 0); tex.rotation = Math.PI / 4;
+        this.mowMat = new THREE.MeshLambertMaterial({ map: tex });
+      }
+      this.flat(wall(Math.max(10, 10 * geo.fence / 200)), 0x3f8f3a, 0.02, this.mowMat);
       // Infield dirt: an arc around the rubber, closed by the foul lines (as in 2D).
       const R = geo.infieldEdge - geo.mound.y, m = geo.mound.y;
       const xi = (m + Math.sqrt(2 * R * R - m * m)) / 2;
@@ -100,15 +116,15 @@
       dirt.push({ x: -xi, y: xi });
       this.flat(dirt, 0xc68c52, 0.04);
       const s = geo.side, k = geo.base / 60;
-      // Base paths: dirt the same width the whole way, 3 ft either side of each baseline (scaled for youth).
-      const path = Math.max(2.2, 3 * geo.base / 90), pd = path * Math.SQRT2;
+      // Base paths: dirt an even 3 ft either side of each line. Outside, it runs from the plate past the bag to
+      // where the infield dirt ends, the same width all the way.
+      const path = 3, pd = path * Math.SQRT2;
       if (geo.league.sport !== 'softball') {
-        this.flat([{ x: 0, y: pd }, { x: s - pd, y: s }, { x: 0, y: 2 * s - pd }, { x: -(s - pd), y: s }], 0x3f8f3a, 0.06);
+        this.flat([{ x: 0, y: pd }, { x: s - pd, y: s }, { x: 0, y: 2 * s - pd }, { x: -(s - pd), y: s }], 0x3f8f3a, 0.06, this.mowMat);
       }
       for (const sgn of [-1, 1]) {
-        // The outside half of each path, in foul ground, from home to 1st and to 3rd.
         const o = { x: sgn * path / Math.SQRT2, y: -path / Math.SQRT2 };
-        this.flat([{ x: 0, y: 0 }, { x: sgn * s, y: s }, { x: sgn * s + o.x, y: s + o.y }, { x: o.x, y: o.y }], 0xc68c52, 0.045);
+        this.flat([{ x: 0, y: 0 }, { x: sgn * xi, y: xi }, { x: sgn * xi + o.x, y: xi + o.y }, { x: o.x, y: o.y }], 0xc68c52, 0.045);
       }
       const circ = (x, y, r, color, h) => {
         const g = new THREE.CircleGeometry(r, 32);
