@@ -370,6 +370,15 @@
       }
     }
 
+    // Quiz: the guess, the answer, and a line between them. Cleared when the next play loads.
+    showQuiz(guess, answer, grade) {
+      this.clearLayer('target');
+      const u = this.us || 1;
+      el('path', { d: `M${guess.x},${-guess.y} L${answer.x},${-answer.y}`, class: 'quiz-line' }, this.layers.target);
+      el('circle', { cx: guess.x, cy: -guess.y, r: 6 * u, class: 'quiz-guess ' + grade }, this.layers.target);
+      el('circle', { cx: answer.x, cy: -answer.y, r: 6 * u, class: 'quiz-answer' }, this.layers.target);
+    }
+
     // A soft cone from each player toward where they're looking.
     setShowLooks(v) { this.showLooks = v; if (this.plan) this.drawLooks(this.t); else this.clearLayer('looks'); }
     drawLooks(t) {

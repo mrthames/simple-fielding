@@ -2,6 +2,16 @@
 
 ---
 
+## [2026-09-25] v0.21.0 — Quiz: drag a player to answer
+
+- While a play waits at the hit (**Ask first**), drag any fielder to where you think they go.
+  - The app checks the answer against where the play sends them: **Yes!** (green), **Close** (yellow) or **Not quite** (red).
+  - It marks your guess and the right spot with a line between them, spotlights that player, and plays the answer.
+  - A running score counts how many a player has gotten right this session.
+- Kids can quiz themselves; coaches can hand the iPad around the dugout.
+
+---
+
 ## [2026-09-25] v0.20.0 — Rundowns
 
 - **Rundowns** between 1st and 2nd, 2nd and 3rd, or 3rd and home. The textbook way:

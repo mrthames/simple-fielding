@@ -846,3 +846,12 @@ body:not(.kind-bunt) #buntd-row { display: none; }
   body.projector .spot-card { left: 16px; right: auto; top: auto; bottom: 90px; width: min(24vw, 420px); }
   body.projector .has-spotlight ~ .tv-caption { display: none; }
 }
+
+/* Quiz: drag a player to answer. */
+.pt-quiz { font-weight: 600; opacity: .85; }
+.quiz-line { stroke: #fff; stroke-width: calc(.8 * var(--u, 1)); stroke-dasharray: calc(1.5 * var(--u, 1)) calc(1.5 * var(--u, 1)); fill: none; }
+.quiz-guess { fill: rgba(255, 255, 255, .15); stroke: #fff; stroke-width: calc(1 * var(--u, 1)); }
+.quiz-guess.right { stroke: #34c759; fill: rgba(52, 199, 89, .3); }
+.quiz-guess.close { stroke: #ffcc00; fill: rgba(255, 204, 0, .25); }
+.quiz-guess.miss { stroke: #ff453a; fill: rgba(255, 69, 58, .2); }
+.quiz-answer { fill: none; stroke: #34c759; stroke-width: calc(1.2 * var(--u, 1)); stroke-dasharray: calc(2 * var(--u, 1)) calc(1.4 * var(--u, 1)); }

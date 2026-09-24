@@ -4,7 +4,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '0.20.0';
+  const VERSION = '0.21.0';
   const Field = window.Field;
   const BATTED = ['ground', 'line', 'fly', 'pop', 'bunt'];
   const { POSITIONS, NAMES, LEAGUES } = Field;
@@ -313,7 +313,7 @@
   // The title card: the play's name, and while asking, the question under it.
   function setTitle(name) {
     const t = $('#play-title');
-    t.innerHTML = '<span class="pt-name"></span><span class="pt-ask" hidden>Where does everybody go?</span><span class="pt-sit"></span>';
+    t.innerHTML = '<span class="pt-name"></span><span class="pt-ask" hidden>Where does everybody go? <span class="pt-quiz">Drag a player to answer.</span></span><span class="pt-sit"></span>';
     t.querySelector('.pt-name').textContent = name;
     t.querySelector('.pt-sit').textContent = $('#sit-strip').textContent;
     t.querySelector('.pt-ask').hidden = !state.asking;
@@ -1627,6 +1627,55 @@
     saveBuild(); renderBuild(); showReady();
   });
   $('#build-fielders-reset').addEventListener('click', () => { state.build.start = {}; saveBuild(); showReady(); });
+
+  // Quiz: while a play waits at the hit, drag a fielder to where you think they go. The app checks the answer against
+  // where the play sends them, marks both spots, and plays it.
+  let qdrag = null;
+  const quiz = { tries: 0, right: 0 };
+  svg.addEventListener('pointerdown', (e) => {
+    if (!state.asking || !state.plan || board.on || state.plan.drawn) return;
+    const pl = e.target.closest && e.target.closest('.player');
+    if (!pl) return;
+    e.stopImmediatePropagation();
+    e.preventDefault();
+    const pos = pl.dataset.pos;
+    const p = view.toField(e.clientX, e.clientY);
+    const at = view.actorAt(pos);
+    qdrag = { id: e.pointerId, pos, off: { x: at.x - p.x, y: at.y - p.y }, moved: false, x0: e.clientX, y0: e.clientY, at };
+    svg.setPointerCapture(e.pointerId);
+  }, true);
+  svg.addEventListener('pointermove', (e) => {
+    if (!qdrag || e.pointerId !== qdrag.id) return;
+    e.stopImmediatePropagation();
+    if (!qdrag.moved && Math.hypot(e.clientX - qdrag.x0, e.clientY - qdrag.y0) < 5) return;
+    qdrag.moved = true;
+    view.cancelHolds();
+    const p = view.toField(e.clientX, e.clientY);
+    qdrag.at = { x: p.x + qdrag.off.x, y: p.y + qdrag.off.y };
+    view.place(view.actors[qdrag.pos], qdrag.at);
+  }, true);
+  const endQ = (e) => {
+    if (!qdrag || e.pointerId !== qdrag.id) return;
+    e.stopImmediatePropagation();
+    const q = qdrag; qdrag = null;
+    if (!q.moved) return;
+    const a = state.plan.assignments[q.pos];
+    const want = a.path && a.path.length ? a.path[a.path.length - 1] : a.to;
+    const off = Math.hypot(q.at.x - want.x, q.at.y - want.y);
+    const k = geo.base / 60;
+    quiz.tries++;
+    const grade = off < 12 * k * (view.us || 1) ? 'right' : off < 28 * k * (view.us || 1) ? 'close' : 'miss';
+    if (grade === 'right') quiz.right++;
+    const name = Field.PLAYERS[q.pos];
+    const msg = grade === 'right' ? `Yes! That's the ${name}'s spot.` : grade === 'close' ? `Close — the ${name} goes a little further. Watch.` : `Not quite — watch where the ${name} goes.`;
+    view.showQuiz(q.at, want, grade);
+    toast(`${msg}  (${quiz.right} of ${quiz.tries})`);
+    setSpotlight(q.pos);
+    // Show the answer: the play runs from the hit, with the guess still marked.
+    setTimeout(() => { if (state.plan) { endAsk(); play(); } }, 900);
+  };
+  svg.addEventListener('pointerup', endQ, true);
+  svg.addEventListener('pointercancel', endQ, true);
 
   // Builder, on the field: drag a fielder to where they start. (Registered in the capture phase so it wins over
   // tapping a player; only while building and before a play is set.)
