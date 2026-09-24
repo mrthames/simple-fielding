@@ -67,6 +67,9 @@
         <button type="button" data-speed="0.5">½×</button>
         <button type="button" data-speed="1" class="on">1×</button>
       </div>
+      <button class="text-btn report-btn" id="btn-report" type="button" hidden title="Something wrong with this play? Report it">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 21V4M5 4h11l-2 4 2 4H5"/></svg><span>Report</span>
+      </button>
       <button class="text-btn" id="btn-reset" type="button">Reset</button>
     </div>
     <div class="board-bar" id="board-bar" hidden role="toolbar" aria-label="Whiteboard tools">
@@ -272,6 +275,29 @@
   </form>
 </dialog>
 
+<!-- Tester report -->
+<dialog class="sheet" id="report">
+  <div class="sheet-head">
+    <h2>Something wrong?</h2>
+    <button class="icon-btn" type="button" data-close aria-label="Close">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+    </button>
+  </div>
+  <form class="sheet-body report-form" id="report-form" autocomplete="off">
+    <p class="report-play" id="report-play"></p>
+    <label class="report-label" for="report-said">What should have happened?</label>
+    <textarea id="report-said" name="said" rows="4" maxlength="2000" placeholder="e.g. The runner from 1st should hold at 3rd. The throw beats him home."></textarea>
+    <div class="report-label">Which players? <span class="fine">(optional)</span></div>
+    <div class="chips small" id="report-pos"></div>
+    <p class="fine">The report includes a log of this play, with a link that replays it exactly. It has positions only, no player names.</p>
+    <div class="report-actions">
+      <button type="button" class="text-btn" id="report-copy">Copy instead</button>
+      <button type="submit" class="primary" id="report-send">Send report</button>
+    </div>
+    <p class="report-status" id="report-status" role="status"></p>
+  </form>
+</dialog>
+
 <!-- Settings -->
 <dialog class="sheet" id="settings">
   <div class="sheet-head">
@@ -299,6 +325,16 @@
     <p class="fine">Simple Fielding is free and has no ads or accounts. It's built by a dad with kids in Little League.
       <a href="https://buymeacoffee.com/thames_" target="_blank" rel="noopener">Buy me a coffee</a> to help keep it going.</p>
     <p class="fine version">Version <span id="version"></span></p>
+    <section class="tester" id="tester" hidden>
+      <h3>Tester</h3>
+      <label class="field-row"><span>Report to</span><input type="url" id="tester-url" placeholder="Apps Script /exec URL" inputmode="url"></label>
+      <p class="fine">Reports go to this address. It's saved on this device only. Leave it empty to copy reports instead.</p>
+      <div class="report-actions">
+        <button type="button" class="text-btn" id="tester-off">Turn tester mode off</button>
+        <button type="button" class="primary" id="tester-test">Send a test report</button>
+      </div>
+      <p class="report-status" id="tester-status" role="status"></p>
+    </section>
   </div>
 </dialog>
 
@@ -308,6 +344,7 @@
 <script src="js/team.js"></script>
 <script src="js/render.js"></script>
 <script src="js/teamui.js"></script>
+<script src="js/playlog.js"></script>
 <script src="js/app.js"></script>
 </body>
 </html>

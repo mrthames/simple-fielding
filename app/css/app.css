@@ -532,3 +532,22 @@ body.board-on .field[data-tool="move"] { cursor: grab; }
   .add-player input.num { flex: 0 0 60px; }
   .add-player button { flex: 1 1 auto; }
 }
+
+/* ---------------------------------------------------------------- tester reports */
+.report-btn { display: inline-flex; align-items: center; gap: 4px; color: var(--red); }
+.report-btn svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.report-play { margin: 8px 0 12px; padding: 10px 12px; border-radius: var(--r); background: var(--bg); font-size: 14px; line-height: 1.4; }
+.report-label { display: block; margin: 12px 0 6px; font-weight: 700; font-size: 15px; }
+.report-form textarea {
+  width: 100%; font: inherit; font-size: 16px; padding: 10px 12px; border-radius: 10px;
+  border: 0.5px solid var(--line-2); background: var(--panel); color: var(--ink); resize: vertical;
+}
+.report-actions { display: flex; justify-content: flex-end; align-items: center; gap: 8px; margin-top: 12px; }
+.report-actions .primary { min-height: 44px; padding: 0 18px; border: 0; border-radius: 10px; background: var(--brand); color: #fff; font-weight: 700; }
+.report-actions .primary:disabled { opacity: .5; }
+.report-status { min-height: 1.4em; margin: 8px 0 0; font-size: 14px; color: var(--ink-2); }
+.tester { margin-top: 12px; padding-top: 4px; border-top: 0.5px solid var(--line); }
+.tester h3 { margin: 12px 0 4px; font-size: 12px; text-transform: uppercase; letter-spacing: .6px; color: var(--red); }
+.tester input { flex: 1; min-width: 0; font: inherit; font-size: 15px; padding: 8px 10px; border-radius: 10px; border: 0.5px solid var(--line-2); }
+#version { cursor: default; user-select: none; -webkit-user-select: none; }
+@media (max-width: 520px) { .report-btn span { display: none; } }

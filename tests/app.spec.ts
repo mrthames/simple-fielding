@@ -2,6 +2,7 @@ import { test, expect, Page } from '@playwright/test';
 
 // Drags from home plate to a field point given in feet, the way a finger would.
 async function dragBall(page: Page, to: { x: number; y: number }) {
+  await page.evaluate(() => window.scrollTo(0, 0));
   const box = await page.evaluate((to) => {
     const svg = document.getElementById('field') as unknown as SVGSVGElement;
     const m = svg.getScreenCTM()!;
@@ -228,4 +229,54 @@ test('team: press and hold a fielder to name them, then back to just the positio
   await page.mouse.up();
   await page.click('#pe-generic');
   await expect(page.locator('.player[data-pos="CF"] .tag')).toBeHidden();
+});
+
+// ---- Tester reports
+
+test('tester: hidden until switched on; five taps on the version turns it on', async ({ page }) => {
+  await dragBall(page, { x: -80, y: 135 });
+  await expect(page.locator('#btn-report')).toBeHidden();
+  await page.locator('#btn-settings').click();
+  for (let i = 0; i < 5; i++) await page.locator('#version').click();
+  await expect(page.locator('#tester')).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(page.locator('#btn-report')).toBeVisible();
+});
+
+test('tester: a report posts the play log to the Sheet endpoint', async ({ page }) => {
+  let posted: any = null;
+  await page.route('https://script.google.com/**', async (route) => {
+    posted = JSON.parse(route.request().postData() || 'null');
+    await route.fulfill({ status: 200, contentType: 'application/json', headers: { 'Access-Control-Allow-Origin': '*' }, body: '{"ok":true}' });
+  });
+  await page.goto('/#tester=' + encodeURIComponent('https://script.google.com/macros/s/TEST/exec'));
+  await page.locator('.mini-base.b1').click();
+  await page.locator('.mini-base.b2').click();
+  await page.locator('#outs').click();
+  await page.locator('#outs').click();
+  await page.locator('#kind-chips [data-kind="line"]').click();
+  await page.locator('#result-chips [data-result="double"]').click();
+  await dragBall(page, { x: 52, y: 172 });
+  await page.locator('#btn-report').click();
+  await page.fill('#report-said', 'Runner from 1st should hold at 3rd.');
+  await page.locator('#report-pos [data-pos="Runners"]').click();
+  await page.locator('#report-send').click();
+  await expect(page.locator('#report-status')).toContainText('Sent');
+  expect(posted.app).toBe('simple-fielding');
+  expect(posted.said).toBe('Runner from 1st should hold at 3rd.');
+  expect(posted.positions).toEqual(['Runners']);
+  expect(posted.situationText).toContain('Runners on 1st & 2nd · 2 outs');
+  expect(posted.didText).toContain('holds at 3rd');
+  expect(posted.replay).toContain('#replay=r1.');
+});
+
+test('replay link reopens the exact play', async ({ page }) => {
+  const code = await page.evaluate(() => (window as any).PlayLog.encodeReplay(
+    { runners: { first: true, second: true, third: false }, outs: 2, batter: 'L', league: 'littleLeague', leadoffs: false },
+    { kind: 'line', at: { x: 52, y: 172 }, result: 'double' }));
+  await page.goto('/#replay=' + code);
+  await expect(page.locator('#play-title')).toHaveText('Double to center field');
+  await expect(page.locator('.mini-base.b1')).toHaveClass(/on/);
+  await expect(page.locator('#outs span.on')).toHaveCount(2);
+  await expect(page.locator('#batter-seg [data-batter="L"]')).toHaveClass(/on/);
 });

@@ -2,6 +2,20 @@
 
 ---
 
+## [2026-09-23] v0.4.0 — Tester reports and a play log
+
+### For testing
+- **Play log.** Every play the app runs is recorded on the device (the last 50): version, field, situation, the exact input (hit type, drop point in feet, forced result), who fielded it, where the throw went, every job, and what each runner did (held, out). Positions only, never player names.
+- **Replay links.** Each play has a code, and `…/app/#replay=r1…` reopens exactly that play. The engine is deterministic, so a replay is identical.
+- **Tester mode** (tap the version number in Settings five times, or open `…/app/#tester=<address>`). It adds a red **Report** button next to Reset, or press `F`. Write what should have happened, tag the players involved, and send. The report and the play's log go to a Google Sheet through a small Apps Script (`tools/feedback-apps-script.gs`). With no address set, the report is copied instead.
+- The Sheet address is stored on the tester's device only and never committed to the repo.
+
+### Tests
+- 5 play-log tests: replay codes round-trip, a replay gives the identical play, bad codes are ignored, the log keeps 50. 42 data and engine tests in all.
+- 3 UI tests: tester mode unlock, a report posted to a stand-in endpoint with the right contents, replay links. 38 UI runs.
+
+---
+
 ## [2026-09-23] v0.3.1 — Runners hold up when the throw beats them
 
 ### Fix

@@ -51,6 +51,7 @@ simple-fielding/
 │   ├── js/scenarios.js   the play library
 │   ├── js/team.js        the roster: players, positions, label styles (stored on the device)
 │   ├── js/teamui.js      the Team sheet, drag-and-drop, the press-and-hold position editor
+│   ├── js/playlog.js     the play log and replay codes (used by tester reports)
 │   ├── js/render.js      SVG drawing and animation playback
 │   └── js/app.js         UI: situation, drag-to-hit, playback
 ├── website/              the companion site (landing, privacy)
@@ -58,6 +59,7 @@ simple-fielding/
 ├── tests/                engine unit tests (node:test) and UI tests (Playwright)
 ├── marketing/icon-layers/ icon layers for Icon Composer (Liquid Glass) and a monochrome version
 ├── scripts/              icon and baseball generation, screenshot helper
+├── tools/feedback-apps-script.gs  receives tester reports into a Google Sheet
 └── tools/check-for-personal-data.sh
 ```
 
@@ -73,6 +75,13 @@ npm start               # serves app/ on http://localhost:3344
 npm test                # engine tests + Playwright UI tests
 npm run icons           # regenerate PNG icons from app/icon.svg and app/icon-dark.svg
 ```
+
+## Testing on a device
+
+Tester mode adds a **Report** button to every play. Tap the version number in Settings five times to turn it on. A
+report carries what the tester says should have happened, plus a log of the play and a `#replay=` link that
+reopens it exactly. Reports go to a Google Sheet through `tools/feedback-apps-script.gs` (setup steps are at the
+top of that file), or are copied to the clipboard if no address is set.
 
 ## Deployment
 

@@ -4,7 +4,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '0.3.1';
+  const VERSION = '0.4.0';
   const { POSITIONS, NAMES, LEAGUES } = window.Field;
   const $ = (s) => document.querySelector(s);
   const $$ = (s) => Array.from(document.querySelectorAll(s));
@@ -34,6 +34,7 @@
   if (!LEAGUES[state.league]) state.league = 'littleLeague';
   state.leadoffs = store.get('leadoffs.' + state.league, LEAGUES[state.league].leadoffs);
 
+  const tester = { on: store.get('tester', false), url: store.get('testerUrl', '') };
   const view = new window.FieldView($('#field'));
   let geo;
 
@@ -123,6 +124,9 @@
     if (ev.at && state.result !== 'auto' && !ev.result) ev.result = state.result;
     const plan = window.Engine.planPlay(situation(), ev);
     state.plan = plan;
+    // Every play is logged (last 50, on the device) so a tester can report it exactly.
+    try { state.entry = window.PlayLog.record(window.localStorage, window.PlayLog.entry(plan, situation(), ev, VERSION)); }
+    catch (e) { state.entry = window.PlayLog.entry(plan, situation(), ev, VERSION); }
     state.lastEvent = event;
     view.load(plan);
     renderResult(plan);
@@ -235,6 +239,7 @@
     btn.disabled = !state.plan;
     $('#scrub').disabled = !state.plan;
     $('#transport').classList.toggle('idle', !state.plan);
+    $('#btn-report').hidden = !(tester.on && state.plan);
     updateScrub();
   }
 
@@ -726,6 +731,7 @@
     if (e.target.matches('input, select, textarea')) return;
     if (document.querySelector('dialog[open]')) return; // a sheet is open: its own keys only
     if ((e.key === 't' || e.key === 'T') && !board.on) { window.TeamUI.openTeam(); return; }
+    if ((e.key === 'f' || e.key === 'F') && tester.on && state.plan && !board.on) { openReport(); return; }
     if (e.key === 'w' || e.key === 'W') { board.on ? closeBoard() : openBoard(); return; }
     if (board.on) {
       const tools = { m: 'move', d: 'pen', a: 'arrow', e: 'eraser' };
@@ -750,11 +756,189 @@
     showReady();
   }
 
+  // -------------------------------------------------------------------------------------------
+  // Tester mode: "Something wrong?" reports, sent to the tester's Google Sheet (or copied)
+  // -------------------------------------------------------------------------------------------
+  const PL = window.PlayLog;
+
+  function setTester(on) {
+    tester.on = on;
+    store.set('tester', on);
+    $('#tester').hidden = !on;
+    updateTransport();
+  }
+
+  // Five taps on the version number turns tester mode on.
+  let taps = 0, tapTimer = 0;
+  $('#version').addEventListener('click', () => {
+    taps += 1;
+    clearTimeout(tapTimer);
+    tapTimer = setTimeout(() => { taps = 0; }, 1500);
+    if (taps >= 5) { taps = 0; setTester(true); $('#tester-url').focus(); }
+  });
+  $('#tester-url').value = tester.url;
+  $('#tester-url').addEventListener('change', (e) => { tester.url = e.target.value.trim(); store.set('testerUrl', tester.url); });
+  $('#tester-off').addEventListener('click', () => setTester(false));
+  $('#tester').hidden = !tester.on;
+
+  function replayUrl(code) {
+    return location.href.split('#')[0] + '#replay=' + code;
+  }
+
+  function buildReport(said, positions) {
+    const e = state.entry;
+    const leagueLabel = LEAGUES[e.situation.league] ? LEAGUES[e.situation.league].label : e.situation.league;
+    const ua = (navigator.userAgent.match(/(iPhone|iPad|Android|Macintosh|Windows)[^;)]*/) || [''])[0];
+    return {
+      app: 'simple-fielding',
+      id: 'r' + Date.now().toString(36),
+      version: VERSION,
+      said,
+      positions,
+      situationText: PL.situationText(e.situation, leagueLabel),
+      eventText: PL.eventText(e.event),
+      didText: PL.didText(state.plan),
+      replay: replayUrl(e.replay),
+      device: `${ua} ${window.innerWidth}x${window.innerHeight}`.trim(),
+      play: e,
+    };
+  }
+
+  function reportText(r) {
+    return [
+      `SF-REPORT ${r.id} v${r.version}`,
+      `said: ${r.said}`,
+      r.positions.length ? `players: ${r.positions.join(', ')}` : '',
+      `play: ${r.play.title}`,
+      `situation: ${r.situationText}`,
+      `event: ${r.eventText}`,
+      `did: ${r.didText.replace(/\n/g, ' | ')}`,
+      `replay: ${r.replay}`,
+    ].filter(Boolean).join('\n');
+  }
+
+  async function sendReport(r) {
+    if (!tester.url) throw new Error('no address');
+    const body = JSON.stringify(r);
+    // text/plain keeps this a "simple" request: no CORS preflight, which Apps Script can't answer.
+    const headers = { 'Content-Type': 'text/plain;charset=utf-8' };
+    let res;
+    try {
+      res = await fetch(tester.url, { method: 'POST', body, headers });
+    } catch (err) {
+      // The reply couldn't be read (CORS on the redirect). Send it blind: Apps Script still records it.
+      await fetch(tester.url, { method: 'POST', body, headers, mode: 'no-cors' });
+      return 'sent-unconfirmed';
+    }
+    const j = await res.json().catch(() => null);
+    if (j && j.ok === false) throw new Error(j.error || 'rejected');
+    return j && j.ok ? 'sent' : 'sent-unconfirmed';
+  }
+
+  async function copyText(text) {
+    try { await navigator.clipboard.writeText(text); return true; }
+    catch (e) {
+      if (navigator.share) { try { await navigator.share({ text }); return true; } catch (err) { return false; } }
+      return false;
+    }
+  }
+
+  const report = $('#report');
+  function openReport() {
+    if (!state.plan || !state.entry) return;
+    stop();
+    const e = state.entry;
+    const leagueLabel = LEAGUES[e.situation.league] ? LEAGUES[e.situation.league].label : '';
+    $('#report-play').textContent = `${e.title} — ${PL.situationText(e.situation, leagueLabel)}`;
+    const pos = $('#report-pos');
+    pos.innerHTML = '';
+    for (const p of [...POSITIONS, 'Runners', 'Ball']) {
+      const b = document.createElement('button');
+      b.type = 'button'; b.textContent = p; b.dataset.pos = p;
+      b.addEventListener('click', () => b.classList.toggle('on'));
+      pos.appendChild(b);
+    }
+    $('#report-status').textContent = '';
+    $('#report-send').disabled = false;
+    $('#report-send').textContent = tester.url ? 'Send report' : 'Copy report';
+    $('#report-copy').hidden = !tester.url;
+    openSheet(report);
+    $('#report-said').focus();
+  }
+  function reportInput() {
+    return buildReport($('#report-said').value.trim(), $$('#report-pos button.on').map((b) => b.dataset.pos));
+  }
+  $('#btn-report').addEventListener('click', openReport);
+  report.addEventListener('click', (e) => { if (e.target === report || e.target.closest('[data-close]')) closeSheet(report); });
+  $('#report-form').addEventListener('submit', async (ev) => {
+    ev.preventDefault();
+    const r = reportInput();
+    const status = $('#report-status');
+    if (!r.said) { status.textContent = 'Say what should have happened first.'; $('#report-said').focus(); return; }
+    if (!tester.url) {
+      status.textContent = (await copyText(reportText(r))) ? 'Copied. Paste it into the chat.' : "Couldn't copy.";
+      return;
+    }
+    $('#report-send').disabled = true;
+    status.textContent = 'Sending…';
+    try {
+      const how = await sendReport(r);
+      status.textContent = how === 'sent' ? `Sent (${r.id}). Thanks!` : `Sent (${r.id}). It should be in the Sheet in a moment.`;
+      $('#report-said').value = '';
+      setTimeout(() => closeSheet(report), 1400);
+    } catch (err) {
+      status.textContent = `Couldn't send (${err.message}). Use "Copy instead".`;
+      $('#report-send').disabled = false;
+    }
+  });
+  $('#report-copy').addEventListener('click', async () => {
+    const r = reportInput();
+    $('#report-status').textContent = (await copyText(reportText(r))) ? 'Copied.' : "Couldn't copy.";
+  });
+  $('#tester-test').addEventListener('click', async () => {
+    const st = $('#tester-status');
+    if (!tester.url) { st.textContent = 'Paste the address first.'; return; }
+    if (!state.plan) { hitTo({ x: -80, y: 135 }); stop(); }
+    st.textContent = 'Sending…';
+    try {
+      const how = await sendReport(buildReport('Test report from the settings screen. Ignore.', []));
+      st.textContent = how === 'sent' ? 'It worked. Check the Sheet.' : "Sent, but the reply couldn't be read here. Check the Sheet.";
+    } catch (err) { st.textContent = `That didn't work: ${err.message}`; }
+  });
+
+  // Open a play from a replay link (#replay=r1...) or turn tester mode on from a link (#tester or #tester=URL).
+  function fromHash() {
+    const h = location.hash.slice(1);
+    if (h.startsWith('tester')) {
+      const url = decodeURIComponent(h.split('=').slice(1).join('='));
+      if (url) { tester.url = url; store.set('testerUrl', url); $('#tester-url').value = url; }
+      setTester(true);
+      history.replaceState(null, '', location.href.split('#')[0]);
+      return;
+    }
+    if (!h.startsWith('replay=')) return;
+    const r = PL.decodeReplay(h.slice(7));
+    if (!r) return;
+    const s = r.situation;
+    if (s.league && LEAGUES[s.league] && s.league !== state.league) {
+      state.league = s.league; leagueSel.value = s.league; setGeometry();
+    }
+    state.runners = Object.assign({ first: false, second: false, third: false }, s.runners);
+    state.outs = s.outs || 0;
+    state.batter = s.batter === 'L' ? 'L' : 'R';
+    if (typeof s.leadoffs === 'boolean') { state.leadoffs = s.leadoffs; $('#leadoffs').checked = s.leadoffs; }
+    if (r.event.at) { state.kind = r.event.kind; state.result = r.event.result || 'auto'; }
+    renderSituation();
+    runEvent(r.event);
+  }
+  window.addEventListener('hashchange', fromHash);
+
   // Test hook: lets the Playwright suite drive plays without synthesising drags.
-  window.SimpleFielding = { state, team, board, openBoard, closeBoard, runEvent, runScenario, hitTo, seekEnd() { if (state.plan) { stop(); state.t = state.plan.timeline.duration; view.seek(state.t); updateTransport(); } } };
+  window.SimpleFielding = { state, team, board, tester, openReport, buildReport, reportText, openBoard, closeBoard, runEvent, runScenario, hitTo, seekEnd() { if (state.plan) { stop(); state.t = state.plan.timeline.duration; view.seek(state.t); updateTransport(); } } };
 
   window.TeamUI.init({ team, onChange: (t) => { T.save(window.localStorage, t); applyLabels(); } });
   buildLibrary();
   setGeometry();
   renderSituation();
+  fromHash();
 })();
