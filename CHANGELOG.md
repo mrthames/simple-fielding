@@ -2,6 +2,15 @@
 
 ---
 
+## [2026-09-25] v0.35.3 — Read out loud, fixed
+
+- **Read now speaks on iPad and iPhone.** It used to stop the voice and start it again in the same instant, which Safari and every iPad browser silently ignore. It now stops only what's actually playing, and waits a moment first.
+- **You can tell it's working.** The button says **Stop** while it reads (tap to stop), and goes back to Read when it's done. It asks for an English voice by name.
+- **If nothing is heard**, it says what to check: on iPhone and iPad, Silent Mode (the switch, or the Action button) mutes the built-in voice.
+- **Lessons can read out loud too.** The speaker in the lesson bar reads the step: what happened, the question, and the choices. It's for players who can't read yet.
+
+---
+
 ## [2026-09-25] v0.35.2 — Lessons stay in 2D
 
 - **The 3D button is hidden during a lesson** and comes back when you leave it. A lesson's markers (where the ball is going, YOU, your guess and the right spot) are drawn on the 2D field. 3D and VR lessons will come as their own feature, where you point to where you'd run instead of dragging.
