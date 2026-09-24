@@ -4,7 +4,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '0.36.0';
+  const VERSION = '0.36.1';
   const Field = window.Field;
   const BATTED = ['ground', 'line', 'fly', 'pop', 'bunt'];
   const { POSITIONS, NAMES, LEAGUES } = Field;
@@ -2009,7 +2009,7 @@
     document.body.classList.add('tr-waiting');
     view.actors[s.pos].classList.add('trainee');
     const you = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-    you.setAttribute('class', 'you-tag'); you.setAttribute('y', String(-8 * (view.us || 1))); you.textContent = 'YOU';
+    you.setAttribute('class', 'you-tag'); you.setAttribute('y', '-7.4'); you.textContent = 'YOU';
     view.actors[s.pos].appendChild(you);
     const hasTarget = !!(state.plan.ball && (state.plan.ball.landing || state.plan.ball.at));
     tbar.innerHTML = `${head}<p class="tb-what"><strong>${escapeHtml(describePlay(state.plan, ev))}</strong> <span>${escapeHtml($('#sit-strip').textContent)}</span></p>

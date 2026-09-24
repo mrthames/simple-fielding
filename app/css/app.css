@@ -935,7 +935,7 @@ body.nohit #hit-card:hover, body.nohit #hit-card:focus-within { opacity: 1; }
 .tb-options button.primary { background: var(--brand); color: #fff; }
 /* Your player, in a lesson: a pulsing ring, so you know who to drag. */
 .player.trainee .ring { stroke: #ffd60a !important; stroke-width: calc(2.6 * var(--u, 1)); animation: trainee 1s ease-in-out infinite alternate; }
-.you-tag { fill: #ffd60a; font-weight: 900; font-size: calc(3.4 * var(--u, 1)); text-anchor: middle; paint-order: stroke; stroke: rgba(0, 0, 0, .55); stroke-width: calc(1.2 * var(--u, 1)); pointer-events: none; }
+.you-tag { fill: #ffd60a; font-weight: 900; font-size: 4.4px; text-anchor: middle; paint-order: stroke; stroke: rgba(0, 0, 0, .55); stroke-width: 0.9px; pointer-events: none; }
 @keyframes trainee { from { stroke-opacity: .35; } to { stroke-opacity: 1; } }
 body.training .field-hint, body.training #field-next, body.training .sit-strip, body.training #play-title { display: none !important; }
 /* In a lesson the bar shows the job, so the job card and, while you decide, the job list stay out of sight. */
@@ -960,3 +960,9 @@ body.tr-waiting .player:not(.trainee) .ring { stroke: transparent !important; }
 .learn-note { margin-top: 18px; }
 body.training #btn-3d, body.training #cam-bar { display: none !important; }
 .tb-say { border: 0; background: none; font-size: 16px; padding: 2px 6px; margin-left: auto; }
+/* Side by side (iPad landscape, desktop): the lesson bar sits over the top of the side panel, off the field
+   entirely, so it never hides where the ball is going. (The panel's own contents are hidden while you decide.) */
+@media (min-width: 900px), (orientation: landscape) and (min-width: 560px) {
+  .trainer-bar { position: fixed; left: auto; right: 12px; top: 72px; transform: none; background: #fff; width: calc(min(380px, 42vw) - 24px); max-height: calc(100dvh - 90px); overflow-y: auto; }
+  body.training .panel { padding-top: 12px; }
+}

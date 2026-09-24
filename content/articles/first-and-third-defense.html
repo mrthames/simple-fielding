@@ -1,0 +1,64 @@
+<script type="application/json">
+{
+  "order": 8,
+  "title": "First and Third Defense: How to Stop the Double Steal in Youth Baseball",
+  "short": "First and third defense",
+  "ogTitle": "Stopping the first-and-third double steal",
+  "description": "Runners on first and third, and the runner on first takes off. What the catcher, the middle infielders, the pitcher and the third baseman do, from the youth cut play to throwing through in high school.",
+  "date": "2026-09-25",
+  "readTime": "5 min",
+  "plays": {
+    "cut-play": {
+      "label": "Youth: the cut play. The catcher throws toward 2nd, the second baseman cuts it in front of the bag, and it comes home if the runner on 3rd breaks.",
+      "situation": { "runners": { "first": true, "third": true }, "outs": 0 },
+      "event": { "kind": "firstThirdSteal" },
+      "expect": { "fielder": "C", "roles": { "2B": "cutoff", "SS": "cover", "P": "backup", "CF": "backup" } }
+    },
+    "throw-through": {
+      "label": "High school: throw through. The shortstop takes it at 2nd and fires home if the runner on 3rd broke.",
+      "situation": { "league": "highSchool", "runners": { "first": true, "third": true }, "outs": 0, "leadoffs": true },
+      "event": { "kind": "firstThirdSteal" },
+      "expect": { "fielder": "C", "target": "second", "roles": { "SS": "cover", "2B": "cutoff", "CF": "backup" } }
+    }
+  },
+  "faq": [
+    ["What is the first and third double steal?", "With runners on first and third, the runner on first steals second. If the catcher throws to second, the runner on third tries to score on the throw. The defense has to decide before the pitch how it will handle it."],
+    ["What is the cut play in youth baseball?", "The catcher throws toward second, and the second baseman comes in front of the bag to catch it. If the runner on third breaks for home, the second baseman throws home. If not, they let it go through to the shortstop covering second."],
+    ["Who yells when the runner on third breaks?", "The third baseman stays on the bag and yells \"Four! Four!\" (home is the fourth base) the moment the runner goes, so the fielder with the ball knows to throw home."]
+  ]
+}
+</script>
+<p>Runners on first and third, fewer than two outs, and the runner on first takes off for second. It's one of the plays youth coaches dread, because it asks the defense to do two things at once: stop the steal of second without letting the runner on third walk home.</p>
+<p>The answer isn't a better arm. It's a plan every fielder knows <strong>before the pitch</strong>.</p>
+
+<h2>Why it's hard</h2>
+<p>If the catcher throws through to second, the runner on third breaks for home as soon as the ball is in the air. If the catcher holds the ball, the runner on first gets second for free. The offense wins either way, unless the defense has a play that covers both.</p>
+
+<h2>The youth answer: the cut play</h2>
+<p>Most youth teams use the cut play:</p>
+<ul>
+<li><strong>Catcher:</strong> catch the pitch, look the runner on third back, then throw toward second. Then get back to the plate fast.</li>
+<li><strong>Second baseman:</strong> come in front of second base, in line with the throw. If the runner on third breaks, cut the throw and fire it home. If not, let it go through.</li>
+<li><strong>Shortstop:</strong> cover second, ready to tag the runner coming from first.</li>
+<li><strong>Third baseman:</strong> stay on the bag and yell "Four! Four!" if the runner breaks for home.</li>
+<li><strong>Pitcher:</strong> duck out of the throw, then circle around the first-base side to back up home. Never cross in front of the plate.</li>
+<li><strong>Center fielder:</strong> charge in to back up second.</li>
+</ul>
+<play id="cut-play"></play>
+<p>The cut play works at younger ages because the throw from the second baseman to home is short, and because the runner on third has to guess whether the ball is going through or being cut.</p>
+
+<h2>Older players: throw through</h2>
+<p>From high school up, the most common call is to <strong>throw through</strong> to second. The catcher checks the runner on third and throws to the base. The second baseman comes in front to read the runner and yells if they break; the shortstop takes the throw at second. If the runner on third broke, the shortstop throws home right away. If they didn't, it's a tag on the runner from first.</p>
+<play id="throw-through"></play>
+<p>It works for older players because their arms are strong enough that the runner on third has to decide as soon as the ball leaves the catcher's hand, and the throw home from second base is short.</p>
+
+<h2>Other options coaches use</h2>
+<ul>
+<li><strong>Throw back to the pitcher:</strong> the catcher fires it back to the pitcher, who checks the runner on third. The runner from first takes second for free, but no run scores.</li>
+<li><strong>Throw to third:</strong> the catcher throws behind the runner at third, hoping to catch them leaning.</li>
+<li><strong>Hold the ball:</strong> concede second and keep the run from scoring.</li>
+</ul>
+<p>There's no single right answer: it depends on the score, the outs, and what your players can do. What matters is that everyone knows the call before the pitch.</p>
+
+<h2>Two outs</h2>
+<p>With two outs, many teams throw through. If the tag at second beats the runner from third to the plate, the inning is over and the run doesn't count. If the runner scores first, it counts, so the throw has to be quick.</p>

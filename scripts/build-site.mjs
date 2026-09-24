@@ -180,7 +180,7 @@ function indexPage(all) {
     '@context': 'https://schema.org', '@type': 'CollectionPage', name: 'Youth Baseball and Softball Defense Guides', url,
     hasPart: all.map((a) => ({ '@type': 'Article', headline: a.title, url: `${SITE}/articles/${a.slug}/` })),
   }];
-  return head({ title: 'Defense Guides for Youth Baseball and Softball Coaches | Simple Fielding', description: 'Plain-English guides to youth baseball and softball defense: cutoffs and relays, who covers second on a steal, bunt defense, backing up bases, pop-up priority, and a practice plan.', url, image: '/images/og-articles.png', type: 'website', jsonld }) + `
+  return head({ title: 'Defense Guides for Youth Baseball and Softball Coaches | Simple Fielding', description: 'Plain-English guides to youth baseball and softball defense: cutoffs and relays, who covers second on a steal, bunt defense, backing up bases, pop-up priority, first and third defense, rundowns, the look-back rule, the dropped third strike, tee-ball basics and a practice plan.', url, image: '/images/og-articles.png', type: 'website', jsonld }) + `
 <main class="wrap">
   <p class="crumbs"><a href="/">Home</a></p>
   <h1>Guides for coaches, players and parents</h1>

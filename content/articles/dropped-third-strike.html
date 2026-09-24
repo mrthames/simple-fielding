@@ -1,0 +1,70 @@
+<script type="application/json">
+{
+  "order": 11,
+  "title": "The Dropped Third Strike: When the Batter Can Run, and What the Catcher Does",
+  "short": "Dropped third strike",
+  "ogTitle": "The dropped third strike, explained",
+  "description": "When a batter can run on a dropped third strike in baseball and softball, when they can't, and how the catcher and first baseman get the out: inside or outside the line, or just step on home.",
+  "date": "2026-09-25",
+  "readTime": "4 min",
+  "plays": {
+    "inside": {
+      "label": "Strike three bounces off the catcher in front of the plate. The first baseman yells \"Inside!\" and the catcher throws from the fair side of the line.",
+      "situation": { "league": "softball", "runners": {}, "outs": 1 },
+      "event": { "kind": "droppedThird", "at": { "x": 3, "y": -6 } },
+      "expect": { "fielder": "C", "target": "first", "roles": { "1B": "cover", "RF": "backup" } }
+    },
+    "outside": {
+      "label": "Strike three gets to the backstop. The first baseman yells \"Outside!\" and the catcher throws from the foul side.",
+      "situation": { "league": "softball", "runners": {}, "outs": 2 },
+      "event": { "kind": "droppedThird", "at": { "x": -8, "y": -22 } },
+      "expect": { "fielder": "C", "target": "first", "roles": { "1B": "cover" } }
+    },
+    "loaded": {
+      "label": "Bases loaded, two outs: everyone is forced, so the catcher just steps on home for the third out.",
+      "situation": { "league": "softball", "runners": { "first": true, "second": true, "third": true }, "outs": 2 },
+      "event": { "kind": "droppedThird", "at": { "x": 2, "y": -4 } },
+      "expect": { "fielder": "C", "target": "home" }
+    },
+    "no-throw": {
+      "label": "Runner on 1st, one out: the batter is out even though the ball was dropped. Don't throw; watch the runner.",
+      "situation": { "league": "softball", "runners": { "first": true }, "outs": 1 },
+      "event": { "kind": "droppedThird", "at": { "x": 2, "y": -5 } },
+      "expect": { "fielder": "C", "title": "Dropped third strike — the batter is out" }
+    }
+  },
+  "faq": [
+    ["When can a batter run on a dropped third strike?", "When first base is open, or when there are two outs. If first base is occupied with fewer than two outs, the batter is out even though the catcher didn't catch the ball."],
+    ["Does Little League use the dropped third strike rule?", "Not in the younger divisions: in Little League Minors, the batter is simply out on strike three. It applies in Little League Majors and above. Softball leagues vary at 10U and 12U, so check your league."],
+    ["Where does the first baseman set up on a dropped third strike?", "On the side of the bag that gives the catcher a clear throw. If the ball is in front of the plate, the first baseman sets up inside (fair territory) and yells \"Inside!\". If it's at the backstop, they set up outside (foul territory) and yell \"Outside!\"."]
+  ]
+}
+</script>
+<p>Strike three, the batter walks away, and then someone yells "Run!" The catcher didn't catch it cleanly, and now the batter is sprinting to first. The <strong>dropped third strike</strong> is one of the most confusing rules for young players. It's actually simple once you know the two conditions.</p>
+
+<h2>When the batter can run</h2>
+<p>On strike three that the catcher doesn't catch cleanly, the batter can run to first if:</p>
+<ul>
+<li><strong>First base is open</strong>, or</li>
+<li><strong>There are two outs.</strong></li>
+</ul>
+<p>If first base is occupied and there are fewer than two outs, the batter is out, caught or not. The rule exists so the catcher can't drop the ball on purpose to start a double play.</p>
+<p>Younger divisions often skip the rule: in Little League Minors, the batter is simply out. It applies in Little League Majors and up. In softball it varies by league at 10U and 12U.</p>
+
+<h2>What the catcher and first baseman do</h2>
+<p>The catcher gets the ball and throws to first. The key is the throwing lane: the batter is running right down the line, and a throw that hits them is a disaster. So the first baseman calls the side:</p>
+<ul>
+<li><strong>Ball in front of the plate:</strong> the first baseman sets up on the inside (fair side) of the bag and yells "Inside!". The catcher steps into fair territory and throws.</li>
+<li><strong>Ball at the backstop:</strong> the first baseman sets up on the outside (foul side) and yells "Outside!".</li>
+</ul>
+<p>The second baseman cheats toward first to back up the throw, and the right fielder charges in behind first. The pitcher gets out of the catcher's throwing lane.</p>
+<play id="inside"></play>
+<play id="outside"></play>
+
+<h2>Bases loaded, two outs</h2>
+<p>With the bases loaded and two outs, every runner is forced, including a runner coming home. The catcher doesn't need to throw at all: pick up the ball and step on home plate for the third out.</p>
+<play id="loaded"></play>
+
+<h2>When not to throw</h2>
+<p>Runner on first and one out? The batter is already out. A throw to first is a wasted throw that can go into right field. Pick up the ball and watch the runners.</p>
+<play id="no-throw"></play>

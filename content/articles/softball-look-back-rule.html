@@ -1,0 +1,57 @@
+<script type="application/json">
+{
+  "order": 10,
+  "title": "The Softball Look-Back Rule, Explained for Players and Coaches",
+  "short": "The look-back rule",
+  "ogTitle": "The softball look-back rule",
+  "description": "What the fastpitch softball look-back rule says, what the pitcher should do with the ball in the circle, and what happens when a runner goes back, stops, or breaks for home.",
+  "date": "2026-09-25",
+  "readTime": "4 min",
+  "plays": {
+    "goes-back": {
+      "label": "The pitcher holds the ball in the circle, facing the runner. The runner goes straight back to 3rd, as the rule asks.",
+      "situation": { "league": "softball", "runners": { "third": true }, "outs": 1 },
+      "event": { "kind": "lookBack", "runner": "third", "action": "return" },
+      "expect": { "fielder": "P", "roles": { "3B": "cover" } }
+    },
+    "stops": {
+      "label": "The runner stops off 3rd with the ball in the circle. No throw: the umpire calls her out.",
+      "situation": { "league": "softball", "runners": { "third": true }, "outs": 1 },
+      "event": { "kind": "lookBack", "runner": "third", "action": "hesitate" },
+      "expect": { "fielder": "P" }
+    },
+    "breaks": {
+      "label": "The runner breaks for home as the pitcher gets the ball. The pitcher throws home, and the catcher tags her.",
+      "situation": { "league": "softball", "runners": { "third": true }, "outs": 1 },
+      "event": { "kind": "lookBack", "runner": "third", "action": "break" },
+      "expect": { "fielder": "P", "roles": { "C": "cover" } }
+    }
+  },
+  "faq": [
+    ["What is the look-back rule in softball?", "Once the pitcher has the ball in the pitching circle and isn't making a play, a runner who is off the base must immediately go back to the base or go on to the next one. A runner who stops, or who starts back and then changes direction, is out."],
+    ["Can a runner stop under the look-back rule?", "It depends on the rulebook. USA Softball and NFHS (high school) allow one stop; NCAA (college) doesn't allow a stop at all. Check your league's rules."],
+    ["What should the pitcher do under the look-back rule?", "Get the ball in the circle, face the runner, and hold it. Don't fake a throw: in college a fake frees the runner. Make her go back or go."]
+  ]
+}
+</script>
+<p>Softball runners leave the base when the pitch is released, so after every pitch there's a runner standing off the bag. Without a rule, they could dance off the base all day. The <strong>look-back rule</strong> ends that: once the pitcher has the ball in the circle, the runner has to decide.</p>
+
+<h2>What the rule says</h2>
+<p>When the pitcher has the ball in the eight-foot pitching circle and isn't making a play, a runner who is off the base must <strong>immediately</strong> go back to the base or go on to the next one. If she stops, or starts one way and then changes direction, she's out. The umpire calls it; nobody has to throw.</p>
+<p>The exact wording varies by rulebook. USA Softball and NFHS (high school) let the runner stop once. NCAA (college) doesn't allow a stop at all. Check your league.</p>
+
+<h2>What the defense does</h2>
+<p>The whole defense has one job after a pitch: <strong>get the ball to the circle.</strong> The catcher throws it right back to the pitcher. The pitcher gets in the circle, faces the runner, and <strong>holds the ball</strong>. Don't fake a throw: in college a fake frees the runner, and at any level it gives her a reason to keep going.</p>
+<p>The third baseman gets to the bag in case the pitcher needs to throw.</p>
+<play id="goes-back"></play>
+
+<h2>When she stops</h2>
+<p>If the runner freezes off the base with the ball in the circle, don't throw. She's out by rule.</p>
+<play id="stops"></play>
+
+<h2>When she breaks for home</h2>
+<p>If the runner on third breaks as the pitcher gets the ball, the pitcher throws home right away, and the catcher, who got right back to the plate after throwing, makes the tag. The shortstop backs up third in case she turns back into a rundown.</p>
+<play id="breaks"></play>
+
+<h2>Teaching it</h2>
+<p>For young players the rule is simpler than it sounds: <strong>the play isn't over until the ball is in the circle.</strong> Outfielders throw it in, infielders get it to the pitcher, and the pitcher holds it facing the runner.</p>

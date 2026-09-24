@@ -2,6 +2,20 @@
 
 ---
 
+## [2026-09-25] v0.36.1 and the website — Five new guides; lessons on the homepage
+
+- **Five new guides**, each with plays checked against the engine when the site is built:
+  - first and third defense (the cut play and throwing through)
+  - rundowns
+  - the softball look-back rule
+  - the dropped third strike
+  - tee-ball defense
+- **The homepage has a section for the fielding lessons**, with a screenshot of a lesson, and lists the new guides.
+- **Lessons: the question sits beside the field, not on it.** On an iPad or a computer it sits over the side panel, so it never hides where the ball is going. On a phone it's still under the field.
+- **The "YOU" tag is the right size.** Its size wasn't valid CSS, so browsers drew it at 16 px, huge on the field.
+
+---
+
 ## [2026-09-25] Website — What every position does
 
 - **A page for each of the nine positions** (simplefielding.com/positions/), such as "Shortstop Responsibilities: Where the Shortstop Goes on Every Play". Each page has:
