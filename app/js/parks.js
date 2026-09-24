@@ -14,7 +14,7 @@
 
   const PARKS = [
   { key: 'orioles-camden', team: "Orioles", park: "Oriole Park at Camden Yards", sport: 'baseball', for: 'pro',
-    fence: [{ a: 0, ft: 318 }, { a: 22.5, ft: 373 }, { a: 45, ft: 400, approx: true }, { a: 67.5, ft: 376 }, { a: 90, ft: 333 }] },
+    fence: [{ a: 0, ft: 318 }, { a: 22.5, ft: 373 }, { a: 45, ft: 400 }, { a: 55, ft: 410, approx: true }, { a: 67.5, ft: 376 }, { a: 90, ft: 333 }] },
   { key: 'redsox-fenway', team: "Red Sox", park: "Fenway Park", sport: 'baseball', for: 'pro',
     fence: [{ a: 0, ft: 302 }, { a: 22.5, ft: 380 }, { a: 35, ft: 420, approx: true }, { a: 45, ft: 390 }, { a: 67.5, ft: 379 }, { a: 90, ft: 310 }] },
   { key: 'yankees-stadium', team: "Yankees", park: "Yankee Stadium", sport: 'baseball', for: 'pro',
@@ -30,7 +30,7 @@
   { key: 'tigers-comerica', team: "Tigers", park: "Comerica Park", sport: 'baseball', for: 'pro',
     fence: [{ a: 0, ft: 330 }, { a: 22.5, ft: 365 }, { a: 45, ft: 412 }, { a: 67.5, ft: 370 }, { a: 90, ft: 342 }] },
   { key: 'royals-kauffman', team: "Royals", park: "Kauffman Stadium", sport: 'baseball', for: 'pro',
-    fence: [{ a: 0, ft: 330 }, { a: 22.5, ft: 379 }, { a: 45, ft: 410 }, { a: 67.5, ft: 379 }, { a: 90, ft: 330 }] },
+    fence: [{ a: 0, ft: 330 }, { a: 5, ft: 344, approx: true }, { a: 12, ft: 364, approx: true }, { a: 22.5, ft: 379 }, { a: 45, ft: 410 }, { a: 67.5, ft: 379 }, { a: 78, ft: 364, approx: true }, { a: 85, ft: 347, approx: true }, { a: 90, ft: 330 }] },
   { key: 'twins-target', team: "Twins", park: "Target Field", sport: 'baseball', for: 'pro',
     fence: [{ a: 0, ft: 328 }, { a: 22.5, ft: 367 }, { a: 40, ft: 403, approx: true }, { a: 45, ft: 411 }, { a: 67.5, ft: 377 }, { a: 90, ft: 339 }] },
   { key: 'astros-daikin', team: "Astros", park: "Daikin Park", sport: 'baseball', for: 'pro',
