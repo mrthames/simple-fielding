@@ -357,6 +357,7 @@
       // youth fields keep the numbers the engine was built on. 90 ft baseball adds a few rules of its own.
       older: !!(L.tempo && L.level !== 'youth8'),
       wallDir,
+      ivy: !!(park && park.ivy),
       big: !!(L.tempo && L.base === 90),
       rules: Object.assign({ leave: L.sport === 'softball' ? 'release' : 'pitch', droppedThird: true, stealing: 'full', pitcher: 'player' }, L.rules || {}),
       fenceMax: Fmax,

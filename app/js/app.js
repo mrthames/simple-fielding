@@ -4,7 +4,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '0.30.0';
+  const VERSION = '0.30.1';
   const Field = window.Field;
   const BATTED = ['ground', 'line', 'fly', 'pop', 'bunt'];
   const { POSITIONS, NAMES, LEAGUES } = Field;
@@ -116,6 +116,8 @@
           v3.setGeometry(geo);
           wire3dScrub(v3.canvas);
         }
+        // The level or park may have changed while 3D was off: rebuild the field if so.
+        if (v3.geo !== geo) v3.setGeometry(geo);
         document.body.classList.add('view3d');
         v3.show(true);
         $('#cam-bar').hidden = false;

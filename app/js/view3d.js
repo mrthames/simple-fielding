@@ -162,7 +162,8 @@
         chalk(half * u, half * u, a.x, a.y);
       }
       // The wall: a dark green fence along the park's shape, with the distances on it.
-      const wallMat = new THREE.MeshLambertMaterial({ color: 0x1f3b2a, side: THREE.DoubleSide });
+      // Dark green padding; Wrigley's ivy is a leafier green.
+      const wallMat = new THREE.MeshLambertMaterial({ color: geo.ivy ? 0x5a9a40 : 0x1f3b2a, side: THREE.DoubleSide });
       const wallH = (x, y) => geo.wallDir ? geo.wallDir(Math.atan2(y, x) * 180 / Math.PI - 45) : (geo.big ? 10 : 6);
       const pts = wall(0).slice(1);
       for (let i = 1; i < pts.length; i++) {

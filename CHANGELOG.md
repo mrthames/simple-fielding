@@ -2,6 +2,13 @@
 
 ---
 
+## [2026-09-25] v0.30.1 — 3D follows the field you picked
+
+- **Fixed: the 3D view kept the old field** after the level or park was changed while 3D was off. A 90 ft play was then drawn on the old diamond, so second base and the runner showed up out in center field, and the scoreboard still named the old level. The 3D field is now rebuilt whenever it comes back on.
+- **Wrigley Field** has its ivy-covered brick wall: about 11½ ft high, and ivy green.
+
+---
+
 ## [2026-09-25] v0.30.0 — When the play's over, everyone stops
 
 - **Fielders stop when the play ends.** Once the last catch, throw or call has happened, everyone eases to a stop within about half a second instead of running out the rest of their route. A backup who wasn't needed (right field coming in behind 1st on a routine grounder, say) is shown on the way, facing where they were going, not arriving long after the out.

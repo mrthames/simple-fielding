@@ -772,3 +772,18 @@ test('3D calls: OUT goes over the runner forced at 2nd and over the batter at 1s
   expect(calls.who).toContain('batter');
   expect(calls.shown).toBe(true);
 });
+
+test('3D follows a level and park changed while it was off', async ({ page }) => {
+  await page.locator('#btn-3d').click();
+  await page.waitForFunction(() => document.body.classList.contains('view3d') || !!document.querySelector('#toast:not([hidden])'), null, { timeout: 15000 });
+  if (!(await page.evaluate(() => document.body.classList.contains('view3d')))) test.skip(true, 'no WebGL in this browser');
+  await page.locator('#btn-3d').click();
+  await page.evaluate(() => {
+    const s = document.getElementById('league') as HTMLSelectElement; s.value = 'pro'; s.dispatchEvent(new Event('change'));
+    const k = document.getElementById('park') as HTMLSelectElement; k.value = [...k.options].find((o) => o.textContent!.includes('Wrigley'))!.value; k.dispatchEvent(new Event('change'));
+  });
+  await page.locator('#btn-3d').click();
+  await page.waitForFunction(() => document.body.classList.contains('view3d'));
+  const g = await page.evaluate(() => { const v = (window as any).SimpleFielding.view3d(); return { key: v.geo.key, park: v.geo.park, base: v.geo.base }; });
+  expect(g).toEqual({ key: 'pro', park: expect.stringContaining('wrigley'), base: 90 });
+});

@@ -56,7 +56,9 @@
   { key: 'nationals-park', team: "Nationals", park: "Nationals Park", sport: 'baseball', for: 'pro',
     fence: [{ a: 0, ft: 335 }, { a: 22.5, ft: 370 }, { a: 45, ft: 402 }, { a: 67.5, ft: 377 }, { a: 90, ft: 337 }] },
   { key: 'cubs-wrigley', team: "Cubs", park: "Wrigley Field", sport: 'baseball', for: 'pro',
-    fence: [{ a: 0, ft: 353 }, { a: 22.5, ft: 368 }, { a: 45, ft: 400 }, { a: 67.5, ft: 368 }, { a: 90, ft: 355 }] },
+    fence: [{ a: 0, ft: 353 }, { a: 22.5, ft: 368 }, { a: 45, ft: 400 }, { a: 67.5, ft: 368 }, { a: 90, ft: 355 }],
+    // The ivy-covered brick wall: about 11.5 ft all the way around.
+    wall: [{ a: 0, ft: 11.5 }, { a: 90, ft: 11.5 }], ivy: true },
   { key: 'reds-gabp', team: "Reds", park: "Great American Ball Park", sport: 'baseball', for: 'pro',
     fence: [{ a: 0, ft: 325 }, { a: 22.5, ft: 370 }, { a: 45, ft: 404 }, { a: 67.5, ft: 379 }, { a: 90, ft: 328 }] },
   { key: 'brewers-amfam', team: "Brewers", park: "American Family Field", sport: 'baseball', for: 'pro',
