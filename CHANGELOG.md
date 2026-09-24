@@ -2,6 +2,12 @@
 
 ---
 
+## [2026-09-25] v0.37.0 — Read out loud removed
+
+- **Read out loud is gone:** the Read button on a play, the "Read each play out loud" setting, and the speaker in the lesson bar. It wasn't reliable on iPad and iPhone, and it wasn't needed. The website no longer mentions it.
+
+---
+
 ## [2026-09-25] v0.36.1 and the website — Five new guides; lessons on the homepage
 
 - **Five new guides**, each with plays checked against the engine when the site is built:

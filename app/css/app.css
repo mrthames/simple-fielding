@@ -959,7 +959,6 @@ body.tr-waiting .player:not(.trainee) .ring { stroke: transparent !important; }
 .tb-what span { color: #44546b; white-space: nowrap; }
 .learn-note { margin-top: 18px; }
 body.training #btn-3d, body.training #cam-bar { display: none !important; }
-.tb-say { border: 0; background: none; font-size: 16px; padding: 2px 6px; margin-left: auto; }
 /* Side by side (iPad landscape, desktop): the lesson bar sits over the top of the side panel, off the field
    entirely, so it never hides where the ball is going. (The panel's own contents are hidden while you decide.) */
 @media (min-width: 900px), (orientation: landscape) and (min-width: 560px) {

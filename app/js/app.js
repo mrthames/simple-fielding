@@ -4,7 +4,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '0.36.1';
+  const VERSION = '0.37.0';
   const Field = window.Field;
   const BATTED = ['ground', 'line', 'fly', 'pop', 'bunt'];
   const { POSITIONS, NAMES, LEAGUES } = Field;
@@ -394,7 +394,6 @@
 
   function renderResult(plan) {
     renderMarks(plan);
-    if (state.autoSpeak && canSpeak) setTimeout(() => { if (state.plan === plan) speakPlay(); }, 50);
     $('#result').hidden = false;
     $('#result-title').textContent = plan.title;
     $('#result-summary').textContent = plan.summary;
@@ -1967,7 +1966,7 @@
     // A way back to the step before, on every step after the first. (Only a step's first try counts toward the score.)
     const back = T.idx > 0 ? '<div class="tb-nav"><button type="button" class="text-btn small" data-back>‹ Back</button></div>' : '';
     const wireBack = () => { const b = tbar.querySelector('[data-back]'); if (b) b.addEventListener('click', prevStep); };
-    const head = `<span class="tb-head">${escapeHtml(T.lesson.title)} · ${T.idx + 1} of ${T.steps.length}${canSpeak ? '<button type="button" class="tb-say" aria-label="Read this out loud">🔊</button>' : ''}<button type="button" class="tb-x" aria-label="End the lesson">✕</button></span>`;
+    const head = `<span class="tb-head">${escapeHtml(T.lesson.title)} · ${T.idx + 1} of ${T.steps.length}<button type="button" class="tb-x" aria-label="End the lesson">✕</button></span>`;
     if (s.type === 'choice') {
       T.waiting = false;
       if (state.plan) { stop(); showReady(); }
@@ -2082,16 +2081,7 @@
     tbar.querySelector('[data-all]').addEventListener('click', () => { exitTrainer(); renderLearn(); openSheet(learn); });
     tbar.querySelector('[data-exit]').addEventListener('click', exitTrainer);
   }
-  tbar.addEventListener('click', (e) => {
-    if (e.target.closest('.tb-x')) exitTrainer();
-    if (e.target.closest('.tb-say')) {
-      if (reading) { stopReading(); return; }
-      const parts = [...tbar.querySelectorAll('.tb-what, .tb-q, .tb-verdict, .tb-why')].map((n) => n.textContent.trim()).filter(Boolean);
-      const choices = [...tbar.querySelectorAll('.tb-choices button')].map((b) => b.textContent.trim());
-      if (choices.length) parts.push('Is it: ' + choices.join('? Or: ') + '?');
-      speakText(parts);
-    }
-  });
+  tbar.addEventListener('click', (e) => { if (e.target.closest('.tb-x')) exitTrainer(); });
   function exitTrainer() {
     const T = state.trainer;
     if (!T) return;
@@ -2141,90 +2131,6 @@
   };
   svg.addEventListener('pointerup', endF, true);
   svg.addEventListener('pointercancel', endF, true);
-
-  // ------------------------------------------------------------------------------------ read aloud
-  // For players who can't read the job list yet: the device's own voice reads the play, or one player's job.
-  const canSpeak = typeof window.speechSynthesis !== 'undefined' && typeof window.SpeechSynthesisUtterance !== 'undefined';
-  state.autoSpeak = store.get('autoSpeak', false);
-  // The Read button shows what's happening: "Stop" while it reads.
-  let reading = false, readSeq = 0;
-  function setReading(on) {
-    reading = on;
-    const b = $('#btn-speak');
-    b.classList.toggle('on', on);
-    b.setAttribute('aria-pressed', String(on));
-    b.querySelector('span').textContent = on ? 'Stop' : 'Read';
-  }
-  // An English voice, if the device lists one (some browsers pick oddly without being told).
-  function englishVoice() {
-    const vs = window.speechSynthesis.getVoices ? window.speechSynthesis.getVoices() : [];
-    return vs.find((v) => /^en[-_]US/i.test(v.lang) && v.localService) || vs.find((v) => /^en[-_]US/i.test(v.lang)) || vs.find((v) => /^en/i.test(v.lang)) || null;
-  }
-  function stopReading() {
-    readSeq++;
-    try { window.speechSynthesis.cancel(); } catch (e) { /* ignore */ }
-    setReading(false);
-  }
-  function speakText(parts) {
-    if (!canSpeak || !parts.length) return;
-    const ss = window.speechSynthesis;
-    const seq = ++readSeq;
-    let started = false;
-    const go = () => {
-      if (seq !== readSeq) return;
-      const voice = englishVoice();
-      parts.forEach((text, i) => {
-        const u = new SpeechSynthesisUtterance(text.replace(/\b1st\b/g, 'first').replace(/\b2nd\b/g, 'second').replace(/\b3rd\b/g, 'third'));
-        u.rate = 0.95;
-        u.lang = 'en-US';
-        if (voice) u.voice = voice;
-        u.onstart = () => { if (seq === readSeq) { started = true; setReading(true); } };
-        if (i === parts.length - 1) u.onend = () => { if (seq === readSeq) setReading(false); };
-        u.onerror = (e) => {
-          if (seq !== readSeq) return;
-          setReading(false);
-          if (e && e.error !== 'interrupted' && e.error !== 'canceled') toast("Couldn't read it out loud on this device.");
-        };
-        ss.speak(u);
-      });
-      try { ss.resume(); } catch (e) { /* some browsers start paused */ }
-      // Nothing heard? On iPhone and iPad the usual reason is Silent Mode, which mutes the built-in voice.
-      setTimeout(() => {
-        if (seq === readSeq && !started && !ss.speaking) toast('Nothing was read out loud. On an iPhone or iPad, check that Silent Mode is off and the volume is up.');
-      }, 2500);
-    };
-    // Stopping and speaking in the same instant makes Safari (and every iPad browser) drop the speech without a word,
-    // so only stop what's actually playing, and give it a moment first.
-    if (ss.speaking || ss.pending) { ss.cancel(); setTimeout(go, 200); } else go();
-  }
-  const sayWho = (pos) => { const l = T.labelFor(team, pos); return l.name ? `${l.name}, ${Field.PLAYERS[pos]}` : NAMES[pos]; };
-  function speakPlay() {
-    const plan = state.plan;
-    if (!plan) return;
-    if (state.spotlight) {
-      const j = plan.jobs.find((x) => x.pos === state.spotlight);
-      if (j && j.job) return speakText([`${sayWho(j.pos)}. ${j.job}`]);
-    }
-    const parts = [state.playName || plan.title];
-    if (state.asking) parts.push('Where does everybody go?');
-    else {
-      parts.push(plan.summary);
-      for (const j of plan.jobs) if (j.job) parts.push(`${sayWho(j.pos)}. ${j.job}`);
-    }
-    speakText(parts);
-  }
-  if (canSpeak) {
-    $('#btn-speak').hidden = false;
-    $('#speak-row').hidden = false;
-    $('#auto-speak').checked = state.autoSpeak;
-    $('#auto-speak').addEventListener('change', (e) => { state.autoSpeak = e.target.checked; store.set('autoSpeak', state.autoSpeak); });
-    $('#btn-speak').addEventListener('click', () => {
-      if (reading || window.speechSynthesis.speaking) { stopReading(); return; }
-      speakPlay();
-    });
-    // Voices load after the page on some browsers; asking once starts the load.
-    try { window.speechSynthesis.getVoices(); } catch (e) { /* ignore */ }
-  }
 
   // ------------------------------------------------------------------------------------ share links, My plays
   function shareCode() {

@@ -670,24 +670,6 @@ test('timeline markers jump to a moment in the play; ¼× speed exists', async (
   await expect(page.locator('.transport [data-speed="0.25"]')).toHaveCount(1);
 });
 
-test('read aloud: the Read button speaks the play (where the browser can)', async ({ page }) => {
-  await page.addInitScript(() => {
-    (window as any).__said = [];
-    if (!('speechSynthesis' in window)) return;
-    const orig = window.speechSynthesis.speak.bind(window.speechSynthesis);
-    window.speechSynthesis.speak = (u: SpeechSynthesisUtterance) => { (window as any).__said.push(u.text); };
-    void orig;
-  });
-  await page.reload();
-  await page.locator('#quick-list .lib-item', { hasText: 'Single to left, runner on 1st' }).click();
-  if (!(await page.locator('#btn-speak').isVisible())) test.skip(true, 'no speech in this browser');
-  await page.locator('#btn-speak').click();
-  const said = await page.evaluate(() => (window as any).__said);
-  expect(said.length).toBeGreaterThan(3);
-  expect(said.join(' ')).toContain('Shortstop');
-  expect(said.join(' ')).not.toContain('1st');
-});
-
 test('projector mode survives the browser dropping full screen on a touch device, with a way back and a way out', async ({ page }) => {
   await page.evaluate(() => {
     // Pretend we're a touch device and the browser just left full screen by itself.
@@ -867,72 +849,4 @@ test('lessons are 2D: the 3D button is hidden during a lesson and back afterward
   await expect(page.locator('#btn-3d')).toBeHidden();
   await page.locator('#trainer-bar .tb-x').click();
   await expect(page.locator('#btn-3d')).toBeVisible();
-});
-
-// A stand-in for the device's voice: records what it's asked to say, and starts and finishes like a real one
-// (or never starts, like an iPad in Silent Mode).
-async function fakeVoice(page: Page, mode: 'works' | 'silent') {
-  await page.addInitScript((mode) => {
-    const log: any = { said: [], cancels: 0, cancelWhileIdle: 0 };
-    (window as any).__voice = log;
-    let speaking = false, timer: any = null;
-    const ss: any = {
-      get speaking() { return speaking; }, get pending() { return false; }, paused: false,
-      getVoices: () => [{ name: 'Test', lang: 'en-US', localService: true, default: true }],
-      speak(u: any) {
-        log.said.push(u.text);
-        if (mode === 'silent') return;
-        if (!speaking) { speaking = true; setTimeout(() => u.onstart && u.onstart({}), 30); }
-        clearTimeout(timer);
-        timer = setTimeout(() => { speaking = false; u.onend && u.onend({}); }, 600);
-      },
-      cancel() { log.cancels++; if (!speaking) log.cancelWhileIdle++; speaking = false; clearTimeout(timer); },
-      resume() {}, pause() {},
-      addEventListener() {},
-    };
-    Object.defineProperty(window, 'speechSynthesis', { value: ss, configurable: true });
-    (window as any).SpeechSynthesisUtterance = function (this: any, text: string) { this.text = text; } as any;
-  }, mode);
-  await page.reload();
-}
-
-test('Read: says the play, shows Stop while reading, and never cancels before speaking when nothing is playing', async ({ page }) => {
-  await fakeVoice(page, 'works');
-  await page.locator('#quick-list .lib-item', { hasText: 'Grounder to short, nobody on' }).click();
-  await page.locator('#btn-speak').click();
-  await expect(page.locator('#btn-speak')).toContainText('Stop');
-  const v = await page.evaluate(() => (window as any).__voice);
-  expect(v.said[0]).toContain('Grounder to short');
-  expect(v.cancelWhileIdle).toBe(0);
-  await expect(page.locator('#btn-speak')).toContainText('Read', { timeout: 3000 });
-  // Tapping while it reads stops it.
-  await page.locator('#btn-speak').click();
-  await expect(page.locator('#btn-speak')).toContainText('Stop');
-  await page.locator('#btn-speak').click();
-  await expect(page.locator('#btn-speak')).toContainText('Read');
-});
-
-test('Read: when nothing starts (an iPad in Silent Mode), it says what to check', async ({ page }) => {
-  await fakeVoice(page, 'silent');
-  await page.locator('#quick-list .lib-item', { hasText: 'Grounder to short, nobody on' }).click();
-  await page.locator('#btn-speak').click();
-  await expect(page.locator('#toast')).toContainText('Silent Mode', { timeout: 4000 });
-});
-
-test('lessons: the speaker reads the step out loud, choices included', async ({ page }) => {
-  await fakeVoice(page, 'works');
-  await page.evaluate(() => (window as any).SimpleFielding.lesson.start('bb-t-alligator'));
-  await page.locator('#trainer-bar .tb-say').click();
-  let said = await page.evaluate(() => (window as any).__voice.said.join(' | '));
-  expect(said).toContain('A ground ball to the left side');
-  expect(said).toContain('shortstop');
-  await page.locator('#trainer-bar [data-stay]').click();
-  await page.locator('#trainer-bar [data-next]').click();
-  await page.evaluate(() => { (window as any).__voice.said = []; });
-  // Let the first reading finish: a tap while it's reading stops it instead.
-  await page.waitForFunction(() => !(window as any).speechSynthesis.speaking);
-  await page.locator('#trainer-bar .tb-say').click();
-  said = await page.evaluate(() => (window as any).__voice.said.join(' | '));
-  expect(said).toContain('Where is your glove');
-  expect(said).toContain('Down on the ground');
 });
