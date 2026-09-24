@@ -204,8 +204,17 @@
       if (kind === 'ground' || kind === 'bunt') return { type: 'foulGround', at, d, fair, kind };
       return { type: 'foulFly', at, d, fair, kind };
     }
-    const inInfield = d < geo.infieldEdge;
+    let inInfield = d < geo.infieldEdge;
     if (kind === 'bunt') return { type: 'bunt', at, d, fair, kind };
+    const IF = ['1B', '2B', 'SS', '3B'];
+    if (geo.tempo.arms && !inInfield) {
+      // From 13U-14U up the middle infielders play at the edge of the dirt: a grounder just behind them, or one
+      // they can range to, is still theirs. A pop they can run under beyond the dirt goes to the infield play,
+      // which lets an outfielder coming in call them off.
+      const nearIF = Math.min(...IF.map((p) => dist(ready[p], at)));
+      if (kind === 'ground') inInfield = d < geo.infieldEdge + 25 && nearIF < 28;
+      else if (kind === 'pop' || kind === 'fly') inInfield = d < geo.infieldEdge + 70 && nearIF <= catchReach(geo, kind, d) * 0.8 && nearIF < dist(ready[nearest(['LF', 'CF', 'RF'], ready, at)], at);
+    }
     if (kind === 'ground') return { type: inInfield ? 'infieldGround' : 'outfieldHit', at, d, fair, kind };
     if (inInfield) return { type: 'infieldFly', at, d, fair, kind };
 
@@ -233,6 +242,8 @@
     if (kind === 'ground') return (corner && d > 0.8 * fence) ? 2 : 1;
     if (d < 0.8 * fence) return 1;
     if (d < 0.93 * fence) return 2;
+    // A ball off a short wall (Fenway's left field, a 300 ft line) comes straight back: a double, not a triple.
+    if (geo.tempo.arms && fence < 345) return 2;
     return 3;
   }
 
@@ -277,6 +288,10 @@
     if ((event.kind === 'ground' || event.kind === 'bunt') && Field.isFair(event.at) && dist(event.at, geo.bases.home) > geo.fenceAt(event.at) - 6) {
       // A ground ball can't leave the park: it rolls to the fence.
       event = Object.assign({}, event, { kind: 'ground', at: along(geo.bases.home, event.at, geo.fenceAt(event.at) - 8), result: event.result || 'double' });
+    }
+    if (event.result && event.result !== 'out' && event.kind !== 'ground' && Field.isFair(event.at) && dist(event.at, geo.bases.home) > geo.fenceAt(event.at) - 10) {
+      // "Double", "Triple": it stays in the park, off the wall.
+      event = Object.assign({}, event, { at: along(geo.bases.home, event.at, geo.fenceAt(event.at) - 12) });
     }
     const c = classify(geo, ready, event);
     const run = situation.runners;
@@ -431,7 +446,7 @@
       assign(plan, '3B', 'cover', b.third, 'Cover 3rd base — the throw is coming here.');
       assign(plan, '1B', 'cover', b.first, 'Make sure the batter touches 1st, then cover the bag.');
       assign(plan, 'C', 'cover', { x: 0, y: 1.5 }, 'Stay home — cover home plate.');
-      assign(plan, 'P', 'backup', behind(geo, b.third, fieldPoint, 30),
+      assign(plan, 'P', 'backup', behind(geo, b.third, fieldPoint, geo.tempo.pBack3),
         'Back up 3rd base — run behind the bag in foul territory, in line with the throw.', { delay: 0.3 });
     } else if (target === 'home') {
       if (F === 'LF') {
@@ -451,7 +466,9 @@
         `Be the cutoff for home — line up about ${cutD} feet in front of the plate, between the ball and home. Listen for the catcher!`,
         { delay: 0.15 });
       assign(plan, 'C', 'cover', HOME_TAG,
-        'Cover home — you are the boss here: yell "Cut!" or "Let it go!" ' + TAG_TEXT);
+        (geo.tempo.arms
+          ? 'Cover home and make the call: say nothing to let it through, "Cut" to hold it, "Cut 2" to throw the batter out at 2nd. '
+          : 'Cover home — you are the boss here: yell "Cut!" or "Let it go!" ') + TAG_TEXT);
       assign(plan, 'P', 'backup', behind(geo, b.home, fieldPoint, geo.tempo.pBackHome),
         'Back up home plate — get behind the catcher, in line with the throw.', { delay: 0.3 });
     }
@@ -544,7 +561,7 @@
 
     if (outsAfter >= 3) {
       plan.summary = `${The(F)} catches it — that's three outs, inning over!`;
-      assign(plan, F, 'field', at, 'Call it loud — "I got it! I got it!" — and catch it with two hands.', { delay: 0.05 });
+      assign(plan, F, 'field', at, geo.tempo.arms ? 'Call it — "I got it!" — and catch it moving through the ball toward your throw.' : 'Call it loud — "I got it! I got it!" — and catch it with two hands.', { delay: 0.05 });
       for (const base of ['first', 'second', 'third']) if (run[base]) r.push({ id: base, from: base, to: nextBase(base) });
       plan.runners = r;
       plan.notes.push('With two outs, runners run on contact — but once the ball is caught, the inning is over.');
@@ -816,7 +833,9 @@
     if (dp) plan.notes.push(isBunt ? '' : 'Double play: get the lead runner first. The second throw only happens if the first out is made cleanly.');
     if (situation.outs === 2) plan.notes.push('Two outs: take the easiest out. Everybody runs on contact.');
     if (run.third && situation.outs < 2 && targets[0] !== 'home') {
-      plan.notes.push('The runner on 3rd may score. With a big lead early in a game, trading a run for an out is fine — ask your coach what they want.');
+      plan.notes.push(geo.tempo.arms
+        ? 'The runner on 3rd may score. Early with a lead, take the sure out; late and close, the infield plays in to cut the run off.'
+        : 'The runner on 3rd may score. With a big lead early in a game, trading a run for an out is fine — ask your coach what they want.');
     }
     plan.notes = plan.notes.filter(Boolean);
 
@@ -1277,6 +1296,7 @@
       const start = ready[pos];
       const keys = [{ t: 0, x: start.x, y: start.y }];
       let t = starts + (a ? a.delay : 0.3);
+      if (plan.pitch && TP.arms && pos !== 'C') t = starts + Math.max(0, (a ? a.delay : 0.3) - 0.75);
       let cur = start;
       keys.push({ t, x: cur.x, y: cur.y });
       const pts = a ? (a.path ? a.path.slice() : [a.to]) : [];
@@ -1332,7 +1352,7 @@
             // A triple is a ball that rattles around in the corner: it takes long enough to dig out that
             // the batter makes it to 3rd ahead of the relay.
             const rs = runnerSpeed(geo);
-            const batterAt3 = T0 + 0.15 + (3 * geo.base) / rs;
+            const batterAt3 = T0 + 0.15 + geo.base / rs + (2 * geo.base) / (rs * 1.12);
             const relay = plan.assignments[plan.throws[0] && plan.throws[0].via];
             const tr = TP.transfer;
             const relayTime = !TP.arms
@@ -1387,7 +1407,7 @@
       const legs = [];
       // Youth throws go through the cutoff, who catches and throws on. From high school up, a single cutoff
       // lets a good throw go through (the catcher says nothing); only a relay on an extra-base hit handles it.
-      const letThrough = TP.arms && th.via && plan.assignments[th.via] && plan.assignments[th.via].role === 'cutoff';
+      const letThrough = TP.arms && th.via && ['LF', 'CF', 'RF'].includes(th.fromPos) && plan.assignments[th.via] && plan.assignments[th.via].role === 'cutoff';
       if (th.via && !letThrough) {
         const a = plan.assignments[th.via];
         legs.push({ to: a.to, pos: th.via });
@@ -1411,7 +1431,8 @@
             ? Math.max(0.5, TP.popTime - throwTime(geo, 124, 'C')) : null;
           // Older levels: an outfielder digging a ball out at the wall takes longer to get rid of it.
           const atWall = TP.arms && fromOF && dist(from, b.home) > geo.fenceAt(from) - 12 ? 0.35 : 0;
-          t += popX !== null ? popX : tr.inf + (fromOF ? tr.of : 0) + (li > 0 ? tr.relay : 0) + atWall;
+          const pivot = TP.pivot && li === 0 && plan.throws.indexOf(th) > 0 && !th.via ? TP.pivot - tr.inf : 0;
+          t += popX !== null ? popX : tr.inf + (fromOF ? tr.of : 0) + (li > 0 ? tr.relay : 0) + atWall + pivot;
           ball.push({ t, x: from.x, y: from.y, h: 4 });
           const recvArr = leg.pos ? arrival(leg.pos) : t;
           const flightT = throwTime(geo, dist(from, leg.to), thrower);
@@ -1552,7 +1573,10 @@
       const tRun = reachAt[r.to];
       const canHold = !r.forced && !r.commit;
       const needed = r.forced ? 0.05 : TP.tagTime;       // how far ahead the ball must be for an out
-      if (canHold && ballThere.t < tRun - needed - TP.sendMargin) {
+      // From 13U-14U up: never make the first or third out at 3rd; with two outs, force the defense at home.
+      const outs = plan.situation.outs;
+      const caution = !TP.arms ? 0 : r.to === 'third' && outs !== 1 ? 0.6 : r.to === 'home' && outs === 2 ? -0.2 : 0;
+      if (canHold && ballThere.t < tRun - needed - TP.sendMargin + caution) {
         // The throw would beat them easily: they hold at the last base, as a coach would stop them.
         const holdBase = path.length > 1 ? path[path.length - 2] : r.from;
         const hb = b[holdBase];

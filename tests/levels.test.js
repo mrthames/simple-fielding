@@ -71,12 +71,15 @@ test('pro speed of play: DP turned, average steal safe, deep sac fly scores', ()
   assert.ok(sac.runners.find((r) => r.id === 'third').safe, 'sac fly at 320');
 });
 
-test('younger players take longer: the same double play is slower at 13U-14U than at pro', () => {
+test("younger players take longer: the same double play is slower at 13U-14U than at pro, and often isn't turned", () => {
   const t = (L) => {
     const p = Engine.planPlay({ runners: on('first'), outs: 0, league: L }, { kind: 'ground', at: { x: -38, y: 132 } });
-    return Math.max(...p.timeline.events.filter((e) => e.type === 'out').map((e) => e.t));
+    // When the relay throw reaches 1st.
+    return Math.max(...p.timeline.events.filter((e) => e.type === 'throw').map((e) => e.tEnd));
   };
   assert.ok(t('junior90') > t('highSchool') && t('highSchool') > t('pro'));
+  const j = Engine.planPlay({ runners: on('first'), outs: 0, league: 'junior90' }, { kind: 'ground', at: { x: -38, y: 132 } });
+  assert.ok(j.runners.find((r) => r.id === 'first').out, 'the lead runner is still out at 13U-14U');
 });
 
 test('the cutoff home stands about 45 ft from the plate at 90 ft', () => {
@@ -95,4 +98,23 @@ test('a park changes the wall: a fly that stays in a standard park is gone at Fe
   const inFen = Engine.planPlay({ runners: {}, outs: 0, league: 'pro', park: 'redsox-fenway' }, { kind: 'fly', at });
   assert.ok(!inStd.homeRun);
   assert.ok(inFen.homeRun);
+});
+
+test('review fixes: reach from hang time, infield range past the dirt, cut play, short walls', () => {
+  const pro = (runners, ev, park) => Engine.planPlay({ runners, outs: 0, league: 'pro', park }, ev);
+  // C1: a 4.7 s fly 58 ft from the center fielder is caught.
+  assert.equal(pro({}, { kind: 'fly', at: { x: 58, y: 320 } }).classification, 'outfieldFly');
+  // C2: a grounder 12 ft behind the shortstop is still the shortstop's.
+  const g = pro({}, { kind: 'ground', at: { x: -46, y: 152 } });
+  assert.equal(g.fielder, 'SS');
+  // C3: on the 1st & 3rd cut play the ball goes out to the cutoff in front of 2nd.
+  const ft = pro(on('first', 'third'), { kind: 'firstThirdSteal' });
+  const throws = ft.timeline.events.filter((e) => e.type === 'throw');
+  assert.ok(throws.length && Math.hypot(throws[0].to.x, throws[0].to.y) > 60, 'first throw goes toward 2nd');
+  // C4: off Fenway's short left-field wall it's a double, not a triple.
+  const f = pro({}, { kind: 'line', at: { x: -205, y: 214 } }, 'redsox-fenway');
+  assert.notEqual(f.hitBases, 3);
+  // M1: a "double" never leaves the park.
+  const d = Engine.planPlay({ runners: {}, outs: 0, league: 'junior90' }, { kind: 'line', at: { x: -205, y: 222 }, result: 'double' });
+  assert.ok(!d.homeRun);
 });

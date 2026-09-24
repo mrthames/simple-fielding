@@ -2,6 +2,24 @@
 
 ---
 
+## [2026-09-25] v0.9.1 — Fixes from the pro-level review
+
+A review by a pro field coordinator and a high school coach ran 70,560 plays across the new levels and parks. Youth plays are unchanged.
+
+- **Fly balls:** catches at 90 ft levels are now worked out from hang time. The high school, college and pro fields had been using the youth catch distances, so a 4.7 s fly 58 ft from the center fielder fell in for a double. Line drives hang longer.
+- **Infielders** field grounders just behind the dirt and go out for pops they can reach. An outfielder coming in still calls them off.
+- **The 1st & 3rd cut play** works at high school and up. Only throws from the outfield go through a cutoff.
+- **Triples:** a ball off a short wall, like Fenway's left field, is a double, not a triple. The triple timer counts the batter's speed rounding the bases.
+- **A double or triple stays in the park,** and the 90 ft plays follow each field's own fences. A gap double is a gap double at 13U–14U and in every park.
+- **Base running:** runners aren't sent to make the first or third out at 3rd. With two outs they're sent home more readily.
+- **Steals:** the middle infielder covering 2nd breaks as the pitch crosses the plate, not after the catch.
+- **Double plays** use each level's time to turn the pivot, so 13U–14U often gets only the lead runner.
+- **Backups:** the pitcher backs up 3rd deeper at older levels.
+- **Wording:** the catcher's calls at 90 ft are "Cut", "Cut 2", or nothing to let the throw through. Fewer youth-only phrases appear at pro.
+- **List plays:** the slow roller, deep in the hole, 1st to 3rd and the pop-up between the first baseman, second baseman and right fielder are placed more realistically.
+
+---
+
 ## [2026-09-25] v0.9.0 — High school, college and pro fields, and real ballparks
 
 ### Levels of play

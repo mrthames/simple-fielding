@@ -4,7 +4,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '0.9.0';
+  const VERSION = '0.9.1';
   const Field = window.Field;
   const { POSITIONS, NAMES, LEAGUES } = Field;
   const $ = (s) => document.querySelector(s);
@@ -815,6 +815,17 @@
     return { x: Math.round(p.x * s * 10) / 10, y: Math.round(p.y * s * 10) / 10 };
   }
 
+  // The 90 ft plays are written for a standard pro-size field. Outfield spots follow this field's own fence, so a
+  // gap double stays a gap double at 13U-14U and in every park.
+  const PRO = Field.geometry('pro');
+  function scaleAbs(p) {
+    const r = Math.hypot(p.x, p.y);
+    if (!Field.isFair(p) || r < 170) return { ...p };
+    const f = geo.fenceAt(p) / PRO.fenceAt(p);
+    const s = 1 + (f - 1) * Math.min(1, (r - 170) / 60);
+    return { x: Math.round(p.x * s * 10) / 10, y: Math.round(p.y * s * 10) / 10 };
+  }
+
   function runScenario(idx) {
     const all = window.Scenarios.ALL;
     // Skip plays that don't belong on this field, in whichever direction we're stepping.
@@ -834,7 +845,7 @@
     }
     const ev = Object.assign({}, sc.event);
     if (ev.at) {
-      ev.at = sc.abs ? { ...ev.at } : scaleSpot(ev.at);
+      ev.at = sc.abs ? scaleAbs(ev.at) : scaleSpot(ev.at);
       state.kind = ev.kind;
       state.result = ev.result || 'auto';
     }

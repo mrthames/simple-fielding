@@ -55,7 +55,7 @@
         runner: 19.4, fielder: 19, pitchFlight: 0.55, delivery: 1.6, popTime: 2.35,
         arms: { SS: 68, '3B': 68, '2B': 64, '1B': 64, LF: 70, CF: 70, RF: 72, C: 65, P: 60 }, carry: 150, vLong: 60,
         transfer: { inf: 0.6, of: 0.4, relay: 0.1 }, ground: { a: 0.15, v: 70 }, roll: 40, through: 40,
-        hang: { fly: [1.6, 115], line: [0.15, 115], pop: [3.6, 170] },
+        hang: { fly: [1.6, 115], line: [0.4, 115], pop: [3.6, 170] }, pivot: 0.8, pBack3: 38,
         lead: { steal: 9, first: 14, second: 18, third: 10 },
         tagTime: 0.35, sendMargin: 0.35, cutHome: 40, relayReach: 140, trail: 20, pBackHome: 30,
       },
@@ -74,7 +74,7 @@
         runner: 20.7, fielder: 20, pitchFlight: 0.46, delivery: 1.5, popTime: 2.15,
         arms: { SS: 77, '3B': 77, '2B': 73, '1B': 73, LF: 80, CF: 80, RF: 82, C: 74, P: 70 }, carry: 200, vLong: 70,
         transfer: { inf: 0.55, of: 0.35, relay: 0.07 }, ground: { a: 0.15, v: 77 }, roll: 43, through: 43,
-        hang: { fly: [1.8, 125], line: [0.2, 125], pop: [3.9, 160] },
+        hang: { fly: [1.8, 125], line: [0.45, 120], pop: [3.9, 160] }, pivot: 0.7, pBack3: 40,
         lead: { steal: 10, first: 16, second: 22, third: 12 },
         tagTime: 0.3, sendMargin: 0.3, cutHome: 45, relayReach: 160, trail: 20, pBackHome: 32,
       },
@@ -93,7 +93,7 @@
         runner: 21.4, fielder: 21, pitchFlight: 0.43, delivery: 1.4, popTime: 2.05,
         arms: { SS: 83, '3B': 83, '2B': 79, '1B': 79, LF: 85, CF: 85, RF: 87, C: 79, P: 75 }, carry: 240, vLong: 80,
         transfer: { inf: 0.5, of: 0.3, relay: 0.05 }, ground: { a: 0.15, v: 83 }, roll: 46, through: 46,
-        hang: { fly: [2.0, 130], line: [0.2, 140], pop: [4.2, 150] },
+        hang: { fly: [2.0, 130], line: [0.5, 120], pop: [4.2, 150] }, pivot: 0.62, pBack3: 44,
         lead: { steal: 11, first: 17, second: 24, third: 13 },
         tagTime: 0.25, sendMargin: 0.3, cutHome: 45, relayReach: 175, trail: 22, pBackHome: 38,
       },
@@ -112,7 +112,7 @@
         runner: 22.2, fielder: 22, pitchFlight: 0.4, delivery: 1.35, popTime: 2.0,
         arms: { SS: 86, '3B': 86, '2B': 81, '1B': 78, LF: 86, CF: 88, RF: 90.5, C: 81, P: 78 }, carry: 270, vLong: 85,
         transfer: { inf: 0.45, of: 0.25, relay: 0.05 }, ground: { a: 0.15, v: 87 }, roll: 48, through: 48,
-        hang: { fly: [2.2, 130], line: [0.25, 150], pop: [4.5, 150] },
+        hang: { fly: [2.2, 130], line: [0.5, 120], pop: [4.5, 150] }, pivot: 0.55, pBack3: 45,
         lead: { steal: 11.6, first: 18, second: 25, third: 14 },
         tagTime: 0.2, sendMargin: 0.25, cutHome: 45, relayReach: 190, trail: 25, pBackHome: 40,
       },
@@ -128,7 +128,7 @@
     hang: { fly: [1.5, 110], line: [0.1, 95], pop: [2.6, 200] },
     reach: { fly: 55, pop: 55, line: 28 },
     lead: { steal: 8, first: 8, second: 8, third: 8 },
-    tagTime: 0.4, sendMargin: 0.4, cutHome: null, relayReach: null, trail: 18, pBackHome: 22,
+    tagTime: 0.4, sendMargin: 0.4, cutHome: null, relayReach: null, trail: 18, pBackHome: 22, pivot: null, pBack3: 30,
   };
 
   const POSITIONS = ['P', 'C', '1B', '2B', 'SS', '3B', 'LF', 'CF', 'RF'];
@@ -206,6 +206,8 @@
     };
     const tempo = Object.assign({}, YOUTH_TEMPO, L.tempo || {});
     if (L.sport === 'softball' && !L.tempo) tempo.runner = 18;
+    // A level with its own tempo works out catch reach from hang time (engine.catchReach), not the youth reaches.
+    if (L.tempo) tempo.reach = null;
     const P2 = (xy) => ({ x: xy[0], y: xy[1] });
     // Outfielders at a level's own depth, but never closer than 30 ft to this park's wall.
     const ofAt = (a, depth) => polar(a, Math.min(depth, fenceDir(a) - 30));
