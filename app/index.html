@@ -52,6 +52,8 @@
         Drag the ball from home plate to where it's hit
       </div>
       <div class="play-title" id="play-title" hidden></div>
+      <div class="sit-strip" id="sit-strip" aria-live="polite"></div>
+      <div class="ask-card" id="ask-card" hidden>Where does everybody go? <span>Press ▶ to see.</span></div>
       <div class="spot-card" id="spot-card" hidden></div>
       <div class="field-key" id="field-key" aria-label="Color key">
         <span class="fk role-field">Gets the ball</span>
@@ -73,6 +75,8 @@
         <svg viewBox="0 0 24 24" class="i-replay" aria-hidden="true"><path d="M12 5V2L7 6l5 4V7a5 5 0 1 1-5 5H5a7 7 0 1 0 7-7z"/></svg>
       </button>
       <input type="range" id="scrub" min="0" max="1000" value="0" aria-label="Play timeline">
+      <button class="text-btn ask-btn" id="btn-ask" type="button" aria-pressed="false" title="Stop at the hit and hide the paths, so you can ask the team first">Ask<span class="wide-only"> first</span></button>
+      <button class="text-btn next-btn" id="btn-next" type="button" title="Next play (N)">Next ›</button>
       <div class="seg" role="group" aria-label="Speed">
         <button type="button" data-speed="0.5">½×</button>
         <button type="button" data-speed="1" class="on">1×</button>
@@ -173,7 +177,7 @@
       </div>
       <h3 class="coach-only">What happens?</h3>
       <div class="chips small coach-only" id="result-chips">
-        <button type="button" data-result="auto" class="on">Let the app decide</button>
+        <button type="button" data-result="auto" class="on">Normal play</button>
         <button type="button" data-result="out">Caught</button>
         <button type="button" data-result="single">Single</button>
         <button type="button" data-result="double">Double</button>
@@ -182,7 +186,7 @@
     </section>
 
     <section class="card coach-only">
-      <h2>No hit — other plays</h2>
+      <h2>Steals, passed balls &amp; pickoffs</h2>
       <div class="chips" id="other-plays">
         <button type="button" data-play="steal2">Steal 2nd</button>
         <button type="button" data-play="steal3">Steal 3rd</button>

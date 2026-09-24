@@ -2,6 +2,32 @@
 
 ---
 
+## [2026-09-25] v0.8.0 — Basic and Coach modes, grounders that get through, a coach's flow
+
+### Basic and Coach modes
+- **Basic** (the default on a first visit) is for players: a quick-pick list of every play, the runners, the outs, baseball or softball, and drag-the-ball. It hides the team, the whiteboard, the batter, how the hit turns out, steals and pickoffs, and the field size.
+- **Coach** has everything. Switch in Settings, or from the link at the bottom of the panel. The choice is remembered.
+
+### Grounders that get through
+- After a ground ball, a dashed ring marks where the infielder tried for it. **Drag from the ring to where the ball rolled**: the infielder dives, gets up and goes to their job, and everyone plays it as a ball that got through.
+- Choosing **Single**, **Double** or **Triple** on a grounder at an infielder now does the same on the ball's line. It used to be ignored.
+
+### How a coach runs it (from a coach's-eye review)
+- **Ask first**: stops at the hit with the paths hidden, so a coach can ask "where do you go?" before anything moves. Press Play to show the answer. Key: A.
+- **Tapping the field no longer throws away a paused play.** A tap only hits the ball on an empty field.
+- **Changing runners or outs re-runs the same hit**, so you can flip between variations.
+- **The situation is on the field** (outs, runners, a lefty batting), including in projector mode, and a play from the list keeps its name as the title.
+- **Next ›** on screen in projector mode.
+- Wording: "Let the app decide" → "Normal play"; "No hit — other plays" → "Steals, passed balls & pickoffs". The secondary lead is hidden in softball.
+
+### Fixes from the guides review
+- **1st & 3rd with two outs**: the note said a tag at 2nd always beats the run. It doesn't; the run counts if it scores before the tag. Fixed.
+- **Infield fly** note now covers ordinary effort, caught or not, and when runners must tag.
+- **Bases-loaded bunt**: one player covers 3rd (the shortstop; the third baseman reads the bunt), the catcher steps on home, then throws to 1st, and the note matches the play.
+- The guides were corrected throughout, and every guide play now opens on the baseball field it was written for.
+
+---
+
 ## [2026-09-24] v0.7.0 — Adversarial review fixes
 
 Two independent reviews ran the engine through about 1,000 situations: a professional baseball defensive coordinator and a fastpitch softball coach. Both called it not production-ready. This release fixes every critical and major finding, and the minor ones, each with a regression test (`tests/review.test.js`). The reports are kept in the private notes.

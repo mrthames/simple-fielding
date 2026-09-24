@@ -37,8 +37,11 @@ function readArticles() {
 }
 
 // Check a play against what the article claims, and return its replay link.
+// Every play is pinned to a league (Little League baseball unless the play says otherwise), so a softball
+// user who follows the link sees the play the article describes, not the softball version of it.
 function checkPlay(article, id, p) {
-  const plan = Engine.planPlay(p.situation, p.event);
+  const situation = Object.assign({ league: 'littleLeague' }, p.situation);
+  const plan = Engine.planPlay(situation, p.event);
   const e = p.expect || {};
   const fail = (msg) => { throw new Error(`${article.slug} / play "${id}": ${msg}`); };
   if (e.fielder && plan.fielder !== e.fielder) fail(`fielder is ${plan.fielder}, article says ${e.fielder}`);
@@ -53,7 +56,7 @@ function checkPlay(article, id, p) {
     const g = plan.geo.bases[base] || { x: 0, y: 0 };
     if (Math.hypot(end.x - g.x, end.y - g.y) > 6) fail(`${pos} doesn't end at ${base}`);
   }
-  return `/app/#replay=${PlayLog.encodeReplay(p.situation, p.event)}`;
+  return `/app/#replay=${PlayLog.encodeReplay(situation, p.event)}`;
 }
 
 function renderBody(a) {
@@ -219,7 +222,7 @@ async function renderOg(all) {
   const tpl = readFileSync(path.join(ROOT, 'content/og-template.html'), 'utf8');
   const icon = 'data:image/svg+xml;base64,' + Buffer.from(readFileSync(path.join(ROOT, 'app/icon.svg'))).toString('base64');
   const items = [
-    { file: 'og-home.png', kicker: 'Free for coaches, players and parents', title: 'Where every fielder goes, on every play.' },
+    { file: 'og-home.png', kicker: 'Free for coaches, players and parents', title: 'Where every fielder goes, and why.' },
     { file: 'og-articles.png', kicker: 'Simple Fielding guides', title: 'Youth baseball and softball defense, in plain English' },
     ...all.map((a) => ({ file: `og-${a.slug}.png`, kicker: 'Simple Fielding guide', title: a.ogTitle || a.short || a.title })),
   ];

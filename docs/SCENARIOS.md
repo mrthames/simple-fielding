@@ -20,10 +20,10 @@ Positions: **P** pitcher · **C** catcher · **1B** first base · **2B** second 
    - pop-ups in the infield: priority depends on **direction**. The player coming toward the ball beats the player
      going away from it: the corners own pops in front of them, the shortstop and second baseman own pops behind the
      corners (the shortstop when it's close between them), the catcher owns pops near the plate, and an outfielder
-     coming in beats an infielder going out. **The pitcher never takes a pop-up** — they point and yell, and let a
-     fielder catch it;
+     coming in beats an infielder going out. **The pitcher doesn't take a pop-up unless nobody else can get
+     there** — they point and yell, and let a fielder catch it;
    - line drives: whoever is in the ball's path;
-   - bunts: corners charge the lines, the pitcher takes the middle, the catcher takes anything right in front of the plate.
+   - bunts: corners come in along the lines, the pitcher takes the middle, the catcher takes anything right in front of the plate.
 2. **The throw goes where the lead runner is trying to go.** With a runner on 2nd, a single is thrown home.
    With a runner on 1st, it's thrown to 3rd. With nobody on, it goes to 2nd to keep the batter at 1st.
 3. **Every base that might get a play has somebody on it.** When the usual fielder is busy, a substitute takes it:
@@ -43,7 +43,7 @@ Positions: **P** pitcher · **C** catcher · **1B** first base · **2B** second 
 | Situation | Throw | Who covers | Backups |
 |---|---|---|---|
 | Nobody on | 1st | 1B at the bag. Ball to the left side → 2B covers 2nd; right side → SS covers 2nd | C runs down the line to back up 1st. RF backs up 1st. LF and CF back up the fielder. |
-| **Ball to the right side** (1B fields it) | 1st | **P runs to 1st**: to the baseline a few steps short of the bag, up the *inside* of the line, and takes the throw on the inside of the bag. *(Softball: many teams have 2B cover 1st whenever 1B leaves it; the app does that for softball.)* | C, RF back up 1st |
+| **Ball to the right side** (1B fields it) | 1st | **P runs to 1st**: to the baseline a few steps short of the bag, up the *inside* of the line, and takes the throw on the inside of the bag. If 1B can beat the runner to the bag, 1B takes it unassisted and waves the pitcher off. *(Softball: many teams have 2B cover 1st whenever 1B leaves it, and P backs it up; the app does that for softball. Many softball leagues use a double (safety) first base: the fielder uses the white half, the runner the colored half.)* | C, RF back up 1st |
 | Runner on 1st, < 2 outs | 2nd, then 1st (double play) | Ball to SS/3B → **2B covers 2nd**. Ball to 2B/1B → **SS covers 2nd**. Comebacker → SS | CF backs up 2nd, RF backs up 1st |
 | Runners on 1st & 2nd, < 2 outs | 3B steps on 3rd if 3B fields it; otherwise 2nd, then 1st | as above | LF backs up 3rd |
 | Bases loaded, < 2 outs | **Home** (C steps on the plate), then 1st | C at home | P backs up home |
@@ -95,8 +95,9 @@ Everybody else covers a base. The nearest outfielder backs up an infielder going
 When the catcher takes a pop **behind or beside** the plate, the pitcher covers home; on a pop **in front** of the
 plate, the pitcher just steps out of the way.
 
-**Infield fly rule:** with runners on 1st and 2nd (or the bases loaded) and less than two outs, the batter is out on a
-fair pop-up an infielder can catch easily. Runners may advance at their own risk.
+**Infield fly rule:** with runners on 1st and 2nd (or the bases loaded) and fewer than two outs, the batter is out on a
+fair fly ball (not a line drive or a bunt) that an infielder can catch with ordinary effort, whether or not it's caught.
+Runners may advance at their own risk: if the ball is caught, they must tag up; if it drops, they don't have to.
 
 **Line drives** belong to whoever is in the ball's path. Runners freeze; if one is caught off the base, throw to the base
 they left.
@@ -118,11 +119,19 @@ A caught foul ball is an out, and runners can tag up.
 
 | Runners | Fielders | Covers | Throw |
 |---|---|---|---|
-| Nobody on | 1B and 3B charge, staying on the fair side of their lines; P comes off the mound; C takes anything in front of the plate | **2B covers 1st**; SS covers 2nd | 1st — take the sure out |
+| Nobody on | 1B and 3B start in when the bat drops into bunting position — under control, glove up, ready if the batter pulls back and swings (younger players wait until the ball is on the ground) — staying on the fair side of their lines; P comes off the mound (the circle, in softball); C takes anything in front of the plate | **2B covers 1st**; SS covers 2nd | 1st — take the sure out |
 | Runner on 1st | same | 2B covers 1st, SS covers 2nd | 1st (youth: the sure out) |
 | Runner on 2nd | 3B decides whether to charge | **SS covers 3rd**, 2B covers 1st (with runners on 1st & 2nd, 2nd is open — take the sure out) | 1st |
 | Bases loaded, < 2 outs | whoever fields it close to the plate | C on the plate | **Force at home**, then 1st |
 | Runner on 1st, 3B fields it | 3B | **C covers 3rd** so the runner can't round 2nd into an empty base | 1st |
+
+The corner who doesn't field the bunt gets out of the way: 3B hustles back to 3rd; 1B peels off to the inside, out
+of the runner's lane — 2B has 1st. A bunt back to the pitcher goes to 1st, while a comebacker with a runner on 1st
+goes to 2nd: a hard-hit ball gets there in time to beat the lead runner, a slow bunt doesn't. With a runner on 2nd,
+looking the runner back costs time, and a slow bunt is often a close play at 1st.
+
+Slap defense (SS and 3B splitting the hole, 3B stopping her charge when the batter shows slap) is its own topic,
+not covered yet.
 
 ## 8. Steals
 
@@ -134,10 +143,12 @@ A caught foul ball is an out, and runners can tag up.
 | **1st & 3rd double steal** (cut play) | C throws toward 2nd | **2B cuts in front of the bag**; SS covers 2nd; 3B yells "Four!" if the runner breaks home | P backs up home; CF backs up 2nd |
 
 Who covers 2nd: batters usually pull the ball, so the fielder on the pull side stays put. Righty → 2B covers;
-lefty → SS covers. *(Softball: many fastpitch teams have the shortstop cover on every steal, because the second baseman
-owns 1st on bunts and slaps.)*
+lefty → SS covers. *(Softball: the pull logic flips for a left-handed slapper, who hits to the left side. Most fastpitch
+teams keep the shortstop covering 2nd and the second baseman owning 1st, or make a call before every pitch.)*
 
-With **two outs** on 1st & 3rd, throw through to 2nd: the tag there ends the inning before the run can count.
+With **two outs** on 1st & 3rd, many teams throw through to 2nd. It's a tag play, not a force: if the tag beats the
+runner from 3rd to the plate, the inning is over and the run doesn't count; if that runner scores first, the run
+counts. So the throw has to be quick.
 
 1st & 3rd is where teams differ most: throw through, fake to 3rd, throw back to the pitcher, or hold the
 ball. The app shows the cut play.
@@ -148,19 +159,21 @@ ball. The app shows the cut play.
 - **P sprints to cover home** — always, with a runner on 3rd — points to the ball, and yells "Here!" Set up in front
   of the plate, leave the runner the back of it, and sweep the tag.
 - Throw to the base the lead runner is heading for. Everybody else covers their base.
+- *Softball:* the pitcher is close enough to beat the runner home, so she sprints on the miss, not on the catcher's yell.
 
 ## 10. Leads and pickoffs
 
 **Where leads are allowed.** Little League baseball on a 60 ft field does not allow leadoffs: a runner can't
-leave the base until the pitch reaches the batter. 50/70, travel ball and older divisions allow leadoffs.
-Softball runners can leave when the pitcher releases the ball. The app has a setting for this, and it changes
-when runners start to move.
+leave the base until the pitch reaches the batter. 50/70, older divisions and many travel organizations allow
+leadoffs. Softball runners can leave when the pitcher releases the ball; fastpitch pitchers don't make pickoff throws,
+but the catcher back-picks a runner who wanders. Many 10U softball leagues limit stealing (for example, no stealing
+home, or one base on a passed ball). The app has a setting for this, and it changes when runners start to move.
 
 | Play | What happens | Jobs |
 |---|---|---|
 | **Primary lead** (baseball, leadoffs on) | The runner takes a lead before the pitch; the pitcher, from the stretch, throws over | **1B holds the runner** at the bag; 2B cheats toward 1st; RF charges in to back up the pickoff |
 | **Secondary lead** | The runner shuffles off as the pitch is thrown; the catcher back-picks to 1st | 1B sneaks back to the bag after the pitch; RF and 2B back up; P steps out of the lane |
-| **Softball look-back rule** | Once the pitcher has the ball in the circle, a runner off the base must immediately go back or advance. Once she stops, or starts back, any further move off the base is an out | P faces the lead runner and **holds the ball** (a throw releases the look-back) — throw only if she's caught hanging; the base she's off is covered |
+| **Softball look-back rule** | Once the pitcher has the ball in the circle, a runner off the base must immediately go back or try for the next base. Stopping or changing direction can be an out; the exact rule varies by league, so check yours | P faces the lead runner and **holds the ball** (a throw releases the look-back) — throw only if she's caught hanging; the base she's off is covered |
 
 ---
 
@@ -182,7 +195,8 @@ Fastpitch uses the same principles with its own conventions:
 - **The corners play even with the bag or in front of it**, and come in to 30–40 feet from the plate with a runner on
   1st and less than two outs (bunt and slap threat). The second baseman shades toward 1st.
 - **Outfielders play shallower** (about two thirds of the way to the fence).
-- **The second baseman covers 1st** when the first baseman fields the ball.
+- **The second baseman covers 1st** when the first baseman fields the ball. Many leagues use a double (safety)
+  first base: the fielder uses the white half, the runner the colored half.
 - **The look-back rule** replaces pickoffs from a lead.
 - **Fields:** 12U (40 ft pitching distance, 200 ft fence) and 10U (35 ft, 175 ft).
 

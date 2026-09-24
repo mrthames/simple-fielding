@@ -709,7 +709,8 @@
     // on 1st and 2nd that leaves 2nd open — take the sure out at 1st.
     if (isBunt && run.second && F !== 'SS') {
       assign(plan, 'SS', 'cover', b.third, 'Cover 3rd base — the third baseman might charge the bunt.', { delay: 0.1 });
-      if (run.first) plan.notes.push('Runners on 1st and 2nd: the shortstop covers 3rd and the second baseman covers 1st, so 2nd is open. Take the sure out at 1st.');
+      if (run.first && run.third) plan.notes.push('Bases loaded: every runner is forced. Get the force at home, then 1st if there\'s time.');
+      else if (run.first) plan.notes.push('Runners on 1st and 2nd: the shortstop covers 3rd and the second baseman covers 1st, so 2nd is open. Take the sure out at 1st.');
     }
     // Ground ball to the third baseman with a runner on 2nd: the shortstop covers 3rd behind them.
     if (!isBunt && F === '3B' && (run.second || run.first) && !plan.assignments.SS && coverSecond !== 'SS') {
@@ -738,6 +739,9 @@
       if (isBunt && !run.second) {
         assign(plan, '3B', 'hold', charge3,
           'Charge in on the bunt! If the pitcher or catcher calls it, get back to 3rd.', { delay: 0.05 });
+      } else if (isBunt && plan.assignments.SS && plan.assignments.SS.role === 'cover' && near3(plan.assignments.SS.to)) {
+        assign(plan, '3B', 'hold', lerp(b.third, charge3, 0.5),
+          'Read the bunt: charge it if it\'s yours. If the pitcher or catcher has it, get out of the way — the shortstop has 3rd.', { delay: 0.05 });
       } else {
         assign(plan, '3B', 'cover', b.third, targets[0] === 'third' ? 'Cover 3rd base for the force.' : 'Cover 3rd base.');
       }
@@ -746,6 +750,8 @@
       // can't round 2nd and walk into an empty base.
       assign(plan, 'C', 'cover', b.third, 'The third baseman charged — sprint up the line and cover 3rd so the runner can\'t take it.', { delay: 0.4 });
     }
+
+    function near3(pt) { return pt && dist(pt, b.third) < 6; }
 
     // Home
     const needHome = run.second || run.third || targets.includes('home');
@@ -766,7 +772,7 @@
     // Pitcher
     if (F !== 'P' && !plan.assignments.P) {
       if (isBunt) {
-        assign(plan, 'P', 'hold', { x: 0, y: geo.mound.y - 14 * k }, 'Come off the mound toward the plate — if you field it, throw to 1st.', { delay: 0.05 });
+        assign(plan, 'P', 'hold', { x: 0, y: geo.mound.y - 14 * k }, `Come off the mound toward the plate — if you field it, ${targets[0] === 'home' ? 'throw home for the force' : 'throw to 1st'}.`, { delay: 0.05 });
       } else if (at.x > 0 && dist(at, b.first) < 60 * k) {
         assign(plan, 'P', 'hold', lineApproach,
           'Ball hit to your left — break toward 1st! Get to the inside of the line in case you need to cover.', { delay: 0.1 });
@@ -778,7 +784,9 @@
     }
 
     // The fielder
-    const throwText = dp
+    const throwText = dp && stepSelf
+      ? `step on ${baseName(targets[0])}, then throw to 1st for two`
+      : dp
       ? `throw to ${baseName(targets[0])} for the lead runner`
       : stepSelf ? `step on ${baseName(first)}` : `throw to ${baseName(first)}`;
     const look = (!forced.second && run.second) || (!forced.third && run.third);
@@ -902,7 +910,7 @@
       else plan.notes.push('Pop-up priority: the corners take balls in front of them, the shortstop and second baseman take balls behind the corners, the catcher takes pops near the plate, and an outfielder coming in beats an infielder going out. The pitcher points and yells, and lets a fielder catch it.');
       // Infield fly rule: runners on 1st & 2nd (or loaded), less than two outs, a fair pop an infielder can catch.
       if (run.first && run.second && situation.outs < 2 && !ofs.includes(F)) {
-        plan.notes.push('Infield fly rule: with runners on 1st and 2nd (or the bases loaded) and less than two outs, the umpire calls the batter out on a pop-up an infielder can catch easily. Runners can advance at their own risk, just like any caught fly.');
+        plan.notes.push('Infield fly rule: with runners on 1st and 2nd (or the bases loaded) and less than two outs, the umpire calls the batter out on a fair pop-up an infielder can catch with ordinary effort, caught or not. Runners may advance at their own risk: if it\'s caught they must tag up; if it drops they don\'t have to.');
       }
     }
 
@@ -1092,7 +1100,7 @@
       case 'firstThirdSteal': {
         plan.fielder = 'C';
         if (situation.outs === 2) {
-          // Two outs: throw through. The out at 2nd ends the inning before the run can count.
+          // Two outs: throw through. A tag at 2nd before the runner from 3rd touches home ends the inning, no run.
           plan.title = '1st & 3rd — double steal, two outs';
           plan.summary = 'With two outs, the catcher throws through to 2nd. If the tag beats the runner from 3rd home, the run doesn\'t count.';
           plan.target = 'second';
@@ -1107,7 +1115,7 @@
             { id: 'first', from: 'first', to: 'second', start: go, commit: true },
             { id: 'third', from: 'third', to: 'home', start: 'afterFirstThrow' },
           ];
-          plan.notes.push('With two outs, a tag out anywhere ends the inning before a run can score — so throw through to 2nd.');
+          plan.notes.push('With two outs, many teams throw through to 2nd. If the tag beats the runner from 3rd to the plate, the inning is over and the run doesn\'t count. If the runner scores first, it counts, so the throw has to be quick.');
         } else {
           plan.title = '1st & 3rd — double steal';
           plan.summary = 'The runner on 1st steals. The catcher throws toward 2nd, the second baseman cuts it in front of the bag, and the ball comes home if the runner on 3rd breaks.';

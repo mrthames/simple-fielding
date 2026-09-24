@@ -4,7 +4,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '0.7.0';
+  const VERSION = '0.8.0';
   const { POSITIONS, NAMES, LEAGUES } = window.Field;
   const $ = (s) => document.querySelector(s);
   const $$ = (s) => Array.from(document.querySelectorAll(s));
@@ -30,6 +30,8 @@
     t: 0,
     spotlight: null,
     scenarioIndex: -1,
+    askFirst: store.get('askFirst', false),
+    asking: false,
     mode: store.get('mode', 'basic') === 'coach' ? 'coach' : 'basic',
   };
   if (!LEAGUES[state.league]) state.league = 'littleLeague';
@@ -69,6 +71,10 @@
     const dots = $$('#outs span');
     dots.forEach((d, i) => d.classList.toggle('on', i < state.outs));
     $('#outs').setAttribute('aria-label', `${state.outs} out${state.outs === 1 ? '' : 's'}`);
+    const on = ['first', 'second', 'third'].filter((k) => state.runners[k]);
+    const ord = { first: '1st', second: '2nd', third: '3rd' };
+    const bases = on.length === 3 ? 'Bases loaded' : on.length ? `Runner${on.length > 1 ? 's' : ''} on ${on.map((k) => ord[k]).join(' & ')}` : 'Nobody on';
+    $('#sit-strip').textContent = `${state.outs} out${state.outs === 1 ? '' : 's'} · ${bases}${state.batter === 'L' ? ' · Lefty batting' : ''}`;
     for (const b of $$('#batter-seg button')) b.classList.toggle('on', b.dataset.batter === state.batter);
     for (const b of $$('#kind-chips button')) b.classList.toggle('on', b.dataset.kind === state.kind);
     for (const b of $$('#result-chips button')) b.classList.toggle('on', b.dataset.result === state.result);
@@ -100,7 +106,9 @@
   function situationChanged() {
     if (board.on) closeBoard();
     renderSituation();
-    showReady();
+    // Flip between variations of the same hit: re-run it with the new runners or outs.
+    if (state.lastEvent && state.lastEvent.at) rerunHit();
+    else showReady();
   }
 
   function showReady() {
@@ -132,6 +140,14 @@
     clearInkOnNewPlay();
     const ev = Object.assign({}, event);
     if (ev.at && state.result !== 'auto' && !ev.result) ev.result = state.result;
+    // A grounder at an infielder called a hit: it gets through, on the same line into the outfield.
+    if (ev.kind === 'ground' && ev.at && !ev.through && /^(single|double|triple)$/.test(ev.result || '')) {
+      const d = Math.hypot(ev.at.x, ev.at.y);
+      if (d > 8 && d < geo.infieldEdge && Math.abs(ev.at.x) <= ev.at.y) {
+        const reach = (ev.result === 'single' ? 135 : 175) * (geo.base / 60);
+        ev.through = { x: Math.round(ev.at.x / d * reach * 10) / 10, y: Math.round(ev.at.y / d * reach * 10) / 10 };
+      }
+    }
     const plan = window.Engine.planPlay(situation(), ev);
     state.plan = plan;
     // Every play is logged (last 50, on the device) so a tester can report it exactly.
@@ -148,9 +164,35 @@
     title.hidden = false;
     setSpotlight(state.spotlight);
     state.t = 0;
-    if (!opts || opts.autoplay !== false) play();
-    else updateTransport();
+    const auto = !opts || opts.autoplay !== false;
+    if (auto && state.askFirst) {
+      // Ask the team first: freeze at the hit, paths hidden, until Play.
+      state.asking = true;
+      view.setShowPaths(false);
+      view.seek(0);
+      $('#ask-card').hidden = false;
+      updateTransport();
+    } else {
+      endAsk();
+      if (auto) play();
+      else updateTransport();
+    }
   }
+
+  function endAsk() {
+    if (!state.asking) return;
+    state.asking = false;
+    view.setShowPaths(state.showPaths);
+    $('#ask-card').hidden = true;
+  }
+  function setAskFirst(on) {
+    state.askFirst = on;
+    store.set('askFirst', on);
+    $('#btn-ask').setAttribute('aria-pressed', String(on));
+    if (!on) endAsk();
+  }
+  $('#btn-ask').addEventListener('click', () => setAskFirst(!state.askFirst));
+  $('#btn-next').addEventListener('click', () => runScenario(state.scenarioIndex + 1));
 
   function renderResult(plan) {
     $('#result').hidden = false;
@@ -208,6 +250,7 @@
 
   function play() {
     if (!state.plan) return;
+    endAsk();
     if (state.t >= state.plan.timeline.duration) state.t = 0;
     state.playing = true;
     lastFrame = performance.now();
@@ -537,6 +580,7 @@
       d.hold = setTimeout(() => {
         if (drag !== d || d.moved) return;
         stop();
+        endAsk();
         d.scrub = { x0: d.cx, t0: state.t };
         showScrub(true);
       }, 350);
@@ -579,6 +623,7 @@
     // A drag that doesn't start at home plate scrubs the play (a drag from the plate hits the ball).
     if (drag.moved && !drag.fromPlate && state.plan && !drag.scrub) {
       stop();
+      endAsk();
       drag.scrub = { x0: drag.cx, t0: state.t };
       showScrub(true);
       return;
@@ -610,9 +655,10 @@
     if (d.fromPlate && d.moved) {
       hitTo(d.at);
     } else if (!d.moved && !d.fromPlate) {
-      // A plain tap on the field also hits the ball there — easier on a projector or with a mouse.
+      // A plain tap on an empty field hits the ball there (easier with a mouse). Once a play is loaded a tap
+      // is a coach pointing at something, so it never throws the play away.
       if (state.spotlight) { setSpotlight(null); return; }
-      if (Math.hypot(d.at.x, d.at.y) > 12) hitTo(d.at);
+      if (!state.plan && Math.hypot(d.at.x, d.at.y) > 12) hitTo(d.at);
     } else if (!d.moved && d.fromPlate && state.plan) {
       replay();
     }
@@ -763,6 +809,7 @@
     }
     renderSituation();
     runEvent(ev);
+    $('#play-title').textContent = sc.name;
     markQuick(state.scenarioIndex);
     scrollToResultOnPhone();
   }
@@ -853,6 +900,8 @@
     $('#leadoffs-row').hidden = sport === 'softball';
     const lead = $('#other-plays [data-play="primaryLead"]');
     if (lead) lead.textContent = sport === 'softball' ? 'Look-back rule' : 'Lead & pickoff';
+    const second = $('#other-plays [data-play="secondaryLead"]');
+    if (second) second.hidden = sport === 'softball';
     for (const b of $$('#sport-seg button')) {
       b.classList.toggle('on', b.dataset.sport === sport);
       b.setAttribute('aria-pressed', String(b.dataset.sport === sport));
@@ -917,6 +966,7 @@
     else if (e.key === 'ArrowLeft' && e.shiftKey) runScenario(state.scenarioIndex - 1);
     else if (e.key === 'p' || e.key === 'P') toggleProjector();
     else if (e.key === 'r' || e.key === 'R') showReady();
+    else if (e.key === 'a' || e.key === 'A') setAskFirst(!state.askFirst);
     else if (e.key === 'Escape') setSpotlight(null);
   });
 
@@ -1112,6 +1162,7 @@
   buildLibrary();
   buildQuick();
   setMode(state.mode);
+  setAskFirst(state.askFirst);
   setGeometry();
   renderSituation();
   fromHash();

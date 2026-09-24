@@ -361,7 +361,7 @@
       const g = el('g', { class: 'roll-handle', transform: `translate(${at.x},${-at.y})` }, this.layers.handle);
       el('circle', { r: 8, class: 'rh-ring' }, g);
       const t = el('text', { class: 'rh-text', y: 13 }, g);
-      t.textContent = 'drag if it got through';
+      t.textContent = 'Got through? Drag it';
     }
 
     // ---------------------------------------------------------------------------------------------

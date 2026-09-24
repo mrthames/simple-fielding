@@ -399,3 +399,33 @@ test('a grounder that gets through: drag from the ring to the outfield', async (
   expect(s.fielder).toBe('LF');
   expect(s.missedBy).toBe('SS');
 });
+
+test('coach flow: a tap on a loaded play keeps it; changing runners re-runs the same hit', async ({ page }) => {
+  await dragBall(page, { x: -24, y: 78 });
+  const before = await page.evaluate(() => (window as any).SimpleFielding.state.lastEvent.at);
+  const pt = await page.evaluate(() => {
+    const svg = document.getElementById('field') as unknown as SVGSVGElement;
+    const p = svg.createSVGPoint(); p.x = 90; p.y = -120; const q = p.matrixTransform(svg.getScreenCTM()!); return { x: q.x, y: q.y };
+  });
+  await page.mouse.click(pt.x, pt.y);
+  expect(await page.evaluate(() => (window as any).SimpleFielding.state.lastEvent.at)).toEqual(before);
+  await page.locator('#mini-diamond [data-base="first"]').click();
+  await expect(page.locator('#result')).toBeVisible();
+  expect(await page.evaluate(() => (window as any).SimpleFielding.state.plan.target)).toBe('second');
+  await expect(page.locator('#sit-strip')).toContainText('Runner on 1st');
+});
+
+test('ask first: the play waits at the hit with paths hidden until Play', async ({ page }) => {
+  await page.locator('#btn-ask').click();
+  await dragBall(page, { x: -80, y: 135 });
+  await expect(page.locator('#ask-card')).toBeVisible();
+  expect(await page.evaluate(() => (window as any).SimpleFielding.state.playing)).toBe(false);
+  await page.locator('#btn-play').click();
+  await expect(page.locator('#ask-card')).toBeHidden();
+});
+
+test('a single on a grounder at an infielder gets through', async ({ page }) => {
+  await page.locator('#result-chips [data-result="single"]').click();
+  await dragBall(page, { x: -22, y: 76 });
+  await expect(page.locator('#result-title')).toContainText('Through the infield');
+});
