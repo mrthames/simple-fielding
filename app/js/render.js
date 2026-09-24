@@ -147,7 +147,30 @@
         el('circle', { r: 6, class: 'body' }, g);
         const t = el('text', { class: 'label', y: 0.2 }, g);
         t.textContent = pos;
-        outer.addEventListener('pointerup', (e) => { e.stopPropagation(); if (this.onPick) this.onPick(pos); });
+        // Name tag under the circle, shown when the field is labelled with players' names.
+        const tag = el('g', { class: 'tag', transform: 'translate(0,10.5)' }, g);
+        el('rect', { class: 'tag-bg', x: -8, y: -3.4, width: 16, height: 6.8, rx: 3.4 }, tag);
+        el('text', { class: 'tag-text', y: 0.2 }, tag);
+        tag.style.display = 'none';
+
+        // Tap spotlights; press and hold opens the position editor.
+        let hold = null, held = false, start = null;
+        const cancel = () => { if (hold) { clearTimeout(hold); hold = null; } };
+        outer.addEventListener('pointerdown', (e) => {
+          held = false; start = { x: e.clientX, y: e.clientY };
+          cancel();
+          hold = setTimeout(() => { hold = null; held = true; if (this.onLongPress) this.onLongPress(pos); }, 550);
+        });
+        outer.addEventListener('pointermove', (e) => { if (start && Math.hypot(e.clientX - start.x, e.clientY - start.y) > 8) cancel(); });
+        outer.addEventListener('pointerleave', cancel);
+        outer.addEventListener('pointercancel', cancel);
+        outer.addEventListener('contextmenu', (e) => e.preventDefault());
+        outer.addEventListener('pointerup', (e) => {
+          e.stopPropagation(); cancel();
+          if (held) { held = false; return; }
+          if (this.onPick) this.onPick(pos);
+        });
+        outer._cancelHold = cancel;
         this.actors[pos] = outer;
       }
       this.ballShadow = el('ellipse', { rx: 2.2, ry: 1.2, class: 'ball-shadow' }, this.layers.ball);
@@ -337,6 +360,30 @@
 
     // Draw a board state: free positions, no paths, no timeline.
     setBoardMode(on) { this.boardMode = on; }
+
+    cancelHolds() { for (const pos of POSITIONS) this.actors[pos]._cancelHold(); }
+
+    // labels[pos] = { inner, tag } from Team.labelFor.
+    setLabels(labels) {
+      for (const pos of POSITIONS) {
+        const l = labels[pos] || { inner: pos, tag: '' };
+        const g = this.actors[pos];
+        const t = g.querySelector('.label');
+        t.textContent = l.inner;
+        t.classList.toggle('long', l.inner.length >= 3);
+        const tag = g.querySelector('.tag');
+        if (l.tag) {
+          const text = l.tag.length > 12 ? l.tag.slice(0, 11) + '…' : l.tag;
+          tag.querySelector('.tag-text').textContent = text;
+          const w = Math.max(10, text.length * 3.1 + 5);
+          const r = tag.querySelector('.tag-bg');
+          r.setAttribute('x', -w / 2); r.setAttribute('width', w);
+          tag.style.display = '';
+        } else {
+          tag.style.display = 'none';
+        }
+      }
+    }
 
     showBoard(board) {
       this.clearLayer('paths'); this.clearLayer('marks'); this.clearLayer('throws'); this.clearLayer('captions');

@@ -4,7 +4,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '0.2.0';
+  const VERSION = '0.3.0';
   const { POSITIONS, NAMES, LEAGUES } = window.Field;
   const $ = (s) => document.querySelector(s);
   const $$ = (s) => Array.from(document.querySelectorAll(s));
@@ -36,6 +36,24 @@
 
   const view = new window.FieldView($('#field'));
   let geo;
+
+  // The coach's team: names on the field and in the job list. Stored on this device only.
+  const T = window.Team;
+  let team;
+  try { team = T.load(window.localStorage); } catch (e) { team = T.empty(); }
+
+  function who(pos) {
+    const l = T.labelFor(team, pos);
+    return l.name ? `${NAMES[pos]} · ${l.name}` : NAMES[pos];
+  }
+
+  function applyLabels() {
+    const labels = {};
+    for (const pos of POSITIONS) labels[pos] = T.labelFor(team, pos);
+    view.setLabels(labels);
+    if (state.plan) renderResult(state.plan);
+    setSpotlight(state.spotlight);
+  }
 
   function situation() {
     return { runners: Object.assign({}, state.runners), outs: state.outs, batter: state.batter, league: state.league, leadoffs: state.leadoffs };
@@ -135,7 +153,7 @@
       const li = document.createElement('li');
       li.className = `job role-${j.role}`;
       li.dataset.pos = j.pos;
-      li.innerHTML = `<span class="badge">${j.pos}</span><span class="job-text"><strong>${NAMES[j.pos]}</strong> ${escapeHtml(j.job)}</span>`;
+      li.innerHTML = `<span class="badge">${j.pos}</span><span class="job-text"><strong>${escapeHtml(who(j.pos))}</strong> ${escapeHtml(j.job)}</span>`;
       li.addEventListener('click', () => setSpotlight(state.spotlight === j.pos ? null : j.pos));
       jobs.appendChild(li);
     }
@@ -153,13 +171,13 @@
     if (pos && state.plan) {
       const j = state.plan.assignments[pos];
       card.className = `spot-card role-${j.role}`;
-      card.innerHTML = `<span class="badge">${pos}</span><div><strong>${NAMES[pos]}</strong><p>${escapeHtml(j.job)}</p></div>`;
+      card.innerHTML = `<span class="badge">${pos}</span><div><strong>${escapeHtml(who(pos))}</strong><p>${escapeHtml(j.job)}</p></div>`;
       card.hidden = false;
       const li = $(`#jobs li[data-pos="${pos}"]`);
       if (li && window.matchMedia('(min-width: 900px)').matches) li.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
     } else if (pos) {
       card.className = 'spot-card';
-      card.innerHTML = `<span class="badge">${pos}</span><div><strong>${NAMES[pos]}</strong><p>Hit the ball to see what the ${NAMES[pos].toLowerCase()} does.</p></div>`;
+      card.innerHTML = `<span class="badge">${pos}</span><div><strong>${escapeHtml(who(pos))}</strong><p>Hit the ball to see what the ${NAMES[pos].toLowerCase()} does. Press and hold a player to put a name on them.</p></div>`;
       card.hidden = false;
     } else {
       card.hidden = true;
@@ -495,6 +513,7 @@
     const p = view.toField(e.clientX, e.clientY);
     drag.at = p;
     if (Math.hypot(p.x - drag.start.x, p.y - drag.start.y) > 6) drag.moved = true;
+    if (drag.moved) view.cancelHolds();
     if (drag.fromPlate && drag.moved) {
       view.showDrag({ x: 0, y: 1 }, p, state.kind);
       $('#field-hint').hidden = true;
@@ -526,6 +545,7 @@
     const baseEl = e.target.closest && e.target.closest('.base');
     if (baseEl) toggleRunner(baseEl.dataset.base);
   });
+  view.onLongPress = (pos) => { if (!board.on) { stop(); window.TeamUI.openPosition(pos); } };
   view.onPick = (pos) => { if (!drag || !drag.moved) setSpotlight(state.spotlight === pos ? null : pos); };
 
   function hitTo(p) {
@@ -704,6 +724,8 @@
 
   document.addEventListener('keydown', (e) => {
     if (e.target.matches('input, select, textarea')) return;
+    if (document.querySelector('dialog[open]')) return; // a sheet is open: its own keys only
+    if ((e.key === 't' || e.key === 'T') && !board.on) { window.TeamUI.openTeam(); return; }
     if (e.key === 'w' || e.key === 'W') { board.on ? closeBoard() : openBoard(); return; }
     if (board.on) {
       const tools = { m: 'move', d: 'pen', a: 'arrow', e: 'eraser' };
@@ -724,12 +746,14 @@
     geo = window.Field.geometry(state.league);
     view.setGeometry(geo);
     view.setShowPaths(state.showPaths);
+    applyLabels();
     showReady();
   }
 
   // Test hook: lets the Playwright suite drive plays without synthesising drags.
-  window.SimpleFielding = { state, board, openBoard, closeBoard, runEvent, runScenario, hitTo, seekEnd() { if (state.plan) { stop(); state.t = state.plan.timeline.duration; view.seek(state.t); updateTransport(); } } };
+  window.SimpleFielding = { state, team, board, openBoard, closeBoard, runEvent, runScenario, hitTo, seekEnd() { if (state.plan) { stop(); state.t = state.plan.timeline.duration; view.seek(state.t); updateTransport(); } } };
 
+  window.TeamUI.init({ team, onChange: (t) => { T.save(window.localStorage, t); applyLabels(); } });
   buildLibrary();
   setGeometry();
   renderSituation();

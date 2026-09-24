@@ -2,6 +2,26 @@
 
 ---
 
+## [2026-09-23] v0.3.0 — Your team on the field
+
+### Team
+- A **Team** sheet: add players with first name, last name and number. They start on the bench.
+- **Drag and drop** players onto the nine positions, laid out like the field. It works with a finger, an Apple Pencil or a mouse. Drop onto a filled position to swap; drop on the bench to sit someone. Without dragging, tap a player and then a position.
+- **Press and hold a fielder on the field** to pick a player from the roster, type a one-off name, or set it back to just the position.
+- **Show on the field:** position (the default), first name, last name, initials, or number. Names appear on a tag under the circle; initials and numbers go inside it.
+- The job list and the spotlight card use the name: "Shortstop · Maya R.".
+- Saved on the device only. Nothing is uploaded and there's no account; these are children's names.
+- Keyboard: `T` opens the team.
+
+### Fixes
+- On narrow phones the header drops the wordmark so all the buttons fit.
+
+### Tests
+- 10 new tests for the roster data (assigning, swapping, one-off names, label styles, bad data in storage). 35 data and engine tests in all.
+- 3 new UI tests: drag to a position, tap to a position with the name in the job list (surviving a reload), and press-and-hold naming. 32 UI runs.
+
+---
+
 ## [2026-09-23] v0.2.0 — Whiteboard mode, and the Simple Pitch Counter look
 
 ### Whiteboard

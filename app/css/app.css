@@ -135,6 +135,10 @@ svg { display: block; }
 .player .body { fill: var(--team); stroke: #fff; stroke-width: 1.1; }
 .player .ring { fill: none; stroke: transparent; stroke-width: 2.2; }
 .player .label { fill: #fff; font: 800 5.4px var(--font); text-anchor: middle; dominant-baseline: middle; pointer-events: none; }
+.player .label.long { font-size: 4.2px; }
+.player .tag { pointer-events: none; }
+.player .tag-bg { fill: rgba(11, 28, 58, .88); }
+.player .tag-text { fill: #fff; font: 700 4.6px var(--font); text-anchor: middle; dominant-baseline: middle; }
 .player.role-field .ring { stroke: var(--r-field); }
 .player.role-cutoff .ring, .player.role-relay .ring, .player.role-trail .ring { stroke: var(--r-cutoff); }
 .player.role-cover .ring { stroke: var(--r-cover); }
@@ -418,4 +422,112 @@ body.board-on .field[data-tool="move"] { cursor: grab; }
 @media (max-width: 700px) {
   .field-hint { top: 8px; bottom: auto; font-size: 13px; padding: 8px 12px; gap: 8px; }
   .field-hint .hint-ball { width: 18px; height: 18px; }
+}
+
+/* ---------------------------------------------------------------- team */
+.sheet.wide { width: min(760px, calc(100% - 24px)); }
+.team-label { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin: 10px 0 4px; font-weight: 600; }
+.team-label .seg { flex-wrap: wrap; }
+.team-help { margin: 6px 0 12px; }
+
+.lineup {
+  display: grid; gap: 8px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-areas:
+    "lf cf rf"
+    "ss .  sb"
+    "tb p  fb"
+    ".  c  .";
+  padding: 12px; border-radius: var(--r-lg);
+  background: linear-gradient(180deg, #4EA457 0 55%, #C9925C 55% 100%);
+}
+.slot {
+  min-width: 0;
+  min-height: 68px; padding: 6px; border-radius: var(--r);
+  background: rgba(255, 255, 255, .92); border: 2px solid transparent;
+  display: flex; flex-direction: column; gap: 4px;
+}
+.slot-pos { font-size: 12px; color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.slot-pos b { color: var(--brand); margin-right: 2px; }
+.slot-open { font-size: 13px; color: var(--ink-3); padding: 6px 4px; }
+.slot-oneoff { font-size: 14px; font-weight: 600; padding: 6px 4px; }
+.slot-oneoff small { font-weight: 400; color: var(--ink-3); }
+.drop.over { border-color: var(--brand); background: var(--brand-bg); }
+
+.bench-head { display: flex; align-items: baseline; justify-content: space-between; }
+.bench {
+  display: flex; flex-wrap: wrap; gap: 8px; min-height: 60px; padding: 10px;
+  border-radius: var(--r-lg); background: var(--bg); border: 2px dashed var(--line-2);
+}
+.bench-empty { margin: 0; color: var(--ink-3); font-size: 14px; align-self: center; }
+
+.chip {
+  display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 4px 4px 4px 6px;
+  border-radius: 10px; background: var(--panel); border: 0.5px solid var(--line-2);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, .08);
+  font-size: 14px; font-weight: 600; cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none;
+  max-width: 100%;
+}
+.slot .chip { width: 100%; }
+.chip-num {
+  flex: none; min-width: 26px; height: 26px; padding: 0 4px; border-radius: 13px;
+  display: grid; place-items: center; background: var(--brand); color: #fff; font-size: 12px; font-weight: 800;
+}
+.chip-num:empty { background: var(--chip); }
+.chip-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.chip-edit { flex: none; width: 32px; height: 32px; display: grid; place-items: center; border-radius: 8px; color: var(--ink-3); cursor: pointer; }
+.chip-edit svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.chip.selected { outline: 3px solid var(--brand); }
+.chip.dragging { opacity: .35; }
+.chip.ghost { position: fixed; left: 0; top: 0; z-index: 1000; pointer-events: none; box-shadow: 0 10px 30px rgba(0, 0, 0, .3); opacity: .95; }
+
+.add-player { display: flex; gap: 8px; margin-top: 14px; }
+.add-player input, .pe-name input, .player-form input {
+  flex: 1; min-width: 0; font: inherit; font-size: 16px; padding: 10px 12px;
+  border-radius: 10px; border: 0.5px solid var(--line-2); background: var(--panel); color: var(--ink);
+}
+.add-player input.num { flex: 0 0 64px; }
+.add-player button, .pe-name button {
+  flex: none; padding: 0 16px; min-height: 44px; border: 0; border-radius: 10px; background: var(--brand); color: #fff; font-weight: 700;
+}
+
+.pe-list { display: flex; flex-direction: column; gap: 6px; margin: 8px 0 12px; }
+.pe-player {
+  display: flex; align-items: center; gap: 10px; min-height: 48px; padding: 6px 12px; text-align: left;
+  border: 0; border-radius: var(--r); background: var(--bg); font-size: 15px; font-weight: 600;
+}
+.pe-player small { margin-left: auto; color: var(--ink-3); font-weight: 500; }
+.pe-player.on { background: var(--brand-bg); outline: 2px solid var(--brand); }
+.pe-name { display: flex; gap: 8px; }
+.pe-generic { width: 100%; margin-top: 10px; min-height: 44px; border: 0.5px solid var(--line-2); border-radius: 10px; background: var(--panel); font-weight: 600; }
+
+.player-form label { display: flex; flex-direction: column; gap: 4px; margin: 8px 0; font-size: 13px; color: var(--ink-2); font-weight: 600; }
+.player-actions { display: flex; gap: 8px; margin-top: 16px; }
+.player-actions button { flex: 1; min-height: 44px; border-radius: 10px; font-weight: 700; border: 0.5px solid var(--line-2); background: var(--panel); }
+.player-actions .primary { background: var(--brand); color: #fff; border-color: var(--brand); }
+.player-actions .danger { color: var(--red); }
+
+@media (max-width: 520px) {
+  .lineup { gap: 5px; padding: 8px; }
+  .slot { min-height: 60px; padding: 4px; }
+  .slot-pos { font-size: 11px; }
+  .chip { font-size: 13px; gap: 4px; }
+  .chip-edit { width: 26px; }
+  #btn-team span { display: none; }
+  .slot .chip-edit { display: none; }
+  .slot .chip { padding-right: 6px; }
+}
+
+/* Narrow phones: the header keeps its buttons and drops the wordmark. */
+@media (max-width: 430px) {
+  .brand-name { display: none; }
+  .topbar { padding-left: 12px; padding-right: 12px; }
+}
+@media (max-width: 520px) {
+  .team-label .seg { width: 100%; display: grid; grid-template-columns: repeat(5, 1fr); }
+  .team-label .seg button { padding: 0 2px; font-size: 12px; min-width: 0; }
+  .add-player { flex-wrap: wrap; }
+  .add-player input { flex: 1 1 40%; }
+  .add-player input.num { flex: 0 0 60px; }
+  .add-player button { flex: 1 1 auto; }
 }

@@ -31,6 +31,9 @@ A companion to [Simple Pitch Counter](https://github.com/mrthames/simple-pitch-c
   runners and the ball, and draw chalk lines and arrows on top. An Apple Pencil or stylus always draws and a
   finger always moves, and pressure sets the line width. It has undo/redo, clear and reset, and the drawing
   stays over the play when you replay it.
+- **Your team** (`T`): add players and drag them into positions, or press and hold a fielder to name them. The
+  field can show position, first name, last name, initials or number, so a coach can talk to their own
+  players. Stored on the device only.
 - **Projector mode** (`P`): full screen, with the field only.
 
 [`docs/SCENARIOS.md`](docs/SCENARIOS.md) is the coaching reference: every play, every job, and the youth
@@ -46,6 +49,8 @@ simple-fielding/
 │   ├── js/field.js       field geometry, in feet
 │   ├── js/engine.js      the play engine: situation + batted ball → every fielder's job → timeline
 │   ├── js/scenarios.js   the play library
+│   ├── js/team.js        the roster: players, positions, label styles (stored on the device)
+│   ├── js/teamui.js      the Team sheet, drag-and-drop, the press-and-hold position editor
 │   ├── js/render.js      SVG drawing and animation playback
 │   └── js/app.js         UI: situation, drag-to-hit, playback
 ├── website/              the companion site (landing, privacy)

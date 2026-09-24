@@ -160,3 +160,72 @@ test('whiteboard: tapping a base adds a runner', async ({ page }) => {
   await page.mouse.click(p.x, p.y);
   await expect(page.locator('.runner')).toHaveCount(1);
 });
+
+// ---- Team
+
+async function addPlayer(page: Page, first: string, last: string, num: string) {
+  await page.fill('#add-player [name=first]', first);
+  await page.fill('#add-player [name=last]', last);
+  await page.fill('#add-player [name=num]', num);
+  await page.click('#add-player button');
+}
+
+test('team: add players, drag one to shortstop, and the field shows their name', async ({ page }) => {
+  await page.locator('#btn-team').click();
+  await addPlayer(page, 'Maya', 'Rivera', '7');
+  await addPlayer(page, 'Leo', 'Park', '12');
+  await expect(page.locator('#bench .chip')).toHaveCount(2);
+
+  const chip = page.locator('#bench .chip', { hasText: 'Maya' });
+  const cb = (await chip.boundingBox())!;
+  const sb = (await page.locator('.slot[data-drop="SS"]').boundingBox())!;
+  await page.mouse.move(cb.x + 20, cb.y + cb.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(sb.x + sb.width / 2, sb.y + sb.height / 2, { steps: 10 });
+  await page.mouse.up();
+  await expect(page.locator('.slot[data-drop="SS"] .chip')).toContainText('Maya');
+
+  await page.locator('#label-seg [data-label="first"]').click();
+  await page.keyboard.press('Escape');
+  await expect(page.locator('.player[data-pos="SS"] .tag-text')).toHaveText('Maya');
+
+  await page.locator('#label-seg [data-label="number"]').evaluate((b: HTMLElement) => b.click());
+  await expect(page.locator('.player[data-pos="SS"] .label')).toHaveText('7');
+});
+
+test('team: tap a player then a position; job list uses their name; it survives a reload', async ({ page }) => {
+  await page.locator('#btn-team').click();
+  await addPlayer(page, 'Leo', 'Park', '12');
+  await page.locator('#bench .chip .chip-name').click();
+  await page.locator('.slot[data-drop="2B"] .slot-pos').click();
+  await expect(page.locator('.slot[data-drop="2B"] .chip')).toContainText('Leo');
+  await page.keyboard.press('Escape');
+  await dragBall(page, { x: 80, y: 135 });
+  await expect(page.locator('#jobs li[data-pos="2B"]')).toContainText('Leo P.');
+  await page.reload();
+  await page.locator('#btn-team').click();
+  await expect(page.locator('.slot[data-drop="2B"] .chip')).toContainText('Leo');
+});
+
+test('team: press and hold a fielder to name them, then back to just the position', async ({ page }) => {
+  await page.locator('#btn-team').click();
+  await page.locator('#label-seg [data-label="first"]').click();
+  await page.keyboard.press('Escape');
+  const box = (await page.locator('.player[data-pos="CF"] .body').boundingBox())!;
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await page.mouse.down();
+  await page.waitForTimeout(700);
+  await page.mouse.up();
+  await expect(page.locator('#pos-editor')).toBeVisible();
+  await expect(page.locator('#pe-title')).toHaveText('Center field');
+  await page.fill('#pe-name [name=oneoff]', 'Sam');
+  await page.click('#pe-name button');
+  await expect(page.locator('.player[data-pos="CF"] .tag-text')).toHaveText('Sam');
+
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await page.mouse.down();
+  await page.waitForTimeout(700);
+  await page.mouse.up();
+  await page.click('#pe-generic');
+  await expect(page.locator('.player[data-pos="CF"] .tag')).toBeHidden();
+});
