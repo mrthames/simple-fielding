@@ -4,7 +4,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '0.32.1';
+  const VERSION = '0.33.0';
   const Field = window.Field;
   const BATTED = ['ground', 'line', 'fly', 'pop', 'bunt'];
   const { POSITIONS, NAMES, LEAGUES } = Field;
@@ -319,7 +319,7 @@
   // The title card: the play's name, and while asking, the question under it.
   function setTitle(name) {
     const t = $('#play-title');
-    t.innerHTML = '<span class="pt-name"></span><span class="pt-ask" hidden>Where does everybody go? <span class="pt-quiz">Drag a player to answer.</span></span><span class="pt-sit"></span>';
+    t.innerHTML = '<span class="pt-name"></span><span class="pt-ask" hidden>Where does everybody go? <span class="pt-quiz">Tap a player to see their job.</span></span><span class="pt-sit"></span>';
     t.querySelector('.pt-name').textContent = name;
     t.querySelector('.pt-sit').textContent = $('#sit-strip').textContent;
     t.querySelector('.pt-ask').hidden = !state.asking;
@@ -1787,9 +1787,10 @@
   let qdrag = null;
   const quiz = { tries: 0, right: 0 };
   svg.addEventListener('pointerdown', (e) => {
-    if (!state.asking || !state.plan || board.on || state.plan.drawn) return;
+    // Only in the trainer, and only your own player. Everywhere else a tap on a player shows their job.
+    if (!state.trainer || !state.trainer.waiting || !state.plan || board.on) return;
     const pl = e.target.closest && e.target.closest('.player');
-    if (!pl) return;
+    if (!pl || pl.dataset.pos !== state.trainer.pos) return;
     e.stopImmediatePropagation();
     e.preventDefault();
     const pos = pl.dataset.pos;

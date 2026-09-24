@@ -638,28 +638,25 @@ test('rundown button plays a rundown with everyone\'s job', async ({ page }) => 
   await expect(page.locator('#jobs li')).toHaveCount(9);
 });
 
-test('quiz: drag a fielder while the play waits at the hit; it grades the guess and plays the answer', async ({ page }) => {
+test('ask first: tap a player to see their job and only their route; dragging does not move them', async ({ page }) => {
   await page.evaluate(() => localStorage.removeItem('sf.askFirst'));
   await page.reload();
   await page.locator('#quick-list .lib-item', { hasText: 'Single to left, runner on 1st' }).click();
-  await expect(page.locator('#play-title .pt-ask')).toBeVisible();
-  // Drag the shortstop to exactly where the play sends them.
-  const pts = await page.evaluate(() => {
-    const st = (window as any).SimpleFielding.state;
-    const a = st.plan.assignments.SS;
-    const want = a.path && a.path.length ? a.path[a.path.length - 1] : a.to;
-    const svg = document.getElementById('field') as unknown as SVGSVGElement;
-    const m = svg.getScreenCTM()!;
-    const pt = (x: number, y: number) => { const p = svg.createSVGPoint(); p.x = x; p.y = -y; const q = p.matrixTransform(m); return { x: q.x, y: q.y }; };
-    const r = document.querySelector('.player[data-pos="SS"]')!.getBoundingClientRect();
-    return { from: { x: r.x + r.width / 2, y: r.y + r.height / 2 }, to: pt(want.x, want.y) };
-  });
-  await page.mouse.move(pts.from.x, pts.from.y);
-  await page.mouse.down();
-  await page.mouse.move(pts.to.x, pts.to.y, { steps: 10 });
-  await page.mouse.up();
-  await expect(page.locator('#toast')).toContainText('Yes!');
-  await expect(page.locator('.quiz-guess.right')).toHaveCount(1);
+  await expect(page.locator('#play-title .pt-ask')).toContainText('Tap a player');
+  // Routes are hidden while the play asks.
+  await expect(page.locator('.path[data-pos="SS"]')).toBeHidden();
+  const r = await page.locator('.player[data-pos="SS"]').boundingBox();
+  const c = { x: r!.x + r!.width / 2, y: r!.y + r!.height / 2 };
+  // A drag leaves the shortstop where they are.
+  const before = await page.evaluate(() => (window as any).SimpleFielding.state.plan && document.querySelector('.player[data-pos="SS"]')!.getAttribute('transform'));
+  await page.mouse.move(c.x, c.y); await page.mouse.down(); await page.mouse.move(c.x + 80, c.y - 40, { steps: 6 }); await page.mouse.up();
+  expect(await page.evaluate(() => document.querySelector('.player[data-pos="SS"]')!.getAttribute('transform'))).toBe(before);
+  // A tap shows their job, and their route alone.
+  await page.mouse.click(c.x, c.y);
+  await expect(page.locator('#spot-card')).toBeVisible();
+  await expect(page.locator('.path[data-pos="SS"]')).toBeVisible();
+  await expect(page.locator('.path[data-pos="LF"]')).toBeHidden();
+  await expect(page.locator('.quiz-guess')).toHaveCount(0);
 });
 
 test('timeline markers jump to a moment in the play; ¼× speed exists', async ({ page }) => {

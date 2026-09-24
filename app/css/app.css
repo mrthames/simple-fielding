@@ -897,3 +897,7 @@ body.board-on .field-wrap, body.projector .field-wrap { overscroll-behavior: non
 body.nohit #hit-card { opacity: .55; }
 body.nohit #hit-card:hover, body.nohit #hit-card:focus-within { opacity: 1; }
 .vr-btn { border: 0; border-radius: 8px; padding: 5px 10px; background: #a855f7; color: #fff; font-weight: 800; }
+
+/* Paths off (and while a play asks "where does everybody go?"): only the tapped player's route shows. */
+.field.paths-off .path:not(.spot), .field.paths-off .dest:not(.spot), .field.paths-off .lineup,
+.field.paths-off .ghost, .field.paths-off .ghost-dot { display: none; }

@@ -343,8 +343,7 @@
           el('circle', { cx: end.x, cy: -end.y, r: 5.5 * this.us, class: 'ball-target through' }, this.layers.target);
         }
       }
-      this.layers.paths.style.display = this.showPaths ? '' : 'none';
-      this.layers.marks.style.display = this.showPaths ? '' : 'none';
+      this.svg.classList.toggle('paths-off', this.showPaths === false);
       this.seek(0);
     }
 
@@ -419,12 +418,10 @@
       }
     }
 
+    // Paths off hides every route except the spotlit player's: tap a player to see just where they go.
     setShowPaths(v) {
       this.showPaths = v;
-      if (this.layers) {
-        this.layers.paths.style.display = v ? '' : 'none';
-        this.layers.marks.style.display = v ? '' : 'none';
-      }
+      this.svg.classList.toggle('paths-off', !v);
     }
 
     setSpotlight(pos) { this.spotlight = pos; this.applySpotlight(); if (this.plan) this.drawLooks(this.t); }

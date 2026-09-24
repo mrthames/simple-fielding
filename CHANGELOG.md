@@ -2,6 +2,14 @@
 
 ---
 
+## [2026-09-25] v0.33.0 — Ask first: tap a player to see their job
+
+- **While a play asks "Where does everybody go?", tap a player** to see their job card and their route, with the other routes still hidden. Tap another player to see theirs.
+- **No more dragging players to answer here.** It read as "move this player", which was confusing when a player's job was to stay put. Dragging to answer is moving to the fielding trainer that's coming next, where it's the whole point.
+- With chalk paths turned off in Settings, tapping a player shows just that player's route too.
+
+---
+
 ## [2026-09-25] v0.32.1 — A new field starts a clean slate
 
 - **Changing the level or the park resets the play:**
