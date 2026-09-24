@@ -321,3 +321,19 @@ test('a plain drag on the field scrubs right away', async ({ page }) => {
   await page.mouse.up();
   await expect(page.locator('#play-title')).toHaveText('Single to left field');
 });
+
+test('dragging the timeline slider moves the play (while paused)', async ({ page }) => {
+  await dragBall(page, { x: -80, y: 135 });
+  await page.waitForTimeout(600);
+  await page.locator('#btn-play').click(); // pause
+  const box = (await page.locator('#scrub').boundingBox())!;
+  const before = await page.evaluate(() => (window as any).SimpleFielding.state.t);
+  const value = Number(await page.locator('#scrub').inputValue());
+  const y = box.y + box.height / 2;
+  await page.mouse.move(box.x + box.width * value / 1000, y);
+  await page.mouse.down();
+  await page.mouse.move(box.x + box.width * 0.9, y, { steps: 8 });
+  await page.mouse.up();
+  const after = await page.evaluate(() => (window as any).SimpleFielding.state.t);
+  expect(after).toBeGreaterThan(before + 1);
+});

@@ -4,7 +4,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '0.6.0';
+  const VERSION = '0.6.1';
   const { POSITIONS, NAMES, LEAGUES } = window.Field;
   const $ = (s) => document.querySelector(s);
   const $$ = (s) => Array.from(document.querySelectorAll(s));
@@ -657,8 +657,10 @@
   });
   $('#scrub').addEventListener('input', (e) => {
     if (!state.plan) return;
+    // Read the slider before stop(): stopping redraws the slider at the old time.
+    const v = Number(e.target.value);
     stop();
-    state.t = (e.target.value / 1000) * state.plan.timeline.duration;
+    state.t = (v / 1000) * state.plan.timeline.duration;
     view.seek(state.t);
     updateTransport();
   });

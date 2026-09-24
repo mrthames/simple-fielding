@@ -2,6 +2,12 @@
 
 ---
 
+## [2026-09-24] v0.6.1 — The timeline slider works
+
+- **Fix:** dragging the timeline slider did nothing; the thumb snapped back on every move. Its handler paused the play *before* reading the slider, and pausing redraws the slider at the old time. It has been broken since v0.1 and was found testing in Helium and on iPhone. A new test drags the slider itself.
+
+---
+
 ## [2026-09-24] v0.6.0 — Scrub through a play
 
 - **Drag on the field to scrub.** Drag left or right anywhere on the field, except from home plate, and the play moves back and forth under your finger: the width of the field is the whole play. Press and hold also works, and shows the scrub bar before you move. A drag from home plate still hits the ball, and a tap still hits it where you tap.
