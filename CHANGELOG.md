@@ -2,6 +2,23 @@
 
 ---
 
+## [2026-09-25] v0.18.0 — Defensive calls: 1st & 3rd, and bunt defense
+
+- **1st & 3rd defense** (in the Steals card): **Auto · Through · Cut · To P · To 3rd**.
+  - **Auto** uses the cut play for youth, and throws through from 13U–14U up. With two outs it's always through.
+  - **Through:** the catcher throws to 2nd. If the runner on 3rd breaks on the throw, the throw goes home from 2nd.
+  - **Cut:** the second baseman cuts it in front of 2nd.
+  - **To P:** the catcher throws back to the pitcher, and the runner from 1st takes 2nd for free.
+  - **To 3rd:** the catcher throws behind the runner at 3rd.
+- **Bunt defense** (shown when Bunt is picked): **Auto · Standard · Wheel · 1B crash**.
+  - **Standard:** the third baseman holds 3rd for the force, and the shortstop holds 2nd.
+  - **Wheel** (softball: rotation): both corners crash on the pitch, and the shortstop rotates to 3rd.
+  - **1B crash:** the first baseman breaks early with a runner on 1st.
+- **With a called defense, and at every level from 13U–14U up,** the defense goes after the lead runner when the clock says the throw beats them. Otherwise it takes the out at 1st.
+- The calls carry into saved plays and share links.
+
+---
+
 ## [2026-09-25] v0.17.0 — Infield depth
 
 - **Infield: Auto · DP · In · Corners in**, in the Situation card. This was the coach review's top missing option.

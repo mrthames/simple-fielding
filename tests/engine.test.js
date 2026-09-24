@@ -343,3 +343,17 @@ test('infield depth: in throws home, corners in splits it, DP depth moves the mi
   const d = Share.decode(Share.encode({ league: 'pro', runners: { third: true }, outs: 1, depth: 'cornersIn' }, { kind: 'ground', at: { x: -30, y: 62 } }, 'x'));
   assert.equal(d.situation.depth, 'cornersIn');
 });
+
+test('defensive calls: 1st & 3rd (through, cut, to the pitcher, to 3rd) and bunt defenses (wheel forces the lead runner)', () => {
+  const on = (...b) => Object.fromEntries(b.map((x) => [x, true]));
+  const f3 = (d13, league = 'highSchool') => Engine.planPlay({ league, runners: on('first', 'third'), outs: 0, leadoffs: true, d13 }, { kind: 'firstThirdSteal' });
+  assert.match(f3().title, /throw through/, 'HS default is through');
+  assert.match(f3(undefined, 'littleLeague').title, /double steal/, 'youth default is the cut play');
+  assert.equal(f3('pitcher').target, 'mound');
+  assert.equal(f3('third').target, 'third');
+  assert.equal(f3('through').throws.length, 2, 'through, then home');
+  const wheel = Engine.planPlay({ league: 'littleLeague', runners: on('first', 'second'), outs: 0, buntD: 'wheel' }, { kind: 'bunt', at: { x: -14, y: 26 } });
+  assert.equal(wheel.target, 'third');
+  const std = Engine.planPlay({ league: 'littleLeague', runners: on('first', 'second'), outs: 0 }, { kind: 'bunt', at: { x: -14, y: 26 } });
+  assert.equal(std.target, 'first');
+});

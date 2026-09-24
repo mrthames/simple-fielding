@@ -676,6 +676,18 @@
       if (plan.squeeze) return ['first'];
       // Bases loaded, less than two outs: whoever fields it close to the plate takes the force at home.
       if (forced.home && dist(at, b.home) < 35 * (geo.base / 60)) return ['home', 'first'];
+      // Get the lead runner if the throw beats them clearly (older levels, or a called bunt defense); else 1st.
+      const lead = forced.third ? 'third' : forced.second ? 'second' : null;
+      const bd = situation.buntD;
+      if (lead && !forced.home && (geo.older || bd)) {
+        const T = geo.tempo;
+        const ball = T.pitchFlight + Math.max(T.bunt.a + dist(at, b.home) / T.bunt.v, 0.05 + dist(plan.ready[F], at) / T.fielder)
+          + T.transfer.inf + throwTime(geo, dist(at, b[lead]), F);
+        const from = lead === 'third' ? 'second' : 'first';
+        const L = situation.leadoffs || geo.league.sport === 'softball' ? (T.lead[from] || 8) : 0;
+        const runner = T.pitchFlight + 0.15 + (geo.base - L) / T.runner;
+        if (ball + 0.05 < runner - 0.15) return [lead, 'first'];
+      }
       return ['first'];
     }
     // A slow roller or a slap: the force at 2nd is too late unless a middle infielder fields it near the bag.
@@ -791,15 +803,16 @@
         });
     } else if (isBunt || (slapD && F !== '2B')) {
       assign(plan, '2B', 'cover', firstInside, isBunt ? 'Cover 1st base on the bunt — the first baseman is charging.' : 'Cover 1st — against a slapper the first baseman is in, so 1st is yours.', { delay: 0.1 });
-      assign(plan, '1B', 'hold', charge1,
-        'Charge in on the bunt! If someone else fields it, peel off to the inside — stay out of the runner\'s lane.', { delay: 0.05 });
+      assign(plan, '1B', 'hold', charge1, situation.buntD === 'crash' || situation.buntD === 'wheel'
+        ? 'Crash! Break for the plate as the pitcher comes set. If someone else fields it, peel off to the inside.'
+        : 'Charge in on the bunt! If someone else fields it, peel off to the inside — stay out of the runner\'s lane.', { delay: situation.buntD === 'crash' || situation.buntD === 'wheel' ? -0.35 : 0.05 });
     } else {
       assign(plan, '1B', 'cover', firstInside, 'Get to the bag! Stretch toward the throw once you know where it is.');
     }
 
     // Bunt with a runner on 2nd: the shortstop covers 3rd (the third baseman may charge). With runners
     // on 1st and 2nd that leaves 2nd open — take the sure out at 1st.
-    if (isBunt && run.second && F !== 'SS') {
+    if (isBunt && run.second && F !== 'SS' && situation.buntD !== 'standard') {
       assign(plan, 'SS', 'cover', b.third, 'Cover 3rd base — the third baseman might charge the bunt.', { delay: 0.1 });
       if (run.first && run.third) plan.notes.push('Bases loaded: every runner is forced. Get the force at home, then 1st if there\'s time.');
       else if (run.first) plan.notes.push('Runners on 1st and 2nd: the shortstop covers 3rd and the second baseman covers 1st, so 2nd is open. Take the sure out at 1st.');
@@ -831,6 +844,8 @@
       if (isBunt && !run.second) {
         assign(plan, '3B', 'hold', charge3,
           'Charge in on the bunt! If the pitcher or catcher calls it, get back to 3rd.', { delay: 0.05 });
+      } else if (isBunt && situation.buntD === 'wheel') {
+        assign(plan, '3B', 'hold', charge3, 'Wheel play: crash hard on the pitch! The shortstop is rotating to 3rd behind you.', { delay: -0.3 });
       } else if (isBunt && plan.assignments.SS && plan.assignments.SS.role === 'cover' && near3(plan.assignments.SS.to)) {
         assign(plan, '3B', 'hold', lerp(b.third, charge3, 0.5),
           'Read the bunt: charge it if it\'s yours. If the pitcher or catcher has it, get out of the way — the shortstop has 3rd.', { delay: 0.05 });
@@ -882,8 +897,9 @@
       ? `throw to ${baseName(targets[0])} for the lead runner`
       : stepSelf ? `step on ${baseName(first)}` : `throw to ${baseName(first)}`;
     const look = (!forced.second && run.second) || (!forced.third && run.third);
+    const early = isBunt && ((situation.buntD === 'crash' && F === '1B') || (situation.buntD === 'wheel' && (F === '1B' || F === '3B')));
     assign(plan, F, 'field', at,
-      `${isBunt ? 'Charge it' : 'Get in front of it'}, glove down! ${look ? 'Look the runner back, then ' : 'Then '}${throwText}.`, { delay: 0.05 });
+      `${isBunt ? 'Charge it' : 'Get in front of it'}, glove down! ${look ? 'Look the runner back, then ' : 'Then '}${throwText}.`, { delay: early ? -0.35 : 0.05 });
     if (look) {
       plan.notes.push('A runner who isn\'t forced doesn\'t have to run. Look them back to their base with your eyes before you throw — then take the sure out at 1st.');
     }
@@ -1361,6 +1377,56 @@
       }
       case 'firstThirdSteal': {
         plan.fielder = 'C';
+        // The defense the coach called, or the usual one: youth, the cut play; 13U-14U and up, throw through.
+        const def = event.defense || situation.d13 || (situation.outs === 2 || geo.older ? 'through' : 'cut');
+        if (def === 'pitcher' || def === 'third') {
+          plan.pitch = true;
+          if (def === 'pitcher') {
+            plan.title = '1st & 3rd — throw back to the pitcher';
+            plan.summary = 'The catcher throws to the pitcher (or a middle infielder cutting in front of the mound), who checks the runner on 3rd. The runner from 1st takes 2nd for free: that\'s the price of keeping the run off the board.';
+            assign(plan, 'C', 'field', { x: 0, y: -3 }, 'Look the runner on 3rd back, then throw a firm strike to the pitcher.', { delay: 0 });
+            assign(plan, 'P', 'field', { x: 0, y: geo.mound.y - 2 }, 'Catch it facing 3rd. If the runner broke, run at her/him or throw home; if not, you\'re done.', { delay: 0.3 });
+            assign(plan, '3B', 'cover', b.third, 'Stay on 3rd and keep that runner close.', { delay: 0.5 });
+            assign(plan, 'SS', 'cover', b.second, 'Cover 2nd — no throw is coming, so let the runner have it.', { delay: 0.8 });
+            plan.throws.push({ fromPos: 'C', to: 'mound', toPos: 'P' });
+            plan.runners = [{ id: 'first', from: 'first', to: 'second', start: go, commit: true }, { id: 'third', from: 'third', to: 'third', secondary: 4 }];
+            plan.target = 'mound';
+          } else {
+            plan.title = '1st & 3rd — throw behind the runner at 3rd';
+            plan.summary = 'The catcher looks the runner on 3rd back and throws to 3rd, to catch them leaning toward home. The runner from 1st takes 2nd.';
+            assign(plan, 'C', 'field', { x: 0, y: -3 }, 'Come up looking at 3rd. If the runner is too far off, throw to the third baseman.', { delay: 0 });
+            assign(plan, '3B', 'cover', { x: b.third.x + 1, y: b.third.y + 1 }, 'Be at the bag: catch it and tag the runner diving back.', { delay: 0.3 });
+            assign(plan, 'LF', 'backup', behind(geo, b.third, b.home, 40), 'Charge in to back up the throw to 3rd.', { delay: 0.3 });
+            assign(plan, 'SS', 'cover', b.second, 'Cover 2nd.', { delay: 0.8 });
+            plan.throws.push({ fromPos: 'C', to: 'third' });
+            plan.runners = [{ id: 'first', from: 'first', to: 'second', start: go, commit: true }, { id: 'third', from: 'third', to: 'third', secondary: 6 }];
+            plan.target = 'third';
+          }
+          if (run.second) plan.runners.push({ id: 'second', from: 'second', to: 'second' });
+          plan.notes.push('Coaches handle 1st & 3rd differently: throw through, the cut play, throw back to the pitcher, or throw behind the runner at 3rd. Pick it before the pitch.');
+          break;
+        }
+        if (situation.outs < 2 && def === 'through') {
+          plan.title = '1st & 3rd — throw through';
+          plan.summary = 'The catcher throws through to 2nd. If the runner on 3rd breaks on the throw, whoever catches it at 2nd fires home.';
+          plan.target = 'second';
+          assign(plan, 'C', 'field', { x: 0, y: -3 }, 'Check the runner on 3rd, then throw through to 2nd — and get back to the plate for a throw home.', { delay: 0 });
+          assign(plan, 'SS', 'cover', b.second, 'Cover 2nd. Catch it, and if the runner on 3rd broke, throw home right away; otherwise tag the runner from 1st.', { delay: 0.8 });
+          assign(plan, '2B', 'cutoff', { x: 4 * k, y: b.second.y - 16 * k }, 'Come in front of 2nd and read the runner on 3rd — yell "Four!" if they break.', { delay: 0.8 });
+          assign(plan, '3B', 'cover', b.third, 'Stay on 3rd and yell "Four! Four!" if the runner breaks.', { delay: 0.8 });
+          assign(plan, 'P', 'backup', { x: 8 * k, y: geo.backstop * 0.62 }, 'Duck the throw, then circle around the 1st-base side to back up home.', { delay: 0.9, path: [{ x: 18 * k, y: 14 * k }, { x: 14 * k, y: -6 * k }] });
+          assign(plan, 'CF', 'backup', behind(geo, b.second, b.home, 50), 'Charge in to back up 2nd base.', { delay: 0.8 });
+          plan.throws.push({ fromPos: 'C', to: 'second' });
+          plan.throws.push({ fromPos: 'SS', to: 'home', toPos: 'C' });
+          plan.runners = [
+            { id: 'first', from: 'first', to: 'second', start: go, commit: true },
+            { id: 'third', from: 'third', to: 'home', start: 'afterFirstThrow', commit: true },
+          ];
+          if (run.second) plan.runners.push({ id: 'second', from: 'second', to: 'second' });
+          plan.notes.push('Throw through: the most common call from high school up. The runner on 3rd has to decide when the ball leaves the catcher\'s hand, and the throw home from 2nd is short.');
+          plan.pitch = true;
+          break;
+        }
         if (situation.outs === 2) {
           // Two outs: throw through. A tag at 2nd before the runner from 3rd touches home ends the inning, no run.
           plan.title = '1st & 3rd — double steal, two outs';

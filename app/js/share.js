@@ -18,6 +18,8 @@
   const KINDS = ['ground', 'line', 'fly', 'pop', 'bunt', 'steal2', 'steal3', 'firstThirdSteal', 'passedBall', 'primaryLead', 'secondaryLead', 'pitch', 'drawn', 'lookBack', 'delayedSteal', 'droppedThird'];
   const ACTIONS = ['return', 'hesitate', 'break', 'drift'];
   const DEPTHS = ['auto', 'normal', 'dp', 'in', 'cornersIn'];
+  const D13 = ['auto', 'through', 'cut', 'pitcher', 'third'];
+  const BUNTD = ['auto', 'standard', 'wheel', 'crash'];
   const BASES = ['first', 'second', 'third'];
   const POS = ['P', 'C', '1B', '2B', 'SS', '3B', 'LF', 'CF', 'RF'];
   const RESULTS = [undefined, 'out', 'single', 'double', 'triple'];
@@ -147,8 +149,10 @@
     }
     if (nameBytes.length) { out.push(nameBytes.length); out.push(...nameBytes); }
     // Extras, at the very end so older links stay valid: the infield depth.
-    const di = DEPTHS.indexOf(s.depth || 'auto');
-    if (di > 0) out.push(di);
+    const di = Math.max(0, DEPTHS.indexOf(s.depth || 'auto'));
+    const d13 = Math.max(0, D13.indexOf(s.d13 || 'auto'));
+    const bd = Math.max(0, BUNTD.indexOf(s.buntD || 'auto'));
+    if (di || d13 || bd) out.push(di | (d13 << 3) | (bd << 6));
     return toB64url(out);
   }
 
@@ -207,7 +211,13 @@
       }
       let name = '';
       if (f & 16) { const n = b[i++]; name = unutf8(b.slice(i, i + n)); i += n; }
-      if (i < b.length) { const d = DEPTHS[b[i++] & 7]; if (d && d !== 'auto') situation.depth = d; }
+      if (i < b.length) {
+        const x = b[i++];
+        const d = DEPTHS[x & 7], e = D13[(x >> 3) & 7], f2 = BUNTD[(x >> 6) & 3];
+        if (d && d !== 'auto') situation.depth = d;
+        if (e && e !== 'auto') situation.d13 = e;
+        if (f2 && f2 !== 'auto') situation.buntD = f2;
+      }
       return { situation, event, name };
     } catch (e) { return null; }
   }

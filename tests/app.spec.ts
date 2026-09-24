@@ -620,3 +620,12 @@ test('infield depth: In plays the grounder home', async ({ page }) => {
   await page.evaluate(() => (window as any).SimpleFielding.runEvent({ kind: 'ground', at: { x: -22, y: 62 } }));
   expect(await page.evaluate(() => (window as any).SimpleFielding.state.plan.target)).toBe('home');
 });
+
+test('defensive calls: the 1st & 3rd and bunt defense buttons change the play', async ({ page }) => {
+  await page.locator('#d13-seg [data-d13="pitcher"]').click();
+  await page.locator('#other-plays [data-play="firstThirdSteal"]').click();
+  await expect(page.locator('#play-title .pt-name')).toContainText('pitcher');
+  await expect(page.locator('#buntd-row')).toBeHidden();
+  await page.locator('#kind-chips [data-kind="bunt"]').click();
+  await expect(page.locator('#buntd-row')).toBeVisible();
+});

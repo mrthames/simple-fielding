@@ -237,6 +237,15 @@
 
     <section class="card" id="hit-card">
       <h2>How is it hit?</h2>
+      <div class="ctl defense-ctl" id="buntd-row">
+        <span class="ctl-label">Bunt D</span>
+        <div class="seg small" role="group" aria-label="Bunt defense" id="buntd-seg">
+          <button type="button" data-buntd="auto" class="on" title="The usual defense for this level">Auto</button>
+          <button type="button" data-buntd="standard" title="The third baseman holds 3rd for the force">Standard</button>
+          <button type="button" data-buntd="wheel" title="Both corners crash; the shortstop rotates to 3rd (softball: rotation)">Wheel</button>
+          <button type="button" data-buntd="crash" title="The first baseman crashes early">1B crash</button>
+        </div>
+      </div>
       <p class="fine drag-tip">Pick one, then drag the ball from home plate to where it goes.</p>
       <div class="chips" id="kind-chips">
         <button type="button" data-kind="ground" class="on">Grounder</button>
@@ -257,6 +266,16 @@
 
     <section class="card" id="other-card">
       <h2>Steals, passed balls &amp; pickoffs</h2>
+      <div class="ctl defense-ctl">
+        <span class="ctl-label">1st &amp; 3rd</span>
+        <div class="seg small" role="group" aria-label="1st and 3rd defense" id="d13-seg">
+          <button type="button" data-d13="auto" class="on" title="The usual call for this level">Auto</button>
+          <button type="button" data-d13="through">Through</button>
+          <button type="button" data-d13="cut">Cut</button>
+          <button type="button" data-d13="pitcher">To P</button>
+          <button type="button" data-d13="third">To 3rd</button>
+        </div>
+      </div>
       <p class="fine">Quick versions. To set each runner's lead, who's stealing, or where a passed ball goes, use <strong>Build a play</strong>.</p>
       <div class="chips" id="other-plays">
         <button type="button" data-play="steal2">Steal 2nd</button>

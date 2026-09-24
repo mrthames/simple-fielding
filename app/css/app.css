@@ -830,3 +830,7 @@ body.view3d .play-title { top: 58px; }
 @media (max-width: 899px) { .cam-bar { top: auto; bottom: 8px; font-size: 12px; } body.view3d .play-title { top: 8px; } }
 .depth-ctl { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
 .depth-ctl .seg button { padding: 0 9px; font-size: 13px; }
+.defense-ctl { display: flex; align-items: center; gap: 8px; margin: 4px 0 10px; }
+.defense-ctl .ctl-label { width: auto; min-width: 52px; }
+.defense-ctl .seg button { padding: 0 8px; font-size: 13px; }
+body:not(.kind-bunt) #buntd-row { display: none; }
