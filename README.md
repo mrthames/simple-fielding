@@ -7,7 +7,7 @@ ball, who's the cutoff, who covers the base, and who backs it up.
 Free, with no ads and no accounts. It's built for an iPad first, works on phones, and has a projector mode
 for team meetings.
 
-**Try it:** https://simplefielding.com (the web app is at [`/app/`](https://simplefielding.com/app/)). A copy is on [GitHub Pages](https://mrthames.github.io/simple-fielding/).
+**Try it:** https://simplefielding.com (the web app is at [`/app/`](https://simplefielding.com/app/)).
 
 A companion to [Simple Pitch Counter](https://github.com/mrthames/simple-pitch-counter).
 
@@ -90,8 +90,8 @@ top of that file), or are copied to the clipboard if no address is set.
 ## Deployment
 
 **simplefielding.com** is self-hosted: `bash scripts/deploy-nas.sh` publishes it over SSH. The server's
-address, port, user, key and folder come from the environment or a gitignored `deploy.env`, never the repo. Every push to `main` also publishes to GitHub Pages (`.github/workflows/pages.yml`): the website at the root
-and the app under `/app/`. The tests and the personal-data check run on every push and pull request
+address, port, user, key and folder come from the environment or a gitignored `deploy.env`, never the repo. The website
+is at the root and the app under `/app/`. The tests and the personal-data check run on every push and pull request
 (`.github/workflows/test.yml`).
 
 ## License

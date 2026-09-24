@@ -2,6 +2,13 @@
 
 ---
 
+## [2026-09-25] Housekeeping — GitHub Pages retired
+
+- **GitHub Pages is retired**: simplefielding.com is the one home for the site and the app. The Pages workflow is removed and the Pages site is turned off.
+- **The repository's history was rewritten** to take out a description of the server's layout (a folder path and the hosting software's name). No code changed; commit IDs did.
+
+---
+
 ## [2026-09-25] v0.25.0 — VR (first version), and dimmed hit choices
 
 - **Enter VR** (in the 3D view, only where the browser supports headsets: Quest's browser, or a PC browser with SteamVR).

@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 #
 # Deploys simplefielding.com to its web server over SSH: the website at the root, the web app under /app/.
-# Same layout GitHub Pages gets (see .github/workflows/pages.yml).
 #
 # Nothing about the server lives in this repository: not its address, port, user, key or folder. Set them in
 # the environment, from a file outside the repo or a gitignored one (see .gitignore: deploy.env):
