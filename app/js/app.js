@@ -4,7 +4,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '0.12.0';
+  const VERSION = '0.13.0';
   const Field = window.Field;
   const { POSITIONS, NAMES, LEAGUES } = Field;
   const $ = (s) => document.querySelector(s);
@@ -989,7 +989,7 @@
   const GROUPS = [
     ['Youth baseball', ['littleLeague', 'intermediate']],
     ['Baseball, 90 ft', ['junior90', 'highSchool', 'college', 'pro']],
-    ['Fastpitch softball', ['softball', 'softball10']],
+    ['Fastpitch softball', ['softball8', 'softball10', 'softball', 'softball14', 'softballHS', 'softballCollege', 'softballPro']],
   ];
   for (const [name, keys] of GROUPS) {
     const og = document.createElement('optgroup');
@@ -1040,6 +1040,7 @@
     store.set('league', key);
     // Remember which baseball field was last used, so Softball → Baseball goes back to it.
     if (LEAGUES[key].sport === 'baseball') store.set('baseballLeague', key);
+    else store.set('softballLeague', key);
     state.leadoffs = store.get('leadoffs.' + key, LEAGUES[key].leadoffs);
     $('#leadoffs').checked = state.leadoffs;
     state.park = store.get('park.' + key, null);
@@ -1050,6 +1051,13 @@
   }
   function renderSport() {
     const sport = LEAGUES[state.league].sport;
+    const rules = geo ? geo.rules : {};
+    // Slappers are a softball thing, from 10U up.
+    $('#batter-slap').hidden = sport !== 'softball' || state.league === 'softball8';
+    if (state.batter === 'S' && $('#batter-slap').hidden) { state.batter = 'R'; renderSituation(); }
+    // 8U: no stealing, no leads, no pickoffs. The steal card and the builder's steal and pickoff options go away.
+    document.body.classList.toggle('no-steals', rules.stealing === 'none');
+    document.body.classList.toggle('softball', sport === 'softball');
     // Softball has no leadoffs (runners leave on the release), and the look-back rule replaces pickoffs.
     $('#leadoffs-row').hidden = sport === 'softball';
     const lead = $('#other-plays [data-play="primaryLead"]');
@@ -1065,7 +1073,7 @@
   for (const b of $$('#sport-seg button')) {
     b.addEventListener('click', () => {
       if (LEAGUES[state.league].sport === b.dataset.sport) return;
-      setLeague(b.dataset.sport === 'softball' ? 'softball' : store.get('baseballLeague', 'littleLeague'));
+      setLeague(b.dataset.sport === 'softball' ? store.get('softballLeague', 'softball') : store.get('baseballLeague', 'littleLeague'));
     });
   }
   renderSport();

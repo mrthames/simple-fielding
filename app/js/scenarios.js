@@ -96,6 +96,28 @@
       ],
     },
     {
+      // Fastpitch: slaps, bunts, back-picks and steals. Written on the 60 ft diamond in real feet.
+      name: 'Softball: slaps, bunts & steals',
+      sport: 'softball',
+      levels: ['softball10', 'softball', 'softball14', 'softballHS', 'softballCollege', 'softballPro'],
+      abs: true,
+      items: [
+        { name: 'Soft slap to the left side — shortstop charges', runners: on(), outs: 0, batter: 'S', event: { kind: 'ground', at: { x: -26, y: 50 }, slap: 'soft' } },
+        { name: 'Hard slap past the crashing third baseman', runners: on(), outs: 1, batter: 'S', event: { kind: 'ground', at: { x: -38, y: 74 }, slap: 'hard' } },
+        { name: 'Slap in the hole — shortstop backhand', runners: on(), outs: 0, batter: 'S', event: { kind: 'ground', at: { x: -42, y: 70 }, slap: 'hard' } },
+        { name: 'Drag bunt by a slapper — first baseman crashes', runners: on(), outs: 0, batter: 'S', event: { kind: 'bunt', at: { x: 16, y: 26 } } },
+        { name: 'Slap with a runner on 1st — take the sure out', runners: on('first'), outs: 0, batter: 'S', event: { kind: 'ground', at: { x: -24, y: 56 }, slap: 'soft' } },
+        { name: 'Sacrifice bunt, runners on 1st & 2nd', runners: on('first', 'second'), outs: 0, event: { kind: 'bunt', at: { x: -14, y: 28 } } },
+        { name: 'Squeeze — take the out at 1st', runners: on('third'), outs: 1, event: { kind: 'bunt', at: { x: 6, y: 22 } } },
+        { name: 'Bunt, runner on 1st — catcher covers 3rd', runners: on('first'), outs: 0, event: { kind: 'bunt', at: { x: -12, y: 30 } } },
+        { name: 'Steal of 2nd — shortstop covers', runners: on('first'), outs: 0, event: { kind: 'steal2' } },
+        { name: 'Steal of 3rd', runners: on('second'), outs: 1, event: { kind: 'steal3' } },
+        { name: 'Catcher back-pick at 1st', runners: on('first'), outs: 0, event: { kind: 'pitch', move: 'pitch', result: 'caught', runners: { first: { lead: 16, go: false } } } },
+        { name: 'Catcher back-pick at 3rd', runners: on('third'), outs: 1, event: { kind: 'pitch', move: 'pitch', result: 'caught', runners: { third: { lead: 14, go: false } } } },
+        { name: 'Passed ball, runner on 3rd — pitcher covers home', runners: on('third'), outs: 1, event: { kind: 'pitch', move: 'pitch', result: 'passed', runners: { third: { lead: 9, go: false } }, ballTo: { x: 14, y: -22 } } },
+      ],
+    },
+    {
       // Written in real feet for a 90 ft field (abs), and only listed on the 90 ft levels.
       name: '90 ft: depth, relays and tags',
       levels: ['junior90', 'highSchool', 'college', 'pro'],
@@ -122,9 +144,18 @@
 
   // A flat list, handy for "next scenario".
   const ALL = [];
-  GROUPS.forEach((g) => g.items.forEach((it) => ALL.push(Object.assign({ group: g.name, levels: g.levels, abs: g.abs }, it))));
+  GROUPS.forEach((g) => g.items.forEach((it) => ALL.push(Object.assign({ group: g.name, levels: g.levels, abs: g.abs, sport: g.sport },
+    it, { steal: it.steal || g.steal || (it.event && ['steal2', 'steal3', 'firstThirdSteal', 'primaryLead', 'secondaryLead', 'pitch'].includes(it.event.kind)) }))));
   // Whether a play belongs on this field.
-  const fits = (sc, leagueKey) => !sc.levels || sc.levels.includes(leagueKey);
+  const Field = (typeof module !== 'undefined' && module.exports) ? require('./field.js') : root.Field;
+  const fits = (sc, leagueKey) => {
+    const L = Field && Field.LEAGUES[leagueKey];
+    if (sc.sport && L && L.sport !== sc.sport) return false;
+    if (sc.levels && !sc.levels.includes(leagueKey)) return false;
+    // No steals, leads or pickoffs where the rules don't allow them (8U softball).
+    if (sc.steal && L && L.rules && L.rules.stealing === 'none') return false;
+    return true;
+  };
 
   const api = { GROUPS, ALL, fits };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;

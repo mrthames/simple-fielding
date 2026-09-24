@@ -39,6 +39,115 @@
       base: 60, mound: 35, fence: 175,
       leadoffs: false,
     },
+    // Fastpitch softball levels past 12U, and 8U coach pitch (see simple-fielding-notes/softball-levels-spec.md).
+    softball8: {
+      label: 'Fastpitch softball (8U, coach pitch)',
+      short: 'Softball 8U',
+      sport: 'softball', level: 'youth8',
+      base: 60, mound: 35, fence: 150, backstop: -25, arc: 60,
+      infield: { '1B': [31.1, 39.6], '2B': [20, 76], SS: [-20, 76], '3B': [-29.7, 38.2] },
+      pReady: [15, 36],
+      outfield: { corner: 95, cf: 105 },
+      leadoffs: false,
+      rules: { leave: 'contact', droppedThird: false, stealing: 'none', pitcher: 'adult', circleStop: true },
+      tempo: {
+        runner: 14.7, fielder: 14, pitchFlight: 0.75, delivery: 0.8, popTime: null,
+        youthThrow: { v: 45, carry: 60, vLong: 28 },
+        transfer: { inf: 0.55, of: 0.4, relay: 0.15 }, ground: { a: 0.35, v: 45 }, roll: 24, through: 32,
+        hang: { fly: [1.2, 100], line: [0.1, 80], pop: [2.2, 200] }, reach: { fly: 40, pop: 40, line: 20 },
+        lead: { steal: 0, first: 0, second: 0, third: 0 },
+        tagTime: 0.5, sendMargin: 0.5, cutHome: 25, relayReach: null, trail: 15, pBackHome: 18, pBack3: 20,
+      },
+    },
+    softball14: {
+      label: 'Fastpitch softball (14U, 43 ft)',
+      short: 'Softball 14U',
+      sport: 'softball', level: 'junior',
+      base: 60, mound: 43, backstop: -25, arc: 60,
+      fences: [{ a: 0, ft: 200 }, { a: 22.5, ft: 205 }, { a: 45, ft: 210 }, { a: 67.5, ft: 205 }, { a: 90, ft: 200 }],
+      infield: { '1B': [36.1, 43.1], '2B': [23, 80], SS: [-24, 80], '3B': [-33.9, 42.4] },
+      dp: { '2B': [26, 73], SS: [-18, 78] },
+      outfield: { corner: 140, cf: 155 },
+      align: { runnerOnFirst: { '1B': [23.3, 30.4], '3B': [-23.3, 30.4], '2B': [26, 73] },
+               slap: { '1B': [24.7, 31.8], '3B': [-21.2, 29.7], '2B': [26, 72], SS: [-32, 76], ofIn: 12 } },
+      leadoffs: false,
+      rules: { leave: 'release', droppedThird: true, stealing: 'full', pitcher: 'player' },
+      tempo: {
+        runner: 19.4, fielder: 18, pitchFlight: 0.53, delivery: 0.57, popTime: 2.25, drag: 0.0006,
+        arms: { SS: 52, '3B': 52, '2B': 48, '1B': 47, LF: 52, CF: 54, RF: 53, C: 50, P: 46 }, carry: 120, vLong: 45,
+        transfer: { inf: 0.55, of: 0.4, relay: 0.1 }, ground: { a: 0.15, v: 64 }, roll: 34, through: 36,
+        hang: { fly: [1.6, 105], line: [0.2, 85], pop: [3.0, 200] }, pivot: 0.8, pBack3: 25,
+        lead: { steal: 0, first: 9, second: 12, third: 8 },
+        tagTime: 0.38, sendMargin: 0.35, cutHome: 30, relayReach: 110, trail: 15, pBackHome: 20,
+      },
+    },
+    softballHS: {
+      label: 'High school softball (NFHS) · 16U–18U',
+      short: 'Softball HS',
+      sport: 'softball', level: 'hs',
+      base: 60, mound: 43, backstop: -25, arc: 60,
+      fences: [{ a: 0, ft: 200 }, { a: 22.5, ft: 212 }, { a: 45, ft: 220 }, { a: 67.5, ft: 212 }, { a: 90, ft: 200 }],
+      infield: { '1B': [36.8, 43.8], '2B': [25, 83], SS: [-26, 84], '3B': [-33.2, 41.7] },
+      dp: { '2B': [24, 76], SS: [-18, 78] },
+      outfield: { corner: 148, cf: 165 },
+      align: { runnerOnFirst: { '1B': [23.3, 30.4], '3B': [-23.3, 30.4], '2B': [24, 76] },
+               slap: { '1B': [24.7, 31.8], '3B': [-21.2, 29.7], '2B': [26, 72], SS: [-32, 76], ofIn: 15 } },
+      leadoffs: false,
+      rules: { leave: 'release', droppedThird: true, stealing: 'full', pitcher: 'player' },
+      tempo: {
+        runner: 20.3, fielder: 19, pitchFlight: 0.46, delivery: 0.5, popTime: 2.15, drag: 0.0006,
+        arms: { SS: 58, '3B': 58, '2B': 54, '1B': 53, LF: 58, CF: 60, RF: 59, C: 56, P: 52 }, carry: 145, vLong: 50,
+        transfer: { inf: 0.55, of: 0.35, relay: 0.08 }, ground: { a: 0.15, v: 68 }, roll: 37, through: 38,
+        hang: { fly: [1.8, 108], line: [0.2, 90], pop: [3.3, 190] }, pivot: 0.7, pBack3: 25,
+        lead: { steal: 0, first: 10, second: 13, third: 9 },
+        tagTime: 0.33, sendMargin: 0.3, cutHome: 30, relayReach: 125, trail: 15, pBackHome: 20,
+      },
+    },
+    softballCollege: {
+      label: 'College softball (NCAA)',
+      short: 'Softball college',
+      sport: 'softball', level: 'college',
+      base: 60, mound: 43, backstop: -28, arc: 60,
+      fences: [{ a: 0, ft: 200 }, { a: 22.5, ft: 212 }, { a: 45, ft: 220 }, { a: 67.5, ft: 212 }, { a: 90, ft: 200 }],
+      infield: { '1B': [37.5, 44.5], '2B': [26, 86], SS: [-28, 88], '3B': [-32.5, 41.0] },
+      dp: { '2B': [24, 78], SS: [-20, 80] },
+      outfield: { corner: 155, cf: 172 },
+      align: { runnerOnFirst: { '1B': [23.3, 30.4], '3B': [-23.3, 30.4], '2B': [24, 76] },
+               slap: { '1B': [24.7, 31.8], '3B': [-21.2, 29.7], '2B': [26, 72], SS: [-32, 76], ofIn: 15 } },
+      leadoffs: false,
+      rules: { leave: 'release', droppedThird: true, stealing: 'full', pitcher: 'player' },
+      tempo: {
+        runner: 21.0, fielder: 20, pitchFlight: 0.42, delivery: 0.46, popTime: 1.95, drag: 0.0006,
+        arms: { SS: 63, '3B': 62, '2B': 58, '1B': 57, LF: 62, CF: 64, RF: 64, C: 61, P: 55 }, carry: 170, vLong: 56,
+        transfer: { inf: 0.5, of: 0.3, relay: 0.06 }, ground: { a: 0.15, v: 72 }, roll: 40, through: 40,
+        hang: { fly: [1.9, 110], line: [0.2, 95], pop: [3.5, 175] }, pivot: 0.65, pBack3: 25,
+        lead: { steal: 0, first: 11, second: 14, third: 9 },
+        tagTime: 0.26, sendMargin: 0.3, cutHome: 30, relayReach: 140, trail: 16, pBackHome: 20,
+      },
+    },
+    softballPro: {
+      label: 'Pro & international softball (AUSL, WBSC)',
+      short: 'Softball pro',
+      sport: 'softball', level: 'pro',
+      base: 60, mound: 43, backstop: -30, arc: 60,
+      fences: [{ a: 0, ft: 210 }, { a: 22.5, ft: 220 }, { a: 45, ft: 225 }, { a: 67.5, ft: 220 }, { a: 90, ft: 210 }],
+      infield: { '1B': [37.5, 44.5], '2B': [27, 88], SS: [-29, 90], '3B': [-32.5, 41.0] },
+      dp: { '2B': [24, 80], SS: [-20, 82] },
+      outfield: { corner: 162, cf: 178 },
+      align: { runnerOnFirst: { '1B': [23.3, 30.4], '3B': [-23.3, 30.4], '2B': [24, 76] },
+               slap: { '1B': [24.7, 31.8], '3B': [-21.2, 29.7], '2B': [26, 72], SS: [-32, 76], ofIn: 15 } },
+      leadoffs: false,
+      rules: { leave: 'release', droppedThird: true, stealing: 'full', pitcher: 'player' },
+      tempo: {
+        runner: 21.8, fielder: 21, pitchFlight: 0.38, delivery: 0.42, popTime: 1.85, drag: 0.0006,
+        arms: { SS: 67, '3B': 66, '2B': 62, '1B': 60, LF: 66, CF: 68, RF: 68, C: 65, P: 58 }, carry: 185, vLong: 60,
+        transfer: { inf: 0.45, of: 0.28, relay: 0.05 }, ground: { a: 0.15, v: 76 }, roll: 42, through: 42,
+        hang: { fly: [2.0, 110], line: [0.2, 100], pop: [3.7, 170] }, pivot: 0.6, pBack3: 25,
+        lead: { steal: 0, first: 12, second: 15, third: 10 },
+        tagTime: 0.22, sendMargin: 0.25, cutHome: 30, relayReach: 150, trail: 18, pBackHome: 20,
+      },
+    },
+
     // 90 ft levels. Depths, speed of play and conventions come from each level's own tables rather than from
     // scaling the 60 ft field (see simple-fielding-notes/levels-of-play-spec.md for the sources).
     junior90: {
@@ -206,8 +315,8 @@
     };
     const tempo = Object.assign({}, YOUTH_TEMPO, L.tempo || {});
     if (L.sport === 'softball' && !L.tempo) tempo.runner = 18;
-    // A level with its own tempo works out catch reach from hang time (engine.catchReach), not the youth reaches.
-    if (L.tempo) tempo.reach = null;
+    // A level with its own tempo works out catch reach from hang time (engine.catchReach), unless it sets its own.
+    if (L.tempo && !L.tempo.reach) tempo.reach = null;
     const P2 = (xy) => ({ x: xy[0], y: xy[1] });
     // Outfielders at a level's own depth, but never closer than 30 ft to this park's wall.
     const ofAt = (a, depth) => polar(a, Math.min(depth, fenceDir(a) - 30));
@@ -232,6 +341,11 @@
       fence: F,
       park: park ? park.key : null,
       tempo,
+      // Older levels (13U-14U baseball and up, 14U softball and up) play by their own tables and speed; the
+      // youth fields keep the numbers the engine was built on. 90 ft baseball adds a few rules of its own.
+      older: !!(L.tempo && L.level !== 'youth8'),
+      big: !!(L.tempo && L.base === 90),
+      rules: Object.assign({ leave: L.sport === 'softball' ? 'release' : 'pitch', droppedThird: true, stealing: 'full', pitcher: 'player' }, L.rules || {}),
       fenceMax: Fmax,
       fenceAt,
       fenceDir,
@@ -242,7 +356,7 @@
       backstop: L.backstop || -25 * k,
       dp: L.dp ? { '2B': P2(L.dp['2B']), SS: P2(L.dp.SS) } : null,
       ready: L.infield ? {
-        P: { x: 0, y: L.mound },
+        P: L.pReady ? P2(L.pReady) : { x: 0, y: L.mound },
         C: { x: 0, y: -5 },
         '1B': P2(L.infield['1B']), '2B': P2(L.infield['2B']), SS: P2(L.infield.SS), '3B': P2(L.infield['3B']),
         LF: ofAt(75, L.outfield.corner),
@@ -284,10 +398,25 @@
     }
     // Softball bunt/slap alignment: with a runner on 1st and less than two outs, the corners come in to
     // 30-40 ft from the plate and the second baseman shades toward 1st to cover it on the bunt.
-    if (geo.league.sport === 'softball' && run.first && outs < 2) {
-      r['1B'] = geo.onLine(1, 38 * k, 5 * k);
-      r['3B'] = geo.onLine(-1, 38 * k, 5 * k);
-      r['2B'] = { x: 26 * k, y: 2 * geo.side - 12 * k };
+    const align = geo.league.align;
+    if (geo.league.sport === 'softball' && run.first && outs < 2 && geo.rules.stealing !== 'none') {
+      if (align && align.runnerOnFirst) for (const p in align.runnerOnFirst) r[p] = { x: align.runnerOnFirst[p][0], y: align.runnerOnFirst[p][1] };
+      else {
+        r['1B'] = geo.onLine(1, 38 * k, 5 * k);
+        r['3B'] = geo.onLine(-1, 38 * k, 5 * k);
+        r['2B'] = { x: 26 * k, y: 2 * geo.side - 12 * k };
+      }
+    }
+    // A slapper at the plate: corners in (crash the bunt, read the slap), SS toward the hole, 2B toward 1st to cover
+    // it, and the outfield a few steps in.
+    if (geo.league.sport === 'softball' && situation && situation.batter === 'S') {
+      const sl = (align && align.slap) || { '1B': [24.7, 31.8], '3B': [-21.2, 29.7], '2B': [24, 70], SS: [-30, 72], ofIn: 10 };
+      for (const p of ['1B', '3B', '2B', 'SS']) r[p] = { x: sl[p][0], y: sl[p][1] };
+      for (const p of ['LF', 'CF']) {
+        const d = Math.hypot(r[p].x, r[p].y);
+        const f = (d - sl.ofIn) / d;
+        r[p] = { x: r[p].x * f, y: r[p].y * f };
+      }
     }
     // Where the coach put fielders in the scenario builder.
     const start = situation && situation.start;

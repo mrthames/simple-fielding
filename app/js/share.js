@@ -13,7 +13,8 @@
 (function (root) {
   'use strict';
 
-  const LEAGUES = ['littleLeague', 'intermediate', 'softball', 'softball10', 'junior90', 'highSchool', 'college', 'pro'];
+  const LEAGUES = ['littleLeague', 'intermediate', 'softball', 'softball10', 'junior90', 'highSchool', 'college', 'pro',
+    'softball8', 'softball14', 'softballHS', 'softballCollege', 'softballPro'];
   const KINDS = ['ground', 'line', 'fly', 'pop', 'bunt', 'steal2', 'steal3', 'firstThirdSteal', 'passedBall', 'primaryLead', 'secondaryLead', 'pitch', 'drawn'];
   const BASES = ['first', 'second', 'third'];
   const POS = ['P', 'C', '1B', '2B', 'SS', '3B', 'LF', 'CF', 'RF'];
@@ -112,10 +113,12 @@
     const lead = typeof s.leadoffs === 'boolean';
     const moved = s.start ? POS.filter((p) => s.start[p] && Number.isFinite(s.start[p].x)) : [];
     const out = [VERSION];
-    out.push(li | (pi >= 0 ? 8 : 0) | (nameBytes.length ? 16 : 0) | (lead ? 32 : 0) | (lead && s.leadoffs ? 64 : 0) | (moved.length ? 128 : 0));
+    // Byte 1: league (low 3 bits, plus bit 3 of the runner byte's neighbor below for leagues 8+), park, name, leadoffs,
+    // fielder spots. Leagues past the first eight set bit 7 of the runner byte and use the low bits again.
+    out.push((li & 7) | (pi >= 0 ? 8 : 0) | (nameBytes.length ? 16 : 0) | (lead ? 32 : 0) | (lead && s.leadoffs ? 64 : 0) | (moved.length ? 128 : 0));
     if (pi >= 0) out.push(pi);
     const r = s.runners || {};
-    out.push((r.first ? 1 : 0) | (r.second ? 2 : 0) | (r.third ? 4 : 0) | ((s.outs || 0) << 3) | (s.batter === 'L' ? 32 : 0));
+    out.push((r.first ? 1 : 0) | (r.second ? 2 : 0) | (r.third ? 4 : 0) | ((s.outs || 0) << 3) | (s.batter === 'L' ? 32 : 0) | (s.batter === 'S' ? 64 : 0) | (li >= 8 ? 128 : 0));
     const ri = Math.max(0, RESULTS.indexOf(event.result));
     out.push(ki | (ri << 4) | (event.slow ? 128 : 0));
     if (event.kind === 'pitch') {
@@ -136,7 +139,7 @@
     }
     if (event.at) {
       put16(out, event.at.x); put16(out, event.at.y);
-      out.push(event.through ? 1 : 0);
+      out.push((event.through ? 1 : 0) | (event.slap === 'soft' ? 2 : 0) | (event.slap === 'hard' ? 4 : 0));
       if (event.through) { put16(out, event.through.x); put16(out, event.through.y); }
     }
     if (nameBytes.length) { out.push(nameBytes.length); out.push(...nameBytes); }
@@ -150,15 +153,15 @@
       if (b.length < 4 || b[0] !== VERSION) return null;
       let i = 1;
       const f = b[i++];
-      const league = LEAGUES[f & 7];
       let park;
       if (f & 8) { const p = (Field.PARKS || [])[b[i++]]; park = p ? p.key : undefined; }
       const rb = b[i++];
+      const league = LEAGUES[(f & 7) + (rb & 128 ? 8 : 0)];
       const situation = {
         league,
         runners: { first: !!(rb & 1), second: !!(rb & 2), third: !!(rb & 4) },
         outs: (rb >> 3) & 3,
-        batter: rb & 32 ? 'L' : 'R',
+        batter: rb & 64 ? 'S' : rb & 32 ? 'L' : 'R',
       };
       if (park) situation.park = park;
       if (f & 32) situation.leadoffs = !!(f & 64);
@@ -190,7 +193,9 @@
       if (KINDS.indexOf(kind) <= 4) {
         if (b.length < i + 5) return null;
         event.at = { x: get16(b, i), y: get16(b, i + 2) }; i += 4;
-        if (b[i++] & 1) { event.through = { x: get16(b, i), y: get16(b, i + 2) }; i += 4; }
+        const fl = b[i++];
+        if (fl & 2) event.slap = 'soft'; else if (fl & 4) event.slap = 'hard';
+        if (fl & 1) { event.through = { x: get16(b, i), y: get16(b, i + 2) }; i += 4; }
       }
       let name = '';
       if (f & 16) { const n = b[i++]; name = unutf8(b.slice(i, i + n)); i += n; }

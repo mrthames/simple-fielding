@@ -559,3 +559,25 @@ test('edit a play the app worked out: it becomes steps you can change', async ({
   await page.locator('#db-finish').click();
   expect(await page.evaluate(() => (window as any).SimpleFielding.state.plan.drawn)).toBe(true);
 });
+
+test('softball levels: the list, the slapper, and 8U coach pitch', async ({ page }) => {
+  await page.locator('#sport-seg [data-sport="softball"]').click();
+  await expect(page.locator('#batter-slap')).toBeVisible();
+  await page.locator('#btn-settings').click();
+  await page.locator('#league').selectOption('softballHS');
+  await page.locator('#settings [data-close]').click();
+  await expect(page.locator('#quick-list h4').first()).toContainText('Softball');
+  await page.locator('#batter-seg [data-batter="S"]').click();
+  await page.locator('#quick-list .lib-item', { hasText: 'Soft slap' }).click();
+  expect(await page.evaluate(() => (window as any).SimpleFielding.state.plan.situation.batter)).toBe('S');
+  await page.locator('#btn-settings').click();
+  await page.locator('#league').selectOption('softball8');
+  await page.locator('#settings [data-close]').click();
+  await expect(page.locator('#batter-slap')).toBeHidden();
+  await expect(page.locator('.coach-marker')).toHaveCount(1);
+  await expect(page.locator('#other-card')).toBeHidden();
+  // Baseball, then back to softball: it remembers 8U.
+  await page.locator('#sport-seg [data-sport="baseball"]').click();
+  await page.locator('#sport-seg [data-sport="softball"]').click();
+  expect(await page.evaluate(() => (window as any).SimpleFielding.state.league)).toBe('softball8');
+});

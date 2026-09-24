@@ -210,6 +210,28 @@ Numbers are from Statcast and scouting norms at pro. High school and college are
 the project notes.
 
 
+## Softball levels (8U through pro)
+
+| | 8U | 14U | High school · 16U–18U | College | Pro / international |
+|---|---|---|---|---|---|
+| Pitching | a coach (or machine) from 35 ft | 43 ft | 43 ft | 43 ft | 43 ft |
+| Home to 1st (right-handed / slapper) | about 4.3 s | 3.3 / 3.1 s | 3.15 / 2.9 s | 3.05 / 2.8 s | 2.95 / 2.65 s |
+| Catcher's pop time to 2nd | no steals | 2.25 s | 2.15 s | 1.95 s | 1.85 s |
+| Fences (lines / center) | 150 | 200 / 210 | 200 / 220 | 200 / 220 | 210 / 225 |
+
+- **8U:** a coach pitches, and the player "pitcher" fields from beside the circle. Runners leave on contact: no leads,
+  no steals. Many leagues stop play once the ball is back in the circle.
+- **Runners leave on the pitcher's release** from 10U up, so they're already off the base when the ball is hit.
+- **The shortstop covers 2nd on steals** at every softball level (the second baseman owns 1st on bunts and slaps). Some
+  teams use the baseball pull rule instead.
+- **Slappers:** with a slapper up, the corners come in (charge the bunt, read the slap), the shortstop shades to the
+  hole, the second baseman shades toward 1st to cover it, and the outfield comes in a few steps. A routine grounder to
+  short is an out from 14U up, and a slapper beats it.
+- **No pitcher pickoffs** in softball: the catcher's back-pick and the look-back rule take their place.
+- **Cutoff home:** about 30 ft in front of the plate.
+- Not yet: look-back variations, the delayed steal, the dropped third strike, and bunt defenses with runners on 1st and
+  2nd (standard and rotation).
+
 ## Softball
 
 Fastpitch uses the same principles with its own conventions:

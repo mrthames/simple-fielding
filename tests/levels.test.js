@@ -54,7 +54,7 @@ test('every play on a 90 ft field gives all nine a job and a finite timeline', (
 });
 
 test('90 ft plays are listed only on 90 ft fields', () => {
-  const abs = Scenarios.ALL.filter((s) => s.abs);
+  const abs = Scenarios.ALL.filter((s) => s.abs && s.sport !== 'softball');
   assert.ok(abs.length >= 10);
   for (const s of abs) {
     assert.ok(!Scenarios.fits(s, 'littleLeague'));

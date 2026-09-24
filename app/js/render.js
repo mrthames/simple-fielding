@@ -139,6 +139,11 @@
         el('rect', { x: -1.2, y: -g.mound.y - 0.3, width: 2.4, height: 0.6, fill: 'white' }, svg);
       }
       this.svg.dataset.sport = g.league.sport;
+      // 8U: a coach (or a machine) pitches. Draw them on the rubber; the player "pitcher" stands beside the circle.
+      if (g.rules && g.rules.pitcher === 'adult') {
+        el('circle', { cx: 0, cy: -(g.mound.y - 1), r: 5.5, class: 'coach-marker' }, svg);
+        el('text', { x: 0, y: -(g.mound.y - 1), class: 'coach-marker-text' }, svg).textContent = 'Coach';
+      }
 
       // Foul lines and the fence.
       const lf = outer[0], rf = outer[outer.length - 1];

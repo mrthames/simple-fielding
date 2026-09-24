@@ -2,6 +2,31 @@
 
 ---
 
+## [2026-09-25] v0.13.0 — Every fastpitch level
+
+- **Five new softball fields:**
+  - **8U** (coach pitch)
+  - **14U** (43 ft)
+  - **High school · 16U–18U** (NFHS)
+  - **College** (NCAA)
+  - **Pro & international** (AUSL, WBSC)
+- The 10U and 12U fields play exactly as before.
+- **Each level has its own speed of play:** runner speed (slappers included), arm strength (a softball slows down more than a baseball), pop time, pitch speed, grounder speed, hang time, leads off the base at the release, tag time, and when to send a runner. Each also has its own positioning and fences. A routine grounder to short is an out from 14U up; a slapper beats it.
+- **Slappers:** a new **Slapper** batter (10U and up) starts running from the left box. The defense sets the slap alignment: corners in, shortstop to the hole, second baseman toward 1st, outfield in.
+- **The shortstop covers 2nd on softball steals.**
+- **8U:**
+  - A coach pitches, drawn on the rubber, and the player pitcher fields from beside the circle.
+  - Runners leave on contact, so there are no steals or leads, and the steal plays and builder options are hidden.
+  - Throws are sized for 7–8 year olds.
+- **No pickoff in the softball builder:** pitchers don't throw over. The catcher's back-pick is there instead.
+- **13 new softball plays:** slaps (soft, hard, in the hole, drag bunt, with a runner on 1st), bunts (1st & 2nd, squeeze, the catcher covering 3rd), steals, back-picks at 1st and 3rd, and a passed ball.
+- **Slow rollers and soft slaps are really slow now.** The v0.9.1 slow roller had only moved where the ball went.
+- **The Baseball / Softball switch** remembers the last field for each sport.
+- **Softball fields and slappers carry through share links.**
+- **Not yet:** look-back variations, the delayed steal, the dropped third strike, and bunt defenses with runners on 1st and 2nd.
+
+---
+
 ## [2026-09-25] v0.12.0 — Draw what happened, and make a copy
 
 - **Draw what happened, step by step** (Build a play → ✎). This works like the whiteboard, but records steps.

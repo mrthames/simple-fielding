@@ -791,3 +791,15 @@ body.drawing .board-bar .bb-done { display: none; }
   .db-steps { flex-wrap: wrap; width: 100%; }
   .db-step-opts { min-width: 0; flex-basis: 100%; }
 }
+
+/* Softball: pitchers don't throw over, so the builder has no pickoff. 8U has no stealing at all. */
+body.softball #build-what [data-what="pickoff"] { display: none; }
+body.no-steals #other-card, body.no-steals .br-go { display: none; }
+.coach-marker { fill: #f5f1e6; stroke: #2a3b4d; stroke-width: calc(1 * var(--u, 1)); }
+.coach-marker-text { fill: #2a3b4d; font: 800 2.6px var(--font); text-anchor: middle; dominant-baseline: central; }
+/* Three batter choices in softball: keep them on one line in the panel. */
+#batter-seg button { padding: 0 9px; }
+body.softball #batter-seg button { font-size: 13px; padding: 0 7px; }
+.panel { overflow-x: hidden; }
+/* The first-run hint sits to the left so it never covers the color key. */
+@media (min-width: 900px) { .field-hint:not(.top) { left: 12px; transform: none; } }
