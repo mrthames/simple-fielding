@@ -740,3 +740,24 @@ body.projector .field-key { font-size: 15px; max-width: none; }
   padding: 10px 16px; border-radius: 12px; background: rgba(11, 28, 58, .92); color: #fff; font-weight: 700; font-size: 15px;
   pointer-events: none; max-width: calc(100% - 32px); text-align: center;
 }
+
+/* ---------------------------------------------------------------- scenario builder */
+.panel-mode { display: flex; }
+.panel-mode button { flex: 1; min-height: 40px; font-weight: 700; }
+body.pm-build #quick, body.pm-build #other-card, body:not(.pm-build) #build { display: none; }
+body.pm-build:not(.build-hit) #hit-card { display: none; }
+.build-sub[hidden] { display: none; }
+.build-runners { display: flex; flex-direction: column; gap: 8px; }
+.br-row { display: grid; grid-template-columns: 44px 1fr auto; align-items: center; gap: 10px; padding: 8px 10px; border-radius: var(--r); background: var(--bg); }
+.br-base { font-weight: 800; }
+.br-lead { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.br-lead input { width: 100%; }
+.br-lead span { font-size: 13px; color: var(--ink-2); font-weight: 600; }
+.br-go { min-height: 38px; padding: 0 12px; border: 0; border-radius: var(--r); background: var(--chip); color: var(--ink); font-weight: 700; }
+.br-go.on { background: var(--red); color: #fff; }
+.build-go { display: block; width: 100%; margin-top: 14px; min-height: 48px; border: 0; border-radius: 12px; background: var(--brand); color: #fff; font-weight: 800; font-size: 17px; }
+.build-go:disabled { opacity: .45; }
+.field.building .player { cursor: grab; }
+.ball-spot { fill: rgba(255, 255, 255, .2); stroke: #fff; stroke-width: calc(.8 * var(--u, 1)); stroke-dasharray: calc(2 * var(--u, 1)) calc(1.6 * var(--u, 1)); }
+/* While building a pitch play the hint sits at the top, out of the way of the plate. */
+.field-hint.top { top: 12px; bottom: auto; }

@@ -4,7 +4,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '0.10.0';
+  const VERSION = '0.11.0';
   const Field = window.Field;
   const { POSITIONS, NAMES, LEAGUES } = Field;
   const $ = (s) => document.querySelector(s);
@@ -32,6 +32,8 @@
     spotlight: null,
     scenarioIndex: -1,
     askFirst: store.get('askFirst', true),
+    pm: store.get('panelMode', 'plays') === 'build' ? 'build' : 'plays',
+    build: Object.assign({ what: 'pitch', result: 'caught', pickoff: 'first', ballTo: null, runners: {}, start: {} }, store.get('build', {})),
     asking: false,
     mode: 'coach', // Basic mode is off for now (2026-09-25); the code stays for when it's revisited.
   };
@@ -62,7 +64,8 @@
   }
 
   function situation() {
-    return { runners: Object.assign({}, state.runners), outs: state.outs, batter: state.batter, league: state.league, park: state.park || undefined, leadoffs: state.leadoffs };
+    return { runners: Object.assign({}, state.runners), outs: state.outs, batter: state.batter, league: state.league, park: state.park || undefined, leadoffs: state.leadoffs,
+      start: state.pm === 'build' && Object.keys(state.build.start).length ? state.build.start : undefined };
   }
 
   // -------------------------------------------------------------------------------------------
@@ -110,6 +113,7 @@
   function situationChanged() {
     if (board.on) closeBoard();
     renderSituation();
+    if (state.pm === 'build') { renderBuild(); showReady(); return; }
     // Flip between variations of the same hit: re-run it with the new runners or outs.
     if (state.lastEvent && state.lastEvent.at) rerunHit();
     else showReady();
@@ -119,7 +123,17 @@
     stop();
     state.plan = null;
     state.lastEvent = null;
-    view.showReady(window.Field.readyPositions(geo, situation()), state.runners);
+    const building = state.pm === 'build';
+    view.showReady(window.Field.readyPositions(geo, situation()), state.runners,
+      building && state.build.what !== 'hit' ? buildLeads() : null,
+      building && state.build.what === 'pitch' && state.build.result === 'passed' ? (state.build.ballTo || DEFAULT_BALL_TO()) : null);
+    svg.classList.toggle('building', building);
+    const hint = $('#field-hint .fh-text');
+    if (hint) hint.textContent = !building || state.build.what === 'hit' ? "Drag the ball from home plate to where it's hit"
+      : state.build.what === 'pickoff' ? 'Set the lead, then press Set play'
+      : state.build.result === 'passed' ? 'Tap where the ball ends up, then Set play'
+      : 'Set the runners, then press Set play';
+    $('#field-hint').classList.toggle('top', building && state.build.what !== 'hit');
     view.showRollHandle(null);
     $('#result').hidden = true;
     $('#play-title').hidden = true;
@@ -670,7 +684,15 @@
     }
     if (cancelled) return;
     if (d.fromPlate && d.moved) {
+      if (state.pm === 'build' && state.build.what !== 'hit') { state.build.what = 'hit'; saveBuild(); renderBuild(); }
       hitTo(d.at);
+    } else if (!d.moved && state.pm === 'build' && !state.plan && state.build.what !== 'hit') {
+      // Building a pitch play: a tap near or behind the plate says where a passed ball ends up.
+      if (state.build.what === 'pitch' && d.at.y < 25) {
+        state.build.result = 'passed';
+        state.build.ballTo = { x: Math.round(d.at.x * 2) / 2, y: Math.round(Math.max(d.at.y, geo.backstop + 2) * 2) / 2 };
+        saveBuild(); renderBuild(); showReady();
+      }
     } else if (!d.moved && !d.fromPlate) {
       // A plain tap on an empty field hits the ball there (easier with a mouse). Once a play is loaded a tap
       // is a coach pointing at something, so it never throws the play away.
@@ -1253,6 +1275,147 @@
   });
 
   // Open a play from a replay link (#replay=r1...) or turn tester mode on from a link (#tester or #tester=URL).
+  // ------------------------------------------------------------------------------------ the scenario builder
+  const baseName = (x) => ({ first: '1st', second: '2nd', third: '3rd', home: 'home' })[x];
+  const DEFAULT_BALL_TO = () => ({ x: 12, y: Math.max(geo.backstop + 4, -40) });
+  function leadMax() {
+    const L = LEAGUES[state.league];
+    if (L.sport === 'softball') return 12;       // off the base on the release
+    if (!state.leadoffs) return 0;               // 60 ft Little League: no leadoffs
+    return geo.base >= 90 ? 30 : 22;
+  }
+  function defaultLead() {
+    if (LEAGUES[state.league].sport === 'softball') return 6;
+    return state.leadoffs ? Math.round(geo.tempo.lead.steal) : 0;
+  }
+  function buildRunner(base) {
+    const r = state.build.runners[base] || (state.build.runners[base] = { lead: defaultLead(), go: false });
+    r.lead = Math.min(r.lead, leadMax());
+    return r;
+  }
+  function buildLeads() {
+    const out = {};
+    for (const base of ['first', 'second', 'third']) if (state.runners[base]) out[base] = buildRunner(base).lead;
+    return out;
+  }
+  function saveBuild() { store.set('build', state.build); }
+  function buildEvent() {
+    const b = state.build;
+    const runners = {};
+    for (const base of ['first', 'second', 'third']) if (state.runners[base]) runners[base] = { lead: buildRunner(base).lead, go: b.what === 'pitch' && buildRunner(base).go };
+    return b.what === 'pickoff'
+      ? { kind: 'pitch', move: 'pickoff', pickoff: state.runners[b.pickoff] ? b.pickoff : Object.keys(runners)[0], runners }
+      : { kind: 'pitch', move: 'pitch', result: b.result, ballTo: b.result === 'passed' ? (b.ballTo || DEFAULT_BALL_TO()) : undefined, runners };
+  }
+  function renderBuild() {
+    const b = state.build;
+    const bases = ['first', 'second', 'third'].filter((x) => state.runners[x]);
+    for (const x of $$('#build-what button')) x.classList.toggle('on', x.dataset.what === b.what);
+    for (const x of $$('#build-result button')) x.classList.toggle('on', x.dataset.res === b.result);
+    $('#build-pitch').hidden = b.what !== 'pitch';
+    $('#build-passed-tip').hidden = b.result !== 'passed';
+    $('#build-pickoff').hidden = b.what !== 'pickoff';
+    $('#build-hit-tip').hidden = b.what !== 'hit';
+    document.body.classList.toggle('build-hit', b.what === 'hit');
+    // Pickoff: which base (only bases with a runner).
+    const pk = $('#build-pickoff-bases');
+    pk.innerHTML = '';
+    if (!bases.includes(b.pickoff) && bases.length) b.pickoff = bases[0];
+    for (const x of bases) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.textContent = `Throw to ${baseName(x)}`;
+      btn.classList.toggle('on', x === b.pickoff);
+      btn.addEventListener('click', () => { b.pickoff = x; saveBuild(); renderBuild(); showReady(); });
+      pk.appendChild(btn);
+    }
+    // Runners: lead and whether they go.
+    const box = $('#build-runners');
+    box.innerHTML = '';
+    const max = leadMax();
+    for (const x of bases) {
+      const r = buildRunner(x);
+      const row = document.createElement('div');
+      row.className = 'br-row';
+      row.innerHTML = `<span class="br-base">${baseName(x)}</span>
+        <label class="br-lead"><input type="range" min="0" max="${max}" step="1" value="${r.lead}" ${max ? '' : 'disabled'} aria-label="Lead off ${baseName(x)}"><span></span></label>
+        <button type="button" class="br-go" aria-pressed="${r.go}">${r.go ? 'Stealing' : 'Holding'}</button>`;
+      const inp = row.querySelector('input'), lbl = row.querySelector('.br-lead span');
+      const label = () => { lbl.textContent = max ? `${r.lead} ft lead` : 'No lead'; };
+      label();
+      inp.addEventListener('input', () => { r.lead = Number(inp.value); label(); saveBuild(); if (!state.plan) view.setRunners(state.runners, buildLeads()); else showReady(); });
+      const go = row.querySelector('.br-go');
+      go.hidden = b.what !== 'pitch';
+      go.classList.toggle('on', r.go);
+      go.addEventListener('click', () => { r.go = !r.go; saveBuild(); renderBuild(); showReady(); });
+      box.appendChild(row);
+    }
+    $('#build-no-runners').hidden = bases.length > 0;
+    const L = LEAGUES[state.league];
+    $('#build-lead-note').textContent = !bases.length ? ''
+      : L.sport === 'softball' ? 'Softball runners leave on the release: the lead is how far off the base they are when the pitch arrives.'
+      : !state.leadoffs ? 'No leadoffs on this field: runners can go when the pitch reaches the batter. Turn on leadoffs in Settings, or pick a 50/70 or 90 ft field.'
+      : 'The lead is where the runner stands as the pitcher comes set. They shuffle a few more steps as the pitch is thrown.';
+    $('#build-go').hidden = b.what === 'hit';
+    $('#build-go').disabled = b.what === 'pickoff' && !bases.length;
+  }
+  function setPanelMode(pm) {
+    state.pm = pm === 'build' ? 'build' : 'plays';
+    store.set('panelMode', state.pm);
+    document.body.classList.toggle('pm-build', state.pm === 'build');
+    for (const x of $$('#panel-mode button')) { x.classList.toggle('on', x.dataset.pm === state.pm); x.setAttribute('aria-pressed', String(x.dataset.pm === state.pm)); }
+    renderBuild();
+    if (board.on) closeBoard();
+    showReady();
+  }
+  for (const x of $$('#panel-mode button')) x.addEventListener('click', () => setPanelMode(x.dataset.pm));
+  for (const x of $$('#build-what button')) x.addEventListener('click', () => { state.build.what = x.dataset.what; saveBuild(); renderBuild(); showReady(); });
+  for (const x of $$('#build-result button')) x.addEventListener('click', () => { state.build.result = x.dataset.res; saveBuild(); renderBuild(); showReady(); });
+  $('#build-go').addEventListener('click', () => { runEvent(buildEvent(), { name: '' }); scrollToResultOnPhone(); });
+  $('#build-reset').addEventListener('click', () => {
+    state.build = { what: 'pitch', result: 'caught', pickoff: 'first', ballTo: null, runners: {}, start: {} };
+    saveBuild(); renderBuild(); showReady();
+  });
+  $('#build-fielders-reset').addEventListener('click', () => { state.build.start = {}; saveBuild(); showReady(); });
+
+  // Builder, on the field: drag a fielder to where they start. (Registered in the capture phase so it wins over
+  // tapping a player; only while building and before a play is set.)
+  let fdrag = null;
+  svg.addEventListener('pointerdown', (e) => {
+    if (state.pm !== 'build' || state.plan || board.on) return;
+    const pl = e.target.closest && e.target.closest('.player');
+    if (!pl) return;
+    e.stopImmediatePropagation();
+    e.preventDefault();
+    const pos = pl.dataset.pos;
+    const p = view.toField(e.clientX, e.clientY);
+    const at = view.actorAt(pos);
+    fdrag = { id: e.pointerId, pos, off: { x: at.x - p.x, y: at.y - p.y }, moved: false, x0: e.clientX, y0: e.clientY };
+    svg.setPointerCapture(e.pointerId);
+  }, true);
+  svg.addEventListener('pointermove', (e) => {
+    if (!fdrag || e.pointerId !== fdrag.id) return;
+    e.stopImmediatePropagation();
+    if (!fdrag.moved && Math.hypot(e.clientX - fdrag.x0, e.clientY - fdrag.y0) < 5) return;
+    fdrag.moved = true;
+    view.cancelHolds();
+    const p = view.toField(e.clientX, e.clientY);
+    const q = { x: Math.round((p.x + fdrag.off.x) * 2) / 2, y: Math.round((p.y + fdrag.off.y) * 2) / 2 };
+    const r = Math.hypot(q.x, q.y);
+    const max = geo.fenceAt(q) - 5;
+    const spot = r > max ? { x: q.x * max / r, y: q.y * max / r } : q;
+    state.build.start[fdrag.pos] = spot;
+    view.place(view.actors[fdrag.pos], spot);
+  }, true);
+  const endF = (e) => {
+    if (!fdrag || e.pointerId !== fdrag.id) return;
+    e.stopImmediatePropagation();
+    const d = fdrag; fdrag = null;
+    if (d.moved) { saveBuild(); showReady(); }
+  };
+  svg.addEventListener('pointerup', endF, true);
+  svg.addEventListener('pointercancel', endF, true);
+
   // ------------------------------------------------------------------------------------ share links, My plays
   function shareCode() {
     if (!state.lastEvent) return null;
@@ -1280,6 +1443,19 @@
     state.batter = s.batter;
     if (typeof s.leadoffs === 'boolean') { state.leadoffs = s.leadoffs; $('#leadoffs').checked = s.leadoffs; }
     if (d.event.at) { state.kind = d.event.kind; state.result = d.event.result || 'auto'; }
+    if (d.event.kind === 'pitch' || s.start) {
+      const e = d.event;
+      state.build.start = s.start || {};
+      if (e.kind === 'pitch') {
+        state.build.what = e.move === 'pickoff' ? 'pickoff' : 'pitch';
+        state.build.result = e.result === 'passed' ? 'passed' : 'caught';
+        state.build.pickoff = e.pickoff || 'first';
+        state.build.ballTo = e.ballTo || null;
+        state.build.runners = JSON.parse(JSON.stringify(e.runners || {}));
+      } else state.build.what = 'hit';
+      saveBuild();
+      if (state.pm !== 'build') setPanelMode('build'); else renderBuild();
+    }
     renderSituation();
     const name = nameOverride || d.name || '';
     runEvent(d.event, { name });
@@ -1447,7 +1623,11 @@
   buildQuick();
   setMode('coach');
   setAskFirst(state.askFirst);
+  document.body.classList.toggle('pm-build', state.pm === 'build');
+  for (const x of $$('#panel-mode button')) x.classList.toggle('on', x.dataset.pm === state.pm);
   setGeometry();
   renderSituation();
+  renderBuild();
+  showReady();
   fromHash();
 })();

@@ -448,3 +448,59 @@ test('a share link opens the same play on the right field, and the address is ti
   expect(s).toEqual({ league: 'pro', park: 'redsox-fenway', target: 'home' });
   expect(page.url()).not.toContain('#p=');
 });
+
+test('build a play: runner on 1st stealing with a lead, then a pickoff, then a passed ball placed on the field', async ({ page }) => {
+  await page.locator('#btn-settings').click();
+  await page.locator('#league').selectOption('pro');
+  await page.locator('#settings [data-close]').click();
+  await page.locator('#panel-mode [data-pm="build"]').click();
+  await expect(page.locator('#build')).toBeVisible();
+  await expect(page.locator('#quick')).toBeHidden();
+  await page.locator('#mini-diamond [data-base="first"]').click();
+  const row = page.locator('#build-runners .br-row').first();
+  await row.locator('input').fill('14');
+  await row.locator('.br-go').click();
+  await expect(row.locator('.br-go')).toHaveText('Stealing');
+  await page.locator('#build-go').click();
+  let plan = await page.evaluate(() => { const p = (window as any).SimpleFielding.state.plan; return { title: p.title, lead: p.runners[0].leadStart }; });
+  expect(plan).toEqual({ title: 'Stealing 2nd', lead: 14 });
+  // Pickoff at 1st with a big lead is an out at pro.
+  await page.locator('#build-what [data-what="pickoff"]').click();
+  await row.locator('input').fill('17');
+  await page.locator('#build-go').click();
+  plan = await page.evaluate(() => { const p = (window as any).SimpleFielding.state.plan; return { title: p.title, out: !!p.runners[0].out }; });
+  expect(plan).toEqual({ title: 'Pickoff at 1st', out: true });
+  // Passed ball: tap behind the plate to put it there.
+  await page.locator('#build-what [data-what="pitch"]').click();
+  await page.locator('#btn-reset').click();
+  const pt = await page.evaluate(() => {
+    const svg = document.getElementById('field') as unknown as SVGSVGElement;
+    const p = svg.createSVGPoint(); p.x = -30; p.y = 30; const q = p.matrixTransform(svg.getScreenCTM()!); return { x: q.x, y: q.y };
+  });
+  await page.mouse.click(pt.x, pt.y);
+  await expect(page.locator('#build-result [data-res="passed"]')).toHaveClass(/on/);
+  await expect(page.locator('.ball-spot')).toHaveCount(1);
+  await page.locator('#build-go').click();
+  expect(await page.evaluate(() => (window as any).SimpleFielding.state.plan.title)).toContain('Passed ball');
+});
+
+test('build a play: drag a fielder to a new spot; it is saved into a shared link', async ({ page }) => {
+  await page.locator('#panel-mode [data-pm="build"]').click();
+  await page.locator('#mini-diamond [data-base="first"]').click();
+  const toScreen = (x: number, y: number) => page.evaluate(([x, y]) => {
+    const svg = document.getElementById('field') as unknown as SVGSVGElement;
+    const p = svg.createSVGPoint(); p.x = x; p.y = -y; const q = p.matrixTransform(svg.getScreenCTM()!); return { x: q.x, y: q.y };
+  }, [x, y]);
+  const ss = await page.evaluate(() => (window as any).SimpleFielding.state && document.querySelector('.player[data-pos="SS"]')!.getBoundingClientRect());
+  await page.mouse.move(ss.x + ss.width / 2, ss.y + ss.height / 2);
+  await page.mouse.down();
+  const to = await toScreen(-10, 60);
+  await page.mouse.move(to.x, to.y, { steps: 8 });
+  await page.mouse.up();
+  const start = await page.evaluate(() => (window as any).SimpleFielding.state.build.start.SS);
+  expect(Math.abs(start.x + 10) < 4 && Math.abs(start.y - 60) < 4).toBeTruthy();
+  await page.locator('#build-go').click();
+  const code = await page.evaluate(() => { const S = (window as any).Share; const st = (window as any).SimpleFielding.state; return S.encode({ league: st.league, runners: st.runners, outs: st.outs, start: st.build.start }, st.lastEvent, 'SS in'); });
+  const d = await page.evaluate((c) => (window as any).Share.decode(c), code);
+  expect(d.situation.start.SS.y).toBeCloseTo(start.y, 0);
+});

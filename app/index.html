@@ -49,7 +49,7 @@
       <svg id="field" class="field" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Baseball field"></svg>
       <div class="field-hint" id="field-hint">
         <span class="hint-ball"></span>
-        Drag the ball from home plate to where it's hit
+        <span class="fh-text">Drag the ball from home plate to where it's hit</span>
       </div>
       <div class="play-title" id="play-title" hidden></div>
       <div class="sit-strip" id="sit-strip" aria-live="polite"></div>
@@ -123,6 +123,11 @@
   </main>
 
   <aside class="panel" id="panel">
+    <div class="seg panel-mode" role="group" aria-label="Plays or build" id="panel-mode">
+      <button type="button" data-pm="plays">Plays</button>
+      <button type="button" data-pm="build">Build a play</button>
+    </div>
+
     <section class="card situation">
       <div class="card-head">
         <h2>Situation</h2>
@@ -157,6 +162,37 @@
       <p class="sit-hint">Tap the bases to put runners on. <button class="text-btn small inline" id="btn-clear" type="button">Clear bases</button></p>
     </section>
 
+    <section class="card build" id="build">
+      <div class="card-head">
+        <h2>Build a play</h2>
+        <button type="button" class="text-btn small" id="build-reset">Start over</button>
+      </div>
+      <h3>What happens?</h3>
+      <div class="chips" id="build-what">
+        <button type="button" data-what="pitch">Pitch</button>
+        <button type="button" data-what="pickoff">Pickoff</button>
+        <button type="button" data-what="hit">Ball in play</button>
+      </div>
+      <div class="build-sub" id="build-pitch">
+        <div class="chips small" id="build-result">
+          <button type="button" data-res="caught">Catcher catches it</button>
+          <button type="button" data-res="passed">It gets by (passed ball / wild pitch)</button>
+        </div>
+        <p class="fine" id="build-passed-tip">Tap the field behind the plate where the ball ends up.</p>
+      </div>
+      <div class="build-sub" id="build-pickoff">
+        <div class="chips small" id="build-pickoff-bases"></div>
+      </div>
+      <p class="fine build-sub" id="build-hit-tip">Pick how it's hit below, then drag the ball from home plate to where it goes.</p>
+      <h3>Runners</h3>
+      <div class="build-runners" id="build-runners"></div>
+      <p class="fine" id="build-no-runners">Tap the bases above (or on the field) to put runners on.</p>
+      <p class="fine" id="build-lead-note"></p>
+      <h3>Fielders</h3>
+      <p class="fine">Drag any fielder on the field to set where they start. <button class="text-btn small inline" id="build-fielders-reset" type="button">Put everyone back</button></p>
+      <button type="button" class="primary build-go" id="build-go">Set play ▶</button>
+    </section>
+
     <section class="card quick" id="quick">
       <div class="card-head">
         <h2>Pick a play</h2>
@@ -168,7 +204,7 @@
       <button type="button" class="text-btn small quick-more" id="quick-more" aria-expanded="false">Show all plays ▾</button>
     </section>
 
-    <section class="card">
+    <section class="card" id="hit-card">
       <h2>How is it hit?</h2>
       <p class="fine drag-tip">Pick one, then drag the ball from home plate to where it goes.</p>
       <div class="chips" id="kind-chips">
@@ -188,8 +224,9 @@
       </div>
     </section>
 
-    <section class="card">
+    <section class="card" id="other-card">
       <h2>Steals, passed balls &amp; pickoffs</h2>
+      <p class="fine">Quick versions. To set each runner's lead, who's stealing, or where a passed ball goes, use <strong>Build a play</strong>.</p>
       <div class="chips" id="other-plays">
         <button type="button" data-play="steal2">Steal 2nd</button>
         <button type="button" data-play="steal3">Steal 3rd</button>

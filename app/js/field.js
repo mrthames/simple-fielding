@@ -289,6 +289,9 @@
       r['3B'] = geo.onLine(-1, 38 * k, 5 * k);
       r['2B'] = { x: 26 * k, y: 2 * geo.side - 12 * k };
     }
+    // Where the coach put fielders in the scenario builder.
+    const start = situation && situation.start;
+    if (start) for (const pos of POSITIONS) if (start[pos] && Number.isFinite(start[pos].x)) r[pos] = { x: start[pos].x, y: start[pos].y };
     return r;
   }
 

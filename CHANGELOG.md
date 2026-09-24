@@ -2,6 +2,28 @@
 
 ---
 
+## [2026-09-25] v0.11.0 — Build a play: leads, steals, pickoffs and passed balls
+
+- **Plays / Build a play** switch at the top of the controls. Build hides the play list and gives you the pieces:
+  - **What happens**: a pitch the catcher catches, a pitch that gets by (passed ball or wild pitch), a pickoff, or a ball in play.
+  - **Each runner's lead**, with a slider, and whether they're **stealing** or **holding**. Runners show off the bag at their lead.
+  - **The pickoff throw** goes to whichever base you choose.
+  - **A passed ball goes where you tap**, behind or beside the plate.
+  - **Drag any fielder** to where they start: infield in, a first baseman holding the runner, a shift. This works for balls in play too.
+  - **Set play ▶** runs it. The app works out everyone's response.
+- **The clock decides steals, pickoffs and back-picks.** Pickoffs and back-picks used to end "Safe!" every time; now a bigger lead turns safe into out.
+  - A runner diving back takes time to react and get going from a standstill.
+  - A runner coming back from a secondary lead also has to stop and turn.
+  - The tag has to beat their hand to the bag.
+- **When nobody is stealing,** the catcher back-picks the runner a throw can beat, or throws the ball back to the pitcher.
+- **New plays:**
+  - a double steal (the throw goes to 3rd, for the lead runner)
+  - a runner breaking for home on a caught pitch
+- **Passed balls:** runners who weren't stealing read the ball, and hold if the catcher gets to it quickly.
+- **Saving and sharing** carry everything you built: leads, who's stealing, where the ball went and where the fielders started. Opening a built play puts it back in the builder, ready to change.
+
+---
+
 ## [2026-09-25] v0.10.0 — Save and share plays
 
 - **Save** any play (a list play, one you dragged, one from a link) with a name. It shows under **★ My plays** at the top of the play list.

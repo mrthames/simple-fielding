@@ -217,26 +217,33 @@
     }
 
     // Standing positions before any play.
-    showReady(ready, runners) {
+    showReady(ready, runners, leads, spot) {
       this.plan = null;
       this.clearLayer('paths'); this.clearLayer('marks'); this.clearLayer('throws'); this.clearLayer('captions');
+      this.clearLayer('target');
+      // The builder: where a passed ball ends up.
+      if (spot) el('circle', { cx: spot.x, cy: -spot.y, r: 5 * this.us, class: 'ball-spot' }, this.layers.target);
       for (const pos of POSITIONS) {
         this.place(this.actors[pos], ready[pos]);
         this.actors[pos].setAttribute('class', 'player');
       }
-      this.setRunners(runners);
+      this.setRunners(runners, leads);
       this.placeBall({ x: 0, y: 1.5, h: 0 }, true);
       this.applySpotlight();
     }
 
-    setRunners(runners) {
+    setRunners(runners, leads) {
       this.clearLayer('runners');
       this.runnerEls = {};
       const b = this.geo.bases;
+      const next = { first: b.second, second: b.third, third: { x: 0, y: 0 } };
       for (const base of ['first', 'second', 'third']) {
         if (!runners[base]) continue;
         const r = this.makeRunner(base, 'R');
-        this.place(r, { x: b[base].x, y: b[base].y });
+        // Off the bag by their lead, toward the next base, when the builder sets one.
+        const L = leads && leads[base] ? leads[base] : 0;
+        const dx = next[base].x - b[base].x, dy = next[base].y - b[base].y, d = Math.hypot(dx, dy) || 1;
+        this.place(r, { x: b[base].x + dx / d * L, y: b[base].y + dy / d * L });
       }
       for (const base of ['first', 'second', 'third']) {
         this.baseEls[base].classList.toggle('occupied', !!runners[base]);
@@ -257,6 +264,9 @@
       node._p = { x: p.x, y: p.y };
       node.setAttribute('transform', `translate(${p.x.toFixed(2)},${(-p.y).toFixed(2)})${this.us > 1 ? ` scale(${this.us.toFixed(3)})` : ''}`);
     }
+
+    // Where a player is drawn right now (for the builder's drags).
+    actorAt(pos) { return this.actors[pos]._p; }
 
     placeBall(p, idle) {
       const h = p.h || 0;
