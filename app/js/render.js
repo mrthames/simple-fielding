@@ -226,7 +226,7 @@
     showReady(ready, runners, leads, spot) {
       this.plan = null;
       this.clearLayer('paths'); this.clearLayer('marks'); this.clearLayer('throws'); this.clearLayer('captions');
-      this.clearLayer('target');
+      this.clearLayer('target'); this.clearLayer('looks');
       // The builder: where a passed ball ends up.
       if (spot) el('circle', { cx: spot.x, cy: -spot.y, r: 5 * this.us, class: 'ball-spot' }, this.layers.target);
       for (const pos of POSITIONS) {

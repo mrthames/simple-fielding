@@ -721,3 +721,11 @@ test('playlist: with a saved play open, Next steps through My plays in order', a
   await page.locator('#quick-next').click();
   await expect(page.locator('#play-title .pt-name')).toHaveText('Tonight: Fly ball to left, nobody on');
 });
+
+test('Reset clears the look cones along with the rest of the play', async ({ page }) => {
+  await page.evaluate(() => (window as any).SimpleFielding.runEvent({ kind: 'ground', at: { x: -80, y: 135 } }));
+  await page.evaluate(() => (window as any).SimpleFielding.seek(2));
+  expect(await page.locator('.layer-looks path').count()).toBeGreaterThan(0);
+  await page.locator('#btn-reset').click();
+  await expect(page.locator('.layer-looks path')).toHaveCount(0);
+});
