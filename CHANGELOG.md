@@ -2,6 +2,14 @@
 
 ---
 
+## [2026-09-25] v0.30.0 — When the play's over, everyone stops
+
+- **Fielders stop when the play ends.** Once the last catch, throw or call has happened, everyone eases to a stop within about half a second instead of running out the rest of their route. A backup who wasn't needed (right field coming in behind 1st on a routine grounder, say) is shown on the way, facing where they were going, not arriving long after the out.
+- **The chalk paths still show the whole route** to each player's spot, and the job list still says where they go. The quiz still grades against the full spot.
+- In 2D and 3D alike. The homepage animations are re-rendered to match.
+
+---
+
 ## [2026-09-25] v0.29.0 — 3D, round three: calls, gear, and players who move like people
 
 - **OUT! and SAFE! over the runner** the moment the play decides it, including a batter caught on a fly, and "Doubled off!".

@@ -2274,6 +2274,13 @@
       ball.push({ t: ft + dist(fp, mound) / 40, x: mound.x, y: mound.y, h: 5 });
     }
 
+    // When the play is over, it's over. Once the last catch, throw or call has happened, fielders ease to a stop
+    // where they are instead of running the rest of their routes: a backup who wasn't needed doesn't keep going. The
+    // job list and the chalk paths still show where each was headed. Runners finish their trip to the base.
+    let dead = endBall;
+    for (const e of events) dead = Math.max(dead, e.tEnd || e.t);
+    for (const pos of POSITIONS) fielderTrack[pos] = stopAt(fielderTrack[pos], dead + 0.2, 0.6);
+
     for (const pos of POSITIONS) tracks[pos] = fielderTrack[pos];
     tracks.ball = ball;
     for (const id in runnerTracks) tracks['runner:' + id] = runnerTracks[id];
@@ -2282,6 +2289,19 @@
     for (const id in tracks) end = Math.max(end, tracks[id][tracks[id].length - 1].t);
     Object.assign(tracks, computeLooks(plan, tracks, events, T0, end + 1.0));
     return { tracks, events, duration: end + 1.0, contact: T0, hit };
+  }
+
+  // A track cut short at time T: the mover keeps going for `coast` seconds, slowing to a stop, then stands.
+  function stopAt(keys, T, coast) {
+    if (!keys.length || keys[keys.length - 1].t <= T) return keys;
+    const p0 = sampleTrack(keys, T), p1 = sampleTrack(keys, T + 0.1);
+    const vx = (p1.x - p0.x) / 0.1, vy = (p1.y - p0.y) / 0.1;
+    const out = keys.filter((k) => k.t < T);
+    out.push({ t: T, x: p0.x, y: p0.y });
+    // Slowing evenly from speed v to 0 covers v * coast / 2; a midpoint key keeps the slowdown smooth.
+    out.push({ t: T + coast / 2, x: p0.x + vx * coast * 0.375, y: p0.y + vy * coast * 0.375 });
+    out.push({ t: T + coast, x: p0.x + vx * coast / 2, y: p0.y + vy * coast / 2 });
+    return out;
   }
 
   function basePath(from, to) {

@@ -302,10 +302,14 @@
       for (const pos of POSITIONS) {
         const a = plan.assignments[pos];
         this.actors[pos].setAttribute('class', `player role-${a.role}`);
+        // The route as assigned, start to destination. The player may stop short of it when the play ends first,
+        // but the chalk still shows where they were going.
         const keys = plan.timeline.tracks[pos];
-        const start = keys[0], end = keys[keys.length - 1];
+        const start = keys[0];
+        const route = [start, ...(a.path || []), a.to].filter((q, i, all) => q && (i === 0 || Math.hypot(q.x - all[i - 1].x, q.y - all[i - 1].y) > 0.5));
+        const end = route[route.length - 1];
         if (Math.hypot(end.x - start.x, end.y - start.y) > 4) {
-          const d = 'M' + keys.map(P).join(' L');
+          const d = 'M' + route.map(P).join(' L');
           el('path', { d, class: `path role-${a.role}`, 'data-pos': pos }, this.layers.paths);
           el('circle', { cx: end.x, cy: -end.y, r: 3 * this.us, class: `dest role-${a.role}`, 'data-pos': pos }, this.layers.marks);
         }
