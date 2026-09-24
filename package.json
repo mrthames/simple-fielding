@@ -1,6 +1,6 @@
 {
   "name": "simple-fielding",
-  "version": "0.30.1",
+  "version": "0.31.0",
   "private": true,
   "description": "Simple Fielding — youth baseball and softball defensive positioning trainer",
   "scripts": {
@@ -12,7 +12,8 @@
     "site": "node scripts/build-site.mjs",
     "site:og": "node scripts/build-site.mjs --og",
     "hero": "node scripts/render-hero-anim.mjs",
-    "hero:video": "node scripts/render-hero-video.mjs"
+    "hero:video": "node scripts/render-hero-video.mjs",
+    "audit": "node scripts/audit-plays.mjs --check"
   },
   "devDependencies": {
     "@playwright/test": "1.59.1",

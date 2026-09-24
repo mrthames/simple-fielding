@@ -699,7 +699,20 @@
     }
     // A slow roller or a slap: the force at 2nd is too late unless a middle infielder fields it near the bag.
     if ((plan.ball.slow || situation.batter === 'S') && !forced.home && !(['SS', '2B'].includes(F) && dist(at, b.second) < 30 * (geo.base / 60))) return ['first'];
-    if (forced.home) return ['home', 'first'];
+    if (forced.home) {
+      // Bases loaded: the force at home, if the throw can beat the runner from 3rd. In softball that runner is off
+      // with the pitch, and from double-play depth the throw home often can't win; then take the two outs you can
+      // get, at 2nd and 1st, the way a fielder would.
+      const T = geo.tempo;
+      if (!T || !T.ground) return ['home', 'first'];
+      const field = Math.max(T.ground.a + dist(at, b.home) / T.ground.v, 0.05 + dist(plan.ready[F], at) / T.fielder);
+      const ball = T.pitchFlight + field + T.transfer.inf + throwTime(geo, dist(at, b.home), F);
+      const L = situation.leadoffs || geo.league.sport === 'softball' ? (T.lead.third || 8) : 0;
+      const runner = T.pitchFlight + 0.15 + (geo.base - L) / T.runner;
+      if (ball < runner - 0.1) return ['home', 'first'];
+      plan.homeTooLate = true;
+      return ['second', 'first'];
+    }
     const depth = situation.depth || 'auto';
     if (run.third && situation.outs < 2 && (depth === 'in' || (depth === 'cornersIn' && ['1B', '3B', 'P', 'C'].includes(F)))) return ['home'];
     if (forced.third && F === '3B') return ['third', 'first'];
@@ -782,6 +795,7 @@
     // further out and waves the pitcher off.)
     const selfRange = (F === '1B' && first === 'first' && geo.older ? 30 : 18) * (geo.base / 60);
     const stepSelf = dist(at, b[first]) < selfRange && F !== 'C' || (F === 'C' && first === 'home');
+    if (dp) plan.dp = { F, first };
     plan.summary = dp
       ? `${The(F)} gets the lead runner at ${baseName(first)}, then the throw goes to 1st — a double play!`
       : `${The(F)} fields it and ${stepSelf ? 'steps on' : 'throws to'} ${baseName(first)}${first === 'home' ? '' : ' base'}.`;
@@ -907,7 +921,9 @@
       ? `throw to ${baseName(targets[0])} for the lead runner`
       : stepSelf ? `step on ${baseName(first)}` : `throw to ${baseName(first)}`;
     const look = (!forced.second && run.second) || (!forced.third && run.third);
-    const early = isBunt && ((situation.buntD === 'crash' && F === '1B') || (situation.buntD === 'wheel' && (F === '1B' || F === '3B')));
+    // A bunt is shown before the pitch arrives: the batter squares around, and the corner who fields it is already
+    // coming in. (Crash and wheel just send them sooner and harder.)
+    const early = isBunt && (F === '1B' || F === '3B');
     assign(plan, F, 'field', at,
       `${isBunt ? 'Charge it' : 'Get in front of it'}, glove down! ${look ? 'Look the runner back, then ' : 'Then '}${throwText}.`, { delay: early ? -0.35 : 0.05 });
     if (look) {
@@ -2540,6 +2556,28 @@
       plan.assignments.C.job = 'The run is going to score: yell "Cut 2! Cut 2!" so the cutoff throws the batter out at 2nd.';
       plan.notes.unshift('"Cut 2": when the throw home is too late, the catcher has the cutoff catch it and throw to 2nd. The batter who took off for 2nd on the throw is the out you can still get.');
       plan.timeline = buildTimeline(plan);
+    }
+    // The plan goes for two; the clock decides how many it gets. Say what actually happens.
+    if (plan.dp) {
+      const { F, first } = plan.dp;
+      const lead = plan.runners.find((r) => r.id !== 'batter' && r.to === first);
+      const bat = plan.runners.find((r) => r.id === 'batter');
+      if (lead && bat && lead.out && !bat.out) {
+        plan.summary = `${The(F)} gets the lead runner at ${baseName(first)}. The throw on to 1st is a step behind the batter: no double play this time, but it's still the right throw to try.`;
+      } else if (lead && !lead.out) {
+        plan.summary = `${The(F)} goes for the lead runner at ${baseName(first)}, but the runner beats the throw${bat && bat.out ? '. The throw on to 1st gets the batter.' : ', and the throw on to 1st is late too.'}`;
+      }
+    }
+    if (plan.homeTooLate) {
+      plan.summary = `Bases loaded, but the runner from 3rd is too far along for a throw home from here. ${plan.summary}`;
+      plan.notes.unshift('With the bases loaded, the force at home is the first choice when the throw can beat the runner. From double-play depth, and in softball where runners leave on the pitch, it often cannot. Then take the outs you can get.');
+    }
+    // One throw to 1st that doesn't win: say so, rather than let the summary imply the out.
+    const batter = plan.runners.find((r) => r.id === 'batter');
+    if (!plan.dp && plan.targets && plan.targets[0] === 'first' && plan.throws.length && batter && !batter.out && !plan.ball.caught) {
+      plan.summary += plan.situation.batter === 'S'
+        ? ' The slapper beats the throw this time: the running start is what a slap is for. The throw to 1st is still the play.'
+        : ' This time the batter beats the throw. It is still the right throw.';
     }
     plan.jobs = POSITIONS.map((p) => plan.assignments[p])
       .sort((a, b) => ROLE_ORDER.indexOf(a.role) - ROLE_ORDER.indexOf(b.role));

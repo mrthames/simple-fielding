@@ -2,6 +2,21 @@
 
 ---
 
+## [2026-09-25] v0.31.0 — Every play says what actually happens
+
+An audit ran every play in the library at every level (810 in all), checking that each play's name and summary agree with who's out and who's safe. It found:
+
+- **Summaries promised double plays the clock didn't give.** "Bases loaded — force at home" at Little League said "a double play!", but the catcher's throw to 1st is a step behind the batter. Summaries now say what happens: one out, or none, and why.
+- **The force at home was thrown even when it couldn't win.** In softball the runner from 3rd leaves with the pitch, and from double-play depth the throw home is late. The fielder now takes the double play at 2nd and 1st instead, and says why.
+- **"Bases loaded — force at home" now has the infield in**, the way it's played, with the ball hit at the drawn-in second baseman. The force at home is made at every level.
+- **A library play now sets up its whole situation.** The batter (righty unless the play says otherwise), infield depth and the defensive calls reset with each play. Before, a slapper or "infield in" from one play carried into the next and changed its outcome.
+- **Sacrifice bunts: the corner charges when the batter squares around**, before contact, so the out at 1st is made. At Little League the batter had been beating it.
+- **When the batter beats a throw to 1st**, the summary says so (a slapper's running start, an 8U arm) instead of implying the out.
+
+The audit now runs on every push (`npm run audit`). The outcomes that are right but look odd are listed with their reasons in `tests/audit-expected.json`: a slapper beating the throw, and a double play that's a step late at 13U–14U and in softball.
+
+---
+
 ## [2026-09-25] v0.30.1 — 3D follows the field you picked
 
 - **Fixed: the 3D view kept the old field** after the level or park was changed while 3D was off. A 90 ft play was then drawn on the old diamond, so second base and the runner showed up out in center field, and the scoreboard still named the old level. The 3D field is now rebuilt whenever it comes back on.

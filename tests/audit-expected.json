@@ -1,0 +1,58 @@
+[
+  {
+    "rule": "infield-no-out",
+    "name": "Hard slap past the crashing third baseman",
+    "why": "A hard slap past a crashing corner, with the slapper's running start: the batter beats the throw. The summary says so; the throw to 1st is still the play."
+  },
+  {
+    "rule": "infield-no-out",
+    "name": "Slap in the hole — shortstop backhand",
+    "why": "The slap in the hole is designed to beat the throw; the summary says so."
+  },
+  {
+    "rule": "infield-no-out",
+    "name": "Grounder to short, nobody on",
+    "levels": [
+      "softball8"
+    ],
+    "why": "8U arms: the long throw from short often doesn't beat the batter. The summary says so."
+  },
+  {
+    "rule": "infield-no-out",
+    "name": "Runner on 2nd — look them back",
+    "levels": [
+      "softball8"
+    ],
+    "why": "8U arms, and the look-back costs a moment: the batter beats the throw. The summary says so."
+  },
+  {
+    "rule": "dp-named-not-made",
+    "name": "Double play: runner on 1st, grounder to short",
+    "levels": [
+      "junior90",
+      "softball8",
+      "softball10",
+      "softball",
+      "softball14",
+      "softballHS",
+      "softballCollege",
+      "softballPro"
+    ],
+    "why": "Turning two is hard on a 60 ft softball diamond and for 13-14 year olds on 90 ft: the lead out is made and the relay is a step late. The summary says so."
+  },
+  {
+    "rule": "dp-named-not-made",
+    "name": "Double play: runner on 1st, grounder to 2nd",
+    "levels": [
+      "junior90",
+      "softball8",
+      "softball10",
+      "softball",
+      "softball14",
+      "softballHS",
+      "softballCollege",
+      "softballPro"
+    ],
+    "why": "As above."
+  }
+]

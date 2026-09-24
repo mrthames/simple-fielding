@@ -4,7 +4,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '0.30.1';
+  const VERSION = '0.31.0';
   const Field = window.Field;
   const BATTED = ['ground', 'line', 'fly', 'pop', 'bunt'];
   const { POSITIONS, NAMES, LEAGUES } = Field;
@@ -1058,8 +1058,12 @@
     state.scenarioIndex = i;
     state.runners = Object.assign({ first: false, second: false, third: false }, sc.runners);
     state.outs = sc.outs || 0;
-    if (sc.batter) state.batter = sc.batter;
-    else if (state.mode === 'basic') state.batter = 'R';
+    // A play from the library sets up its whole situation, so one play's slapper or infield-in doesn't carry into
+    // the next. (Change any of it afterwards to see the difference.)
+    state.batter = sc.batter || 'R';
+    state.depth = sc.depth || 'auto';
+    state.d13 = sc.d13 || 'auto';
+    state.buntD = sc.buntD || 'auto';
     if (sc.leadoffs && !state.leadoffs && geo.league.sport === 'baseball') {
       // Leads only exist where leadoffs are allowed; switch them on for this play.
       state.leadoffs = true;

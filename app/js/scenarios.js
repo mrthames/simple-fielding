@@ -18,7 +18,7 @@
         { name: 'Double play: runner on 1st, grounder to short', runners: on('first'), outs: 0, event: { kind: 'ground', at: { x: -22, y: 76 } } },
         { name: 'Double play: runner on 1st, grounder to 2nd', runners: on('first'), outs: 1, event: { kind: 'ground', at: { x: 22, y: 76 } } },
         { name: 'Runners on 1st & 2nd, grounder to 3rd', runners: on('first', 'second'), outs: 0, event: { kind: 'ground', at: { x: -38, y: 52 } } },
-        { name: 'Bases loaded — force at home', runners: on('first', 'second', 'third'), outs: 0, event: { kind: 'ground', at: { x: 20, y: 74 } } },
+        { name: 'Bases loaded — force at home', runners: on('first', 'second', 'third'), outs: 0, depth: 'in', event: { kind: 'ground', at: { x: 14, y: 54 } } },
         { name: 'Runner on 2nd — look them back', runners: on('second'), outs: 0, event: { kind: 'ground', at: { x: -24, y: 78 } } },
         { name: 'Two outs — take the easy out', runners: on('first', 'second'), outs: 2, event: { kind: 'ground', at: { x: -36, y: 50 } } },
         { name: 'Comebacker to the pitcher', runners: on('first'), outs: 0, event: { kind: 'ground', at: { x: 2, y: 40 } } },

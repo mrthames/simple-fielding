@@ -372,3 +372,39 @@ test('rundowns: the fielder with the ball drives the runner back, one throw, the
     assert.ok(d1 < d0, r);
   }
 });
+
+// ---------------------------------------------------------------- the play says what the clock decides (audit, 2026-09-25)
+
+test('bases loaded: force at home when the throw can win, the double play when it cannot', () => {
+  const loaded = { first: true, second: true, third: true };
+  const ll = Engine.planPlay({ runners: loaded, outs: 0, league: 'littleLeague' }, { kind: 'ground', at: { x: 20, y: 74 } });
+  assert.deepEqual(ll.targets, ['home', 'first']);
+  assert.ok(ll.runners.find((r) => r.id === 'third').out, 'runner from 3rd forced at home');
+  // Softball, double-play depth: the runner from 3rd is off with the pitch; home is too late, so turn two.
+  const sb = Engine.planPlay({ runners: loaded, outs: 0, league: 'softball' }, { kind: 'ground', at: { x: 20, y: 74 } });
+  assert.deepEqual(sb.targets, ['second', 'first']);
+  assert.match(sb.summary, /too far along/);
+  // Drawn in, with the ball right at them: the force at home again.
+  const sbIn = Engine.planPlay({ runners: loaded, outs: 0, league: 'softball', depth: 'in' }, { kind: 'ground', at: { x: 14, y: 54 } });
+  assert.ok(sbIn.runners.find((r) => r.id === 'third').out);
+});
+
+test('a double play that gets one out says so', () => {
+  const p = Engine.planPlay({ runners: { first: true, second: true, third: true }, outs: 0, league: 'littleLeague' }, { kind: 'ground', at: { x: 20, y: 74 } });
+  assert.ok(!p.runners.find((r) => r.id === 'batter').out);
+  assert.match(p.summary, /no double play this time/);
+  assert.doesNotMatch(p.summary, /a double play!/);
+});
+
+test('a sacrifice bunt: the corner is coming in on the square and gets the batter at 1st', () => {
+  const p = Engine.planPlay({ runners: { first: false, second: true, third: false }, outs: 0, league: 'littleLeague' }, { kind: 'bunt', at: { x: -16, y: 24 } });
+  assert.equal(p.fielder, '3B');
+  assert.ok(p.assignments['3B'].delay < 0, 'charges before contact');
+  assert.ok(p.runners.find((r) => r.id === 'batter').out);
+});
+
+test('a slapper who beats the throw: the summary says so', () => {
+  const p = Engine.planPlay({ runners: { first: false, second: false, third: false }, outs: 0, league: 'softballHS', batter: 'S' }, { kind: 'ground', at: { x: -30, y: 70 } });
+  const bat = p.runners.find((r) => r.id === 'batter');
+  if (!bat.out) assert.match(p.summary, /slapper beats the throw/);
+});
