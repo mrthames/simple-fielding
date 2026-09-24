@@ -2,6 +2,15 @@
 
 ---
 
+## [2026-09-23] v0.4.2 — The field stays put
+
+### Layout
+- **The field never scrolls away.** On phones and portrait iPads, the header, the field and the Play/Reset bar stay fixed on screen, and only the controls below them scroll. The field is sized to the screen: up to about half the height when stacked, and all of the left side when side by side.
+- **Phones turned sideways** get the side-by-side layout (field left, controls right) instead of a thin strip of field.
+- Running a play from the library or the "other plays" buttons scrolls the controls to the play's write-up. Tapping a player scrolls the job list to their job. The field doesn't move either way.
+
+---
+
 ## [2026-09-23] v0.4.1 — American English
 
 ### Fix

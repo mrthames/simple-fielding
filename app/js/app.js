@@ -4,7 +4,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '0.4.1';
+  const VERSION = '0.4.2';
   const { POSITIONS, NAMES, LEAGUES } = window.Field;
   const $ = (s) => document.querySelector(s);
   const $$ = (s) => Array.from(document.querySelectorAll(s));
@@ -178,7 +178,7 @@
       card.innerHTML = `<span class="badge">${pos}</span><div><strong>${escapeHtml(who(pos))}</strong><p>${escapeHtml(j.job)}</p></div>`;
       card.hidden = false;
       const li = $(`#jobs li[data-pos="${pos}"]`);
-      if (li && window.matchMedia('(min-width: 900px)').matches) li.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      if (li) li.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
     } else if (pos) {
       card.className = 'spot-card';
       card.innerHTML = `<span class="badge">${pos}</span><div><strong>${escapeHtml(who(pos))}</strong><p>Hit the ball to see what the ${NAMES[pos].toLowerCase()} does. Press and hold a player to put a name on them.</p></div>`;
@@ -602,7 +602,10 @@
   }
 
   function scrollToResultOnPhone() {
-    if (window.matchMedia('(max-width: 899px)').matches) $('#field-wrap').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    // The field stays on screen; in the stacked layout bring the play's write-up into view in the panel.
+    if (window.matchMedia('(min-width: 900px), (orientation: landscape) and (min-width: 560px)').matches) return;
+    const panel = $('#panel');
+    panel.scrollTo({ top: Math.max(0, $('#result').offsetTop - panel.offsetTop - 8), behavior: 'smooth' });
   }
 
   $('#btn-play').addEventListener('click', () => {
