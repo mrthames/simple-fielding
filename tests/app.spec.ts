@@ -37,7 +37,7 @@ test('loads with nine fielders and the drag hint', async ({ page }) => {
 
 test('dragging the ball to left field plays a single with a cutoff', async ({ page }) => {
   await dragBall(page, { x: -80, y: 135 });
-  await expect(page.locator('#play-title .pt-name')).toHaveText('Single to left field');
+  await expect(page.locator('#play-title .pt-name')).toHaveText(/single to left field$/i);
   await expect(page.locator('#jobs li')).toHaveCount(9);
   await expect(page.locator('#jobs li[data-pos="SS"]')).toContainText('cutoff');
   await expect(page.locator('#field-hint')).toBeHidden();
@@ -89,7 +89,7 @@ test('settings: switching to softball redraws the field', async ({ page }) => {
   await page.locator('#league').selectOption('softball');
   await page.keyboard.press('Escape');
   await dragBall(page, { x: -80, y: 135 });
-  await expect(page.locator('#play-title .pt-name')).toHaveText('Single to left field');
+  await expect(page.locator('#play-title .pt-name')).toHaveText(/single to left field$/i);
 });
 
 // ---- Whiteboard
@@ -149,7 +149,7 @@ test('whiteboard: the drawing stays after Done, and clears when the next play ru
   await page.locator('#bb-done').click();
   await expect(page.locator('#board-bar')).toBeHidden();
   await expect(page.locator('.layer-ink .ink')).toHaveCount(1);
-  await expect(page.locator('#play-title .pt-name')).toHaveText('Single to left field');
+  await expect(page.locator('#play-title .pt-name')).toHaveText(/single to left field$/i);
   await dragBall(page, { x: 80, y: 135 });
   await expect(page.locator('.layer-ink .ink')).toHaveCount(0);
 });
@@ -304,7 +304,7 @@ test('press and hold on the field, then drag, scrubs the play', async ({ page })
   await page.mouse.up();
   await expect(page.locator('#scrub-hint')).toBeHidden();
   // Scrubbing didn't hit a new ball.
-  await expect(page.locator('#play-title .pt-name')).toHaveText('Single to left field');
+  await expect(page.locator('#play-title .pt-name')).toHaveText(/single to left field$/i);
 });
 
 test('a plain drag on the field scrubs right away', async ({ page }) => {
@@ -319,7 +319,7 @@ test('a plain drag on the field scrubs right away', async ({ page }) => {
   const dur = await page.evaluate(() => (window as any).SimpleFielding.state.plan.timeline.duration);
   expect(t).toBeLessThan(dur * 0.5);
   await page.mouse.up();
-  await expect(page.locator('#play-title .pt-name')).toHaveText('Single to left field');
+  await expect(page.locator('#play-title .pt-name')).toHaveText(/single to left field$/i);
 });
 
 test('dragging the timeline slider moves the play (while paused)', async ({ page }) => {

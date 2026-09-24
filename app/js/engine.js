@@ -266,6 +266,12 @@
       tryAt = { x: event.at.x, y: event.at.y };
       event = Object.assign({}, event, { at: event.through });
       delete event.through;
+    } else if (event.kind === 'ground' && !event.through && Field.isFair(event.at) && dist(event.at, geo.bases.home) > geo.infieldEdge) {
+      // A ground ball into the outfield passes through the infield on the way. If its path comes within a step and
+      // a dive of an infielder, they go for it and it gets past them: nobody lets a ball by without trying.
+      tryAt = pathPastInfielder(geo, ready, event.at);
+      // The ball is a clean single either way: the dive changes who does what first, not how fast it gets there.
+      if (tryAt) tryAt.keepBall = true;
     }
     plan.squeeze = !!event.squeeze && !!situation.runners.third;
     plan.T0 = geo.tempo.pitchFlight;
@@ -274,11 +280,29 @@
     return out;
   }
 
+  // Where a ground ball headed for `to` passes closest to an infielder, if within reach of one: the spot that
+  // infielder dives for. (The infield part of the path only, from a few feet out to the edge of the dirt.)
+  function pathPastInfielder(geo, ready, to) {
+    const reach = 10 * (geo.base / 60);
+    const L = dist(to, geo.bases.home), ux = to.x / L, uy = to.y / L;
+    let best = null;
+    for (const pos of ['1B', '2B', 'SS', '3B', 'P']) {
+      const r = ready[pos];
+      const s = Math.max(4, Math.min(geo.infieldEdge, r.x * ux + r.y * uy));
+      const q = { x: ux * s, y: uy * s };
+      const d = dist(r, q);
+      if (d <= reach && (!best || d < best.d)) best = { q, d };
+    }
+    return best ? best.q : null;
+  }
+
   function missedGrounder(plan, tryAt) {
     const { geo } = plan;
     const tryer = dist(tryAt, geo.bases.home) < geo.infieldEdge ? infieldFielder(plan, tryAt, false) : null;
-    plan.ball.landing = round(tryAt);
-    plan.through = true;
+    if (!tryAt.keepBall) {
+      plan.ball.landing = round(tryAt);
+      plan.through = true;
+    }
     if (!tryer || tryer === plan.fielder) return;
     const a = plan.assignments[tryer];
     const dive = along(plan.ready[tryer], tryAt, Math.max(0, dist(plan.ready[tryer], tryAt) - 2));

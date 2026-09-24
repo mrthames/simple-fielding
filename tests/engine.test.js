@@ -408,3 +408,17 @@ test('a slapper who beats the throw: the summary says so', () => {
   const bat = p.runners.find((r) => r.id === 'batter');
   if (!bat.out) assert.match(p.summary, /slapper beats the throw/);
 });
+
+test('a ground ball into the outfield that passes an infielder: they go for it, and the ball is still a clean single', () => {
+  // His play: bases loaded, two outs, a grounder right past the shortstop into shallow center.
+  const p = Engine.planPlay({ league: 'littleLeague', runners: { first: true, second: true, third: true }, outs: 2, batter: 'R', leadoffs: true },
+    { kind: 'ground', at: { x: -35, y: 140 } });
+  assert.match(p.title, /^Through the infield/);
+  assert.match(p.assignments.SS.job, /Go hard after it/);
+  assert.match(p.assignments.SS.job, /cover 2nd base/);                // and then to their job
+  assert.equal(p.fielder, 'CF');
+  assert.ok(!p.through, 'the ball keeps its speed');
+  // In the hole between short and third: nobody's close enough to dive, and it's a clean single.
+  const q = Engine.planPlay({ league: 'littleLeague', runners: { first: false, second: false, third: false }, outs: 0 }, { kind: 'ground', at: { x: -63, y: 136 } });
+  assert.doesNotMatch(q.title, /^Through the infield/);
+});

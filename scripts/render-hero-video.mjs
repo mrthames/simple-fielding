@@ -39,7 +39,7 @@ const info = await page.evaluate((play) => {
   panel.scrollTop = result.offsetTop - panel.offsetTop - 12;
   return { title: sf.state.plan.title, duration: sf.state.plan.timeline.duration };
 }, PLAY);
-if (info.title !== 'Single to left field') throw new Error('unexpected play: ' + info.title);
+if (!/single to left field$/i.test(info.title)) throw new Error('unexpected play: ' + info.title);
 
 const total = Math.round((LEAD + info.duration + HOLD) * FPS);
 for (let i = 0; i < total; i++) {

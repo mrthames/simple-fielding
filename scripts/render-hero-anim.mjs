@@ -52,7 +52,7 @@ const data = await page.evaluate((play) => {
   };
 }, PLAY);
 await browser.close();
-if (data.title !== 'Single to left field') throw new Error('unexpected play: ' + data.title);
+if (!/single to left field$/i.test(data.title)) throw new Error('unexpected play: ' + data.title);
 
 // ---------------------------------------------------------------- sampling
 const smooth = (f) => f * f * (3 - 2 * f);

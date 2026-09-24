@@ -2,6 +2,16 @@
 
 ---
 
+## [2026-09-25] v0.36.0 — Nobody lets a ground ball by without trying
+
+- **A ground ball into the outfield now passes through the infield on the way.** If its path comes within a step and a dive of an infielder, that infielder goes hard after it. It gets by them, and they get up and go to their job. Before, a grounder dragged into center right past the shortstop was played as if the shortstop wasn't there.
+  - The play is titled "Through the infield — single to …" and the summary says whose glove it got past.
+  - The ball is still a clean single at full speed. The dive changes who moves first, not how the play turns out.
+  - Balls in the holes (between first and second, or between short and third) still get through untouched. Balls up the middle pass the pitcher.
+- The library's ground-ball singles show the dive too, and so do the homepage animations.
+
+---
+
 ## [2026-09-25] v0.35.3 — Read out loud, fixed
 
 - **Read now speaks on iPad and iPhone.** It used to stop the voice and start it again in the same instant, which Safari and every iPad browser silently ignore. It now stops only what's actually playing, and waits a moment first.
