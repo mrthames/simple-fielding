@@ -2,6 +2,14 @@
 
 ---
 
+## [2026-09-24] v0.6.0 — Scrub through a play
+
+- **Drag on the field to scrub.** Drag left or right anywhere on the field, except from home plate, and the play moves back and forth under your finger: the width of the field is the whole play. Press and hold also works, and shows the scrub bar before you move. A drag from home plate still hits the ball, and a tap still hits it where you tap.
+- **A timeline slider you can grab**: bigger thumb and track, and it fills as the play runs.
+- **Arrow keys** step through a play a quarter second at a time. Shift+arrows (or `N`) move between library plays.
+
+---
+
 ## [2026-09-24] v0.5.2 — A way back to the website
 
 - The **logo in the app's header** now goes back to the Simple Fielding homepage, which is where people reach for it. Settings also has a "Back to the Simple Fielding website" link. Both are hidden when the app runs inside the native shells, where there's no website to go back to.

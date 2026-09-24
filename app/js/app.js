@@ -4,7 +4,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '0.5.2';
+  const VERSION = '0.6.0';
   const { POSITIONS, NAMES, LEAGUES } = window.Field;
   const $ = (s) => document.querySelector(s);
   const $$ = (s) => Array.from(document.querySelectorAll(s));
@@ -229,6 +229,7 @@
   function updateScrub() {
     const dur = state.plan ? state.plan.timeline.duration : 1;
     $('#scrub').value = Math.round((state.t / dur) * 1000);
+    $('#scrub').style.setProperty('--pct', `${(state.t / dur) * 100}%`);
   }
 
   function updateTransport() {
@@ -504,20 +505,58 @@
     const nearPlate = Math.hypot(p.x, p.y - 1) < 16;
     // Players are tapped, not dragged — except the catcher, who stands on top of the ball.
     if (!nearPlate && e.target.closest && e.target.closest('.player')) return;
-    drag = { id: e.pointerId, start: p, fromPlate: nearPlate, moved: false, at: p };
+    drag = { id: e.pointerId, start: p, fromPlate: nearPlate, moved: false, at: p, cx: e.clientX };
     svg.setPointerCapture(e.pointerId);
     if (nearPlate) {
       stop();
       svg.classList.add('dragging');
+    } else if (state.plan) {
+      // Press and hold on the field, then drag left or right, to scrub the play back and forth.
+      const d = drag;
+      d.hold = setTimeout(() => {
+        if (drag !== d || d.moved) return;
+        stop();
+        d.scrub = { x0: d.cx, t0: state.t };
+        showScrub(true);
+      }, 350);
     }
     e.preventDefault();
   });
 
+  function showScrub(on) {
+    const el = $('#scrub-hint');
+    el.hidden = !on;
+    svg.classList.toggle('scrubbing', on);
+    if (on) updateScrubHint();
+  }
+  function updateScrubHint() {
+    const dur = state.plan.timeline.duration;
+    $('#scrub-hint-fill').style.width = `${(state.t / dur) * 100}%`;
+    $('#scrub-hint-time').textContent = `${state.t.toFixed(1)} s`;
+  }
+
   svg.addEventListener('pointermove', (e) => {
     if (!drag || e.pointerId !== drag.id) return;
+    if (drag.scrub) {
+      // The width of the field is the whole play.
+      const w = svg.getBoundingClientRect().width || 1;
+      const dur = state.plan.timeline.duration;
+      state.t = Math.max(0, Math.min(dur, drag.scrub.t0 + ((e.clientX - drag.scrub.x0) / w) * dur));
+      view.seek(state.t);
+      updateTransport();
+      updateScrubHint();
+      return;
+    }
     const p = view.toField(e.clientX, e.clientY);
     drag.at = p;
-    if (Math.hypot(p.x - drag.start.x, p.y - drag.start.y) > 6) drag.moved = true;
+    if (Math.hypot(p.x - drag.start.x, p.y - drag.start.y) > 6) { drag.moved = true; clearTimeout(drag.hold); }
+    // A drag that doesn't start at home plate scrubs the play (a drag from the plate hits the ball).
+    if (drag.moved && !drag.fromPlate && state.plan && !drag.scrub) {
+      stop();
+      drag.scrub = { x0: drag.cx, t0: state.t };
+      showScrub(true);
+      return;
+    }
     if (drag.moved) view.cancelHolds();
     if (drag.fromPlate && drag.moved) {
       view.showDrag({ x: 0, y: 1 }, p, state.kind);
@@ -529,8 +568,10 @@
     if (!drag || e.pointerId !== drag.id) return;
     const d = drag;
     drag = null;
+    clearTimeout(d.hold);
     svg.classList.remove('dragging');
     view.hideDrag();
+    if (d.scrub) { showScrub(false); return; } // scrubbing never hits the ball
     if (cancelled) return;
     if (d.fromPlate && d.moved) {
       hitTo(d.at);
@@ -764,8 +805,16 @@
       return;
     }
     if (e.key === ' ') { e.preventDefault(); $('#btn-play').click(); }
-    else if (e.key === 'n' || e.key === 'N' || e.key === 'ArrowRight') runScenario(state.scenarioIndex + 1);
-    else if (e.key === 'ArrowLeft') runScenario(state.scenarioIndex - 1);
+    else if ((e.key === 'ArrowRight' || e.key === 'ArrowLeft') && state.plan && !e.shiftKey) {
+      // Step through the play a quarter second at a time.
+      stop();
+      const dur = state.plan.timeline.duration;
+      state.t = Math.max(0, Math.min(dur, state.t + (e.key === 'ArrowRight' ? 0.25 : -0.25)));
+      view.seek(state.t);
+      updateTransport();
+    }
+    else if (e.key === 'n' || e.key === 'N' || (e.key === 'ArrowRight' && e.shiftKey)) runScenario(state.scenarioIndex + 1);
+    else if (e.key === 'ArrowLeft' && e.shiftKey) runScenario(state.scenarioIndex - 1);
     else if (e.key === 'p' || e.key === 'P') toggleProjector();
     else if (e.key === 'r' || e.key === 'R') showReady();
     else if (e.key === 'Escape') setSpotlight(null);

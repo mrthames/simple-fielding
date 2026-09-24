@@ -286,3 +286,38 @@ test('the logo goes back to the website homepage', async ({ page }) => {
   await page.locator('#btn-settings').click();
   await expect(page.locator('.home-link a').first()).toHaveAttribute('href', '../');
 });
+
+test('press and hold on the field, then drag, scrubs the play', async ({ page }) => {
+  await dragBall(page, { x: -80, y: 135 });
+  await page.evaluate(() => (window as any).SimpleFielding.seekEnd());
+  const box = (await page.locator('#field').boundingBox())!;
+  const y = box.y + box.height * 0.35;
+  // Hold on empty outfield grass, then drag left to go back in time.
+  await page.mouse.move(box.x + box.width * 0.75, y);
+  await page.mouse.down();
+  await page.waitForTimeout(500);
+  await expect(page.locator('#scrub-hint')).toBeVisible();
+  await page.mouse.move(box.x + box.width * 0.3, y, { steps: 8 });
+  const t = await page.evaluate(() => (window as any).SimpleFielding.state.t);
+  const dur = await page.evaluate(() => (window as any).SimpleFielding.state.plan.timeline.duration);
+  expect(t).toBeLessThan(dur * 0.7);
+  await page.mouse.up();
+  await expect(page.locator('#scrub-hint')).toBeHidden();
+  // Scrubbing didn't hit a new ball.
+  await expect(page.locator('#play-title')).toHaveText('Single to left field');
+});
+
+test('a plain drag on the field scrubs right away', async ({ page }) => {
+  await dragBall(page, { x: -80, y: 135 });
+  await page.evaluate(() => (window as any).SimpleFielding.seekEnd());
+  const box = (await page.locator('#field').boundingBox())!;
+  const y = box.y + box.height * 0.35;
+  await page.mouse.move(box.x + box.width * 0.8, y);
+  await page.mouse.down();
+  await page.mouse.move(box.x + box.width * 0.2, y, { steps: 10 });
+  const t = await page.evaluate(() => (window as any).SimpleFielding.state.t);
+  const dur = await page.evaluate(() => (window as any).SimpleFielding.state.plan.timeline.duration);
+  expect(t).toBeLessThan(dur * 0.5);
+  await page.mouse.up();
+  await expect(page.locator('#play-title')).toHaveText('Single to left field');
+});

@@ -563,3 +563,23 @@ body.board-on .field[data-tool="move"] { cursor: grab; }
 #version { cursor: default; user-select: none; -webkit-user-select: none; }
 @media (max-width: 520px) { .report-btn span { display: none; } }
 .text-btn.small.inline { min-height: 0; padding: 0 0 0 6px; font-size: 13px; }
+
+/* ---------------------------------------------------------------- scrubbing */
+.scrub-hint {
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  display: flex; align-items: center; gap: 12px; padding: 12px 18px; border-radius: 999px;
+  background: rgba(11, 28, 58, .88); color: #fff; font-weight: 700; font-size: 15px; pointer-events: none;
+}
+.scrub-track { width: 120px; height: 6px; border-radius: 3px; background: rgba(255, 255, 255, .25); overflow: hidden; }
+.scrub-track span { display: block; height: 100%; width: 0; background: #fff; }
+#scrub-hint-time { font-variant-numeric: tabular-nums; min-width: 3.2em; text-align: right; }
+.field.scrubbing { cursor: ew-resize; }
+
+/* A timeline slider you can actually grab with a thumb. */
+#scrub { -webkit-appearance: none; appearance: none; background: transparent; height: 44px; cursor: pointer; }
+#scrub::-webkit-slider-runnable-track { height: 8px; border-radius: 4px; background: linear-gradient(var(--brand), var(--brand)) 0 / var(--pct, 0%) 100% no-repeat, rgba(60, 60, 67, .18); }
+#scrub::-moz-range-track { height: 8px; border-radius: 4px; background: rgba(60, 60, 67, .18); }
+#scrub::-moz-range-progress { height: 8px; border-radius: 4px; background: var(--brand); }
+#scrub::-webkit-slider-thumb { -webkit-appearance: none; width: 28px; height: 28px; margin-top: -10px; border-radius: 50%; background: #fff; border: 0.5px solid rgba(0, 0, 0, .08); box-shadow: 0 2px 6px rgba(0, 0, 0, .25); }
+#scrub::-moz-range-thumb { width: 28px; height: 28px; border-radius: 50%; background: #fff; border: 0; box-shadow: 0 2px 6px rgba(0, 0, 0, .25); }
+#scrub:disabled { cursor: default; }

@@ -54,6 +54,11 @@
       </div>
       <div class="play-title" id="play-title" hidden></div>
       <div class="spot-card" id="spot-card" hidden></div>
+      <div class="scrub-hint" id="scrub-hint" hidden aria-hidden="true">
+        <span>◀ drag to scrub ▶</span>
+        <span class="scrub-track"><span id="scrub-hint-fill"></span></span>
+        <span id="scrub-hint-time">0.0 s</span>
+      </div>
     </div>
 
     <div class="transport" id="transport">
@@ -323,7 +328,8 @@
       <input type="checkbox" id="show-paths" class="switch" checked>
     </label>
     <p class="fine">Little League baseball (60 ft) doesn't allow leadoffs, so runners can't leave until the pitch reaches the batter. Softball runners leave when the pitch is released. Turn leadoffs on for 50/70, travel ball, or older divisions.</p>
-    <p class="fine">Keyboard: <kbd>Space</kbd> play/pause · <kbd>N</kbd> next play · <kbd>P</kbd> projector mode · <kbd>R</kbd> reset · <kbd>W</kbd> whiteboard.</p>
+    <p class="fine">Drag left or right anywhere on the field (not from home plate) to scrub back and forth through a play.</p>
+    <p class="fine">Keyboard: <kbd>Space</kbd> play/pause · <kbd>←</kbd> <kbd>→</kbd> step through the play · <kbd>N</kbd> next play · <kbd>P</kbd> projector mode · <kbd>R</kbd> reset · <kbd>W</kbd> whiteboard.</p>
     <p class="fine">Whiteboard: an Apple Pencil or stylus always draws, and a finger moves players, runners and the ball. You can draw and move without switching tools. A drawing stays on top when you tap Done, until you run the next play.</p>
     <p class="fine">Simple Fielding is free and has no ads or accounts. It's built by a dad with kids in Little League.
       <a href="https://buymeacoffee.com/thames_" target="_blank" rel="noopener">Buy me a coffee</a> to help keep it going.</p>
