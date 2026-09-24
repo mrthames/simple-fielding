@@ -4,7 +4,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '0.19.0';
+  const VERSION = '0.19.1';
   const Field = window.Field;
   const BATTED = ['ground', 'line', 'fly', 'pop', 'bunt'];
   const { POSITIONS, NAMES, LEAGUES } = Field;
@@ -241,6 +241,7 @@
     $('#field-hint').classList.toggle('top', building && state.build.what !== 'hit');
     view.showRollHandle(null);
     $('#result').hidden = true;
+    $('#tv-caption').textContent = '';
     $('#play-title').hidden = true;
     $('#field-hint').hidden = false;
     setSpotlight(null);
@@ -333,6 +334,8 @@
     $('#result').hidden = false;
     $('#result-title').textContent = plan.title;
     $('#result-summary').textContent = plan.summary;
+    // Projector / TV: the teaching point beside the field.
+    $('#tv-caption').textContent = plan.summary + (plan.notes && plan.notes[0] ? '\n\n' + plan.notes[0] : '');
     const notes = $('#result-notes');
     notes.innerHTML = '';
     for (const n of plan.notes) {

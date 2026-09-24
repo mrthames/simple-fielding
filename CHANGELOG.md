@@ -2,6 +2,12 @@
 
 ---
 
+## [2026-09-25] v0.19.1 — TV captions
+
+- **Projector mode on a wide screen** (a TV, or a mirrored iPad or laptop via AirPlay or a Chrome Cast tab) shows the play's summary and its first teaching note in the margin beside the field, so the room gets the lesson as well as the animation. Tap a player and their job card shows there instead.
+
+---
+
 ## [2026-09-25] v0.19.0 — "Cut 2", and the lefty's head start
 
 - **"Cut 2"** (13U–14U and up, baseball and softball). On a single with a runner scoring from 2nd and 1st base open behind them, the batter rounds 1st and takes off for 2nd on the throw home.
