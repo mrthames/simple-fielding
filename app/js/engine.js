@@ -1186,6 +1186,43 @@
         keys.push({ t: tt, x: p.x, y: p.y, o: 1 });
         cur = p;
       }
+
+      // A runner doesn't keep going into a base the throw has already reached. After a ball to the
+      // outfield, if the throw beats them to the plate (or wherever the throw is going), they hold up
+      // at the last base, the way a third-base coach would stop them. If someone is already coming
+      // into that base behind them, they have to keep going, and they're out.
+      const outfieldPlay = plan.classification === 'outfieldHit' || plan.classification === 'outfieldFly';
+      const ballThere = outsMade.find((x) => x.base === r.to);
+      if (outfieldPlay && !r.out && path.length && r.to === plan.target && ballThere && ballThere.t < tt - 0.1) {
+        const holdBase = path.length > 1 ? path[path.length - 2] : r.from;
+        const taken = plan.runners.some((o) => o !== r && o.to === holdBase);
+        if (taken) {
+          r.out = true;
+        } else {
+          const hb = b[holdBase];
+          // Run to the hold base, take a turn toward the next one, see the throw, and go back.
+          const kept = [];
+          let reach = null;
+          for (let i = 0; i < keys.length; i++) {
+            kept.push(keys[i]);
+            if (keys[i].x === hb.x && keys[i].y === hb.y && keys[i].t >= t0) { reach = keys[i].t; break; }
+          }
+          if (reach === null) { reach = t0; kept.push({ t: t0, x: hb.x, y: hb.y, o: 1 }); }
+          const turn = along(hb, holdBase === 'third' ? { x: 0, y: 0 } : b[nextBase(holdBase)], 9);
+          const tTurn = reach + 9 / RUNNER;
+          const tBack = Math.max(tTurn + 0.3, ballThere.t) + 9 / RUNNER;
+          kept.push({ t: tTurn, x: turn.x, y: turn.y, o: 1 });
+          kept.push({ t: Math.max(tTurn + 0.3, ballThere.t), x: turn.x, y: turn.y, o: 1 });
+          kept.push({ t: tBack, x: hb.x, y: hb.y, o: 1 });
+          keys.length = 0;
+          keys.push(...kept);
+          r.held = holdBase;
+          r.to = holdBase;
+          events.push({ t: ballThere.t, type: 'hold', text: `Holds at ${baseName(holdBase)}`, at: { x: hb.x, y: hb.y } });
+          const note = `The throw beats the runner to ${baseName(ballThere.base)}${ballThere.base === 'home' ? '' : ' base'}, so they hold at ${baseName(holdBase)}. That's what a good relay does: it keeps runs off the board.`;
+          if (!plan.notes.includes(note)) plan.notes.push(note);
+        }
+      }
       runnerTracks[r.id] = keys;
       // Outs: fade out a runner who is put out.
       if (r.out) {

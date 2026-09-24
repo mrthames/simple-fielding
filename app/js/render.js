@@ -295,9 +295,9 @@
         if (ev.type === 'throw' && t >= ev.t && t <= ev.tEnd + 0.6) {
           el('line', { x1: ev.from.x, y1: -ev.from.y, x2: ev.to.x, y2: -ev.to.y, class: 'throw', 'marker-end': 'url(#arrow)' }, this.layers.throws);
         }
-        if ((ev.type === 'out' || ev.type === 'catch') && t >= ev.t && t <= ev.t + 1.6) {
+        if ((ev.type === 'out' || ev.type === 'catch' || ev.type === 'hold') && t >= ev.t && t <= ev.t + 1.8) {
           const g = el('g', { class: 'caption ' + ev.type, transform: `translate(${ev.at.x},${-ev.at.y - 12})` }, this.layers.captions);
-          const w = ev.text.length * 5 + 8;
+          const w = ev.text.length * 3.6 + 8;
           el('rect', { x: -w / 2, y: -6, width: w, height: 11, rx: 5.5 }, g);
           el('text', { y: 0.5 }, g).textContent = ev.text;
         }

@@ -214,3 +214,39 @@ test('throw to 2nd on an infield play: center fielder backs up from behind the b
     assert.ok(cf.y > B.second.y + 15 && Math.abs(cf.x) < 15, `CF behind 2nd: ${JSON.stringify(cf)} for ${JSON.stringify(at)}`);
   }
 });
+
+test('a runner the throw would beat home holds at 3rd instead of running in after the ball', () => {
+  // The reported play: runners on 1st and 2nd, two outs, double into the right-center gap.
+  const p = play(on('first', 'second'), { kind: 'line', at: { x: 52, y: 172 }, result: 'double' }, { outs: 2, batter: 'L' });
+  assert.equal(p.target, 'home');
+  const home = p.timeline.events.find((e) => e.type === 'throw' && Math.hypot(e.to.x, e.to.y) < 3);
+  assert.ok(home, 'there is a throw home');
+  for (const r of p.runners) {
+    const keys = p.timeline.tracks['runner:' + r.id];
+    const last = keys[keys.length - 1];
+    const atHome = Math.hypot(last.x, last.y) < 3 && (last.o === undefined || last.o > 0.5);
+    if (atHome) assert.ok(last.t <= home.tEnd + 0.1, `${r.id} reached home at ${last.t.toFixed(2)}s, after the ball (${home.tEnd.toFixed(2)}s)`);
+  }
+  const held = p.runners.find((r) => r.held);
+  assert.ok(held, 'somebody is held up');
+  assert.equal(held.held, 'third');
+  assert.ok(p.timeline.events.some((e) => e.type === 'hold'));
+});
+
+test('no runner on any library play crosses a base after the throw got there first', () => {
+  for (const sc of Scenarios.ALL) {
+    const p = Engine.planPlay({ runners: sc.runners, outs: sc.outs, batter: sc.batter, leadoffs: sc.leadoffs }, sc.event);
+    if (p.classification !== 'outfieldHit' && p.classification !== 'outfieldFly') continue;
+    const arrivals = p.timeline.events.filter((e) => e.type === 'throw');
+    for (const r of p.runners) {
+      const keys = p.timeline.tracks['runner:' + r.id];
+      const last = keys[keys.length - 1];
+      if (last.o !== undefined && last.o < 0.5) continue; // put out
+      for (const th of arrivals) {
+        if (Math.hypot(last.x - th.to.x, last.y - th.to.y) < 3 && r.to === p.target) {
+          assert.ok(last.t <= th.tEnd + 0.1, `${sc.name}: ${r.id} arrives after the ball`);
+        }
+      }
+    }
+  }
+});

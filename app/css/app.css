@@ -171,6 +171,7 @@ svg { display: block; }
 .caption rect { fill: var(--brand-deep); opacity: 0.92; }
 .caption.out rect { fill: var(--red); }
 .caption.catch rect { fill: #248A3D; }
+.caption.hold rect { fill: var(--amber); }
 .caption text { fill: #fff; font: 800 6px var(--font); text-anchor: middle; dominant-baseline: middle; }
 
 .drag-line { fill: none; stroke: #fff; stroke-width: 1.2; stroke-dasharray: 3 2; }

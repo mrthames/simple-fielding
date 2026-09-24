@@ -2,6 +2,16 @@
 
 ---
 
+## [2026-09-23] v0.3.1 — Runners hold up when the throw beats them
+
+### Fix
+- **Runners ran home after the ball was already there.** Found testing on a phone: with runners on 1st and 2nd, two outs, and a double to right-center, the runner from 1st kept running home after the relay throw had beaten him to the plate. Now, after any ball to the outfield, a runner the throw would beat stops at the last base, the way a third-base coach would hold them. They take a turn, see the throw, and go back, with a "Holds at 3rd" call on the field. If another runner is already coming into that base, the runner has to keep going and is out at the plate. A note explains why: a good relay keeps runs off the board.
+
+### Tests
+- The reported play as a regression test, plus a sweep across every library play: no runner reaches a base after the throw got there first.
+
+---
+
 ## [2026-09-23] v0.3.0 — Your team on the field
 
 ### Team
