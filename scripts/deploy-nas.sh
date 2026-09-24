@@ -3,8 +3,8 @@
 # Deploys simplefielding.com to the web server: the website at the root, the web app under /app/.
 # Same layout GitHub Pages gets (see .github/workflows/pages.yml).
 #
-# Connection details are not kept in the repo. Set them in the environment (for Claude Code, in the
-# gitignored .claude/settings.local.json):
+# Connection details are not kept in the repo. Set them in the environment (for Claude Code, in its
+# gitignored local settings file under .claude/):
 #
 #     SF_NAS_HOST   SF_NAS_PORT   SF_NAS_USER   SF_NAS_KEY   (path to the SSH key)
 #     SF_NAS_DIR    defaults to the site folder
