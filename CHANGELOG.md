@@ -2,6 +2,17 @@
 
 ---
 
+## [2026-09-25] v0.23.0 — Read it out loud
+
+- **Read** (on each play) speaks the play for kids who can't read the job list yet. It uses the device's built-in voice: no internet needed, nothing sent anywhere.
+  - It reads the play's name, what happens, then each player's job, using your team's names ("Maya, shortstop…").
+  - If a player is spotlit, it reads just their job.
+  - While a play waits at the hit, it asks the question instead of giving away the answer.
+  - Tap Read again to stop.
+- **Settings → Read each play out loud** reads every play as it starts.
+
+---
+
 ## [2026-09-25] v0.22.0 — Timeline markers, ¼× speed, and plainer words for kids
 
 - **Timeline markers:** a tick under the timeline for each catch, throw, out and safe, in their colors. Tap one to jump just before that moment.

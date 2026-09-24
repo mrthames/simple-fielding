@@ -670,3 +670,21 @@ test('timeline markers jump to a moment in the play; ¼× speed exists', async (
   expect(t).toBeGreaterThan(1);
   await expect(page.locator('.transport [data-speed="0.25"]')).toHaveCount(1);
 });
+
+test('read aloud: the Read button speaks the play (where the browser can)', async ({ page }) => {
+  await page.addInitScript(() => {
+    (window as any).__said = [];
+    if (!('speechSynthesis' in window)) return;
+    const orig = window.speechSynthesis.speak.bind(window.speechSynthesis);
+    window.speechSynthesis.speak = (u: SpeechSynthesisUtterance) => { (window as any).__said.push(u.text); };
+    void orig;
+  });
+  await page.reload();
+  await page.locator('#quick-list .lib-item', { hasText: 'Single to left, runner on 1st' }).click();
+  if (!(await page.locator('#btn-speak').isVisible())) test.skip(true, 'no speech in this browser');
+  await page.locator('#btn-speak').click();
+  const said = await page.evaluate(() => (window as any).__said);
+  expect(said.length).toBeGreaterThan(3);
+  expect(said.join(' ')).toContain('Shortstop');
+  expect(said.join(' ')).not.toContain('1st');
+});

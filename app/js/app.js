@@ -4,7 +4,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '0.22.0';
+  const VERSION = '0.23.0';
   const Field = window.Field;
   const BATTED = ['ground', 'line', 'fly', 'pop', 'bunt'];
   const { POSITIONS, NAMES, LEAGUES } = Field;
@@ -355,6 +355,7 @@
 
   function renderResult(plan) {
     renderMarks(plan);
+    if (state.autoSpeak && canSpeak) setTimeout(() => { if (state.plan === plan) speakPlay(); }, 50);
     $('#result').hidden = false;
     $('#result-title').textContent = plan.title;
     $('#result-summary').textContent = plan.summary;
@@ -1749,6 +1750,47 @@
   };
   svg.addEventListener('pointerup', endF, true);
   svg.addEventListener('pointercancel', endF, true);
+
+  // ------------------------------------------------------------------------------------ read aloud
+  // For players who can't read the job list yet: the device's own voice reads the play, or one player's job.
+  const canSpeak = typeof window.speechSynthesis !== 'undefined' && typeof window.SpeechSynthesisUtterance !== 'undefined';
+  state.autoSpeak = store.get('autoSpeak', false);
+  function speakText(parts) {
+    if (!canSpeak) return;
+    window.speechSynthesis.cancel();
+    for (const text of parts) {
+      const u = new SpeechSynthesisUtterance(text.replace(/\b1st\b/g, 'first').replace(/\b2nd\b/g, 'second').replace(/\b3rd\b/g, 'third'));
+      u.rate = 0.95;
+      u.lang = 'en-US';
+      window.speechSynthesis.speak(u);
+    }
+  }
+  const sayWho = (pos) => { const l = T.labelFor(team, pos); return l.name ? `${l.name}, ${Field.PLAYERS[pos]}` : NAMES[pos]; };
+  function speakPlay() {
+    const plan = state.plan;
+    if (!plan) return;
+    if (state.spotlight) {
+      const j = plan.jobs.find((x) => x.pos === state.spotlight);
+      if (j && j.job) return speakText([`${sayWho(j.pos)}. ${j.job}`]);
+    }
+    const parts = [state.playName || plan.title];
+    if (state.asking) parts.push('Where does everybody go?');
+    else {
+      parts.push(plan.summary);
+      for (const j of plan.jobs) if (j.job) parts.push(`${sayWho(j.pos)}. ${j.job}`);
+    }
+    speakText(parts);
+  }
+  if (canSpeak) {
+    $('#btn-speak').hidden = false;
+    $('#speak-row').hidden = false;
+    $('#auto-speak').checked = state.autoSpeak;
+    $('#auto-speak').addEventListener('change', (e) => { state.autoSpeak = e.target.checked; store.set('autoSpeak', state.autoSpeak); });
+    $('#btn-speak').addEventListener('click', () => {
+      if (window.speechSynthesis.speaking) { window.speechSynthesis.cancel(); return; }
+      speakPlay();
+    });
+  }
 
   // ------------------------------------------------------------------------------------ share links, My plays
   function shareCode() {
