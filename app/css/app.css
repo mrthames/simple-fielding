@@ -706,3 +706,17 @@ body.projector .field-key { font-size: 15px; max-width: none; }
 
 /* Fence distances painted on the warning track. */
 .wall-dist { fill: #fff; font-family: var(--font); font-weight: 800; text-anchor: middle; dominant-baseline: central; opacity: .9; pointer-events: none; paint-order: stroke; stroke: rgba(0, 0, 0, .25); stroke-width: .6px; }
+
+/* Big fields (90 ft levels, ballparks) set --u > 1 so lines stay as bold as on a youth field. A browser that can't
+   do calc() here keeps the plain widths above. */
+.field .chalk { stroke-width: calc(.9 * var(--u, 1)); }
+.field .fence { stroke-width: calc(3 * var(--u, 1)); }
+.field .backstop { stroke-width: calc(2 * var(--u, 1)); }
+.path { stroke-width: calc(1.1 * var(--u, 1)); stroke-dasharray: calc(3 * var(--u, 1)) calc(2.4 * var(--u, 1)); }
+.dest { stroke-width: calc(.9 * var(--u, 1)); }
+.lineup { stroke-width: calc(.8 * var(--u, 1)); stroke-dasharray: calc(1 * var(--u, 1)) calc(2.5 * var(--u, 1)); }
+.throw { stroke-width: calc(1.2 * var(--u, 1)); stroke-dasharray: calc(4 * var(--u, 1)) calc(2 * var(--u, 1)); }
+.drag-line { stroke-width: calc(1.2 * var(--u, 1)); }
+.ball-target { stroke-width: calc(.8 * var(--u, 1)); stroke-dasharray: calc(2 * var(--u, 1)) calc(1.6 * var(--u, 1)); }
+.ball-target.through { stroke-width: calc(.9 * var(--u, 1)); stroke-dasharray: calc(.5 * var(--u, 1)) calc(1.8 * var(--u, 1)); }
+.ball-roll { stroke-width: calc(.6 * var(--u, 1)); stroke-dasharray: calc(.5 * var(--u, 1)) calc(2.2 * var(--u, 1)); }

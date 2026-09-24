@@ -51,6 +51,9 @@
     setGeometry(geo) {
       this.geo = geo;
       const F = geo.fenceMax;
+      // On a big field, draw players, runners, the ball and the chalk bigger than life so they stay readable.
+      this.us = Math.max(1, Math.min(1.9, F / 215));
+      this.svg.style.setProperty('--u', this.us);
       // Wide enough for the farther foul pole, tall enough for the deepest part of the park.
       const poles = Math.max(geo.fenceDir(0), geo.fenceDir(90)) / Math.SQRT2;
       const w = Math.max(F * 1.5, poles * 2 + 30);
@@ -163,12 +166,12 @@
       this.baseEls = {};
       for (const base of ['first', 'second', 'third']) {
         const p = b[base];
-        const grp = el('g', { class: 'base', 'data-base': base, transform: `translate(${p.x},${-p.y}) rotate(45)` }, svg);
+        const grp = el('g', { class: 'base', 'data-base': base, transform: `translate(${p.x},${-p.y}) rotate(45) scale(${this.us})` }, svg);
         el('rect', { x: -7, y: -7, width: 14, height: 14, fill: 'transparent' }, grp); // bigger tap target
         el('rect', { x: -1.6, y: -1.6, width: 3.2, height: 3.2, class: 'bag' }, grp);
         this.baseEls[base] = grp;
       }
-      el('path', { d: 'M-1.4,-1.4 L1.4,-1.4 L1.4,0 L0,1.4 L-1.4,0 Z', class: 'bag' }, svg);
+      el('path', { d: 'M-1.4,-1.4 L1.4,-1.4 L1.4,0 L0,1.4 L-1.4,0 Z', class: 'bag', transform: `scale(${this.us})` }, svg);
     }
 
     makeActors() {
@@ -252,7 +255,7 @@
 
     place(node, p) {
       node._p = { x: p.x, y: p.y };
-      node.setAttribute('transform', `translate(${p.x.toFixed(2)},${(-p.y).toFixed(2)})`);
+      node.setAttribute('transform', `translate(${p.x.toFixed(2)},${(-p.y).toFixed(2)})${this.us > 1 ? ` scale(${this.us.toFixed(3)})` : ''}`);
     }
 
     placeBall(p, idle) {
@@ -262,7 +265,7 @@
       this.ballShadow.setAttribute('cx', p.x); this.ballShadow.setAttribute('cy', -p.y);
       this.ballShadow.setAttribute('opacity', Math.max(0.15, 0.5 - h / 200));
       // Bigger while it waits at the plate to be grabbed, or on the whiteboard; true-ish size in flight.
-      const r = (idle || this.boardMode ? 4.5 : 2.4) + Math.min(h, 90) * 0.04;
+      const r = ((idle || this.boardMode ? 4.5 : 2.4) + Math.min(h, 90) * 0.04) * (this.us || 1);
       this.ballEl.setAttribute('x', (p.x - r).toFixed(2));
       this.ballEl.setAttribute('y', (-p.y - lift - r).toFixed(2));
       this.ballEl.setAttribute('width', (2 * r).toFixed(2));
@@ -288,7 +291,7 @@
         if (Math.hypot(end.x - start.x, end.y - start.y) > 4) {
           const d = 'M' + keys.map(P).join(' L');
           el('path', { d, class: `path role-${a.role}`, 'data-pos': pos }, this.layers.paths);
-          el('circle', { cx: end.x, cy: -end.y, r: 3, class: `dest role-${a.role}`, 'data-pos': pos }, this.layers.marks);
+          el('circle', { cx: end.x, cy: -end.y, r: 3 * this.us, class: `dest role-${a.role}`, 'data-pos': pos }, this.layers.marks);
         }
       }
       // Cutoff and relay lines: from the ball to the base, through the cutoff man.
@@ -306,11 +309,11 @@
       this.clearLayer('target');
       const land = plan.ball.landing || plan.ball.at;
       if (land && plan.ball.at) {
-        el('circle', { cx: land.x, cy: -land.y, r: 5.5, class: 'ball-target' }, this.layers.target);
+        el('circle', { cx: land.x, cy: -land.y, r: 5.5 * this.us, class: 'ball-target' }, this.layers.target);
         if (plan.through && plan.ball.at) {
           const end = plan.ball.at;
           el('path', { d: `M${P(land)} L${P(end)}`, class: 'ball-roll' }, this.layers.target);
-          el('circle', { cx: end.x, cy: -end.y, r: 5.5, class: 'ball-target through' }, this.layers.target);
+          el('circle', { cx: end.x, cy: -end.y, r: 5.5 * this.us, class: 'ball-target through' }, this.layers.target);
         }
       }
       this.layers.paths.style.display = this.showPaths ? '' : 'none';
@@ -342,7 +345,7 @@
           el('line', { x1: ev.from.x, y1: -ev.from.y, x2: ev.to.x, y2: -ev.to.y, class: 'throw', 'marker-end': 'url(#arrow)' }, this.layers.throws);
         }
         if ((ev.type === 'out' || ev.type === 'catch' || ev.type === 'hold' || ev.type === 'safe') && t >= ev.t && t <= ev.t + 1.8) {
-          const g = el('g', { class: 'caption ' + ev.type, transform: `translate(${ev.at.x},${-ev.at.y - 12})` }, this.layers.captions);
+          const g = el('g', { class: 'caption ' + ev.type, transform: `translate(${ev.at.x},${-ev.at.y - 12 * this.us}) scale(${this.us})` }, this.layers.captions);
           const w = ev.text.length * 3.6 + 8;
           el('rect', { x: -w / 2, y: -6, width: w, height: 11, rx: 5.5 }, g);
           el('text', { y: 0.5 }, g).textContent = ev.text;
@@ -381,8 +384,9 @@
       const lift = { ground: 0, bunt: 0, line: 10, fly: 45, pop: 60 }[kind] || 20;
       const d = `M${P(from)} Q${mid.x},${-mid.y - lift} ${to.x},${-to.y}`;
       el('path', { d, class: 'drag-line' }, this.layers.drag);
-      el('circle', { cx: to.x, cy: -to.y, r: 7, class: 'drag-target' }, this.layers.drag);
-      el('image', { href: 'img/baseball.svg', x: to.x - 4.5, y: -to.y - 4.5, width: 9, height: 9 }, this.layers.drag);
+      const u = this.us;
+      el('circle', { cx: to.x, cy: -to.y, r: 7 * u, class: 'drag-target' }, this.layers.drag);
+      el('image', { href: 'img/baseball.svg', x: to.x - 4.5 * u, y: -to.y - 4.5 * u, width: 9 * u, height: 9 * u }, this.layers.drag);
     }
 
     hideDrag() { this.clearLayer('drag'); }
@@ -391,7 +395,7 @@
     showRollHandle(at) {
       this.clearLayer('handle');
       if (!at) return;
-      const g = el('g', { class: 'roll-handle', transform: `translate(${at.x},${-at.y})` }, this.layers.handle);
+      const g = el('g', { class: 'roll-handle', transform: `translate(${at.x},${-at.y}) scale(${this.us})` }, this.layers.handle);
       el('circle', { r: 8, class: 'rh-ring' }, g);
     }
 

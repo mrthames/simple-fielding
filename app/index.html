@@ -339,6 +339,10 @@
       <span>Field</span>
       <select id="league"></select>
     </label>
+    <label class="field-row" id="park-row" hidden>
+      <span>Ballpark</span>
+      <select id="park"></select>
+    </label>
     <label class="field-row" id="leadoffs-row">
       <span>Runners can lead off</span>
       <input type="checkbox" id="leadoffs" class="switch">
@@ -347,6 +351,7 @@
       <span>Show paths</span>
       <input type="checkbox" id="show-paths" class="switch" checked>
     </label>
+    <p class="fine">The field sets the speed of play: how fast runners run and throws travel, where fielders stand, and how far out the cutoffs go. High school, college and pro fields are 90 ft. A ballpark changes only the outfield wall. Park shapes are drawn from published distances and are approximate; Simple Fielding isn't affiliated with or endorsed by MLB, any MLB club, or Little League Baseball, Inc.</p>
     <p class="fine">Little League baseball (60 ft) doesn't allow leadoffs, so runners can't leave until the pitch reaches the batter. Softball runners leave when the pitch is released. Turn leadoffs on for 50/70, travel ball, or older divisions.</p>
     <p class="fine">Drag left or right anywhere on the field (not from home plate) to scrub back and forth through a play.</p>
     <p class="fine">Grounder got through? After a ground ball, drag the pulsing ring (where the infielder tried for it) to where the ball rolled. Everyone plays it as a ball that got by.</p>
@@ -370,6 +375,7 @@
   </div>
 </dialog>
 
+<script src="js/parks.js"></script>
 <script src="js/field.js"></script>
 <script src="js/engine.js"></script>
 <script src="js/scenarios.js"></script>

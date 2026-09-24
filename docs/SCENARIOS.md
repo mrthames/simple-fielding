@@ -186,6 +186,30 @@ the tag. A runner on a hit is **held** at the last base when the throw would cle
 would stop them; otherwise they go, and the play is called safe or out. Runners committed on a steal or a passed ball
 can't be held.
 
+## Higher levels (13U–14U, high school, college, pro)
+
+The same principles, on a 90 ft field, with each level's own speed of play:
+
+| | 13U–14U | High school | College | Pro |
+|---|---|---|---|---|
+| Home to 1st | 4.9 s | 4.6 s | 4.45 s | 4.3 s |
+| Shortstop's arm | 68 mph | 77 mph | 83 mph | 86 mph |
+| Pitcher to the plate + catcher's pop time | 1.60 + 2.35 s | 1.50 + 2.15 s | 1.40 + 2.05 s | 1.35 + 2.00 s |
+| Middle infielders (depth from home) | 130 ft | 134 ft | 140 ft | 147 ft |
+| Center fielder | 262 ft | 285 ft | 305 ft | 320 ft |
+
+- **Cutoff home**: the third baseman from left, the first baseman from center and right, about 45 ft in front of the
+  plate (40 at 13U–14U). The catcher calls it; a good throw goes through.
+- **Tandem relay** on balls in a gap or down a line: the relay goes out far enough that their own throw can reach the
+  base, and the trailer follows 20–25 ft behind.
+- **Double-play depth** with a runner on 1st and less than two outs.
+- Not yet: infield in, the wheel play and 1B crash, pickoffs at 2nd, 1st-and-3rd variations, and the batter taking 2nd
+  on a throw home ("Cut 2").
+
+Numbers are from Statcast and scouting norms at pro. High school and college are estimates; the full sources are in
+the project notes.
+
+
 ## Softball
 
 Fastpitch uses the same principles with its own conventions:

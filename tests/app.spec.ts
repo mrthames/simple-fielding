@@ -400,3 +400,20 @@ test('a single on a grounder at an infielder gets through', async ({ page }) => 
   await dragBall(page, { x: -22, y: 76 });
   await expect(page.locator('#result-title')).toContainText('Through the infield');
 });
+
+test('levels and parks: pro field, then Fenway, with the wall distances and 90 ft plays', async ({ page }) => {
+  await expect(page.locator('.wall-dist')).toHaveCount(3);
+  await page.locator('#btn-settings').click();
+  await expect(page.locator('#park-row')).toBeVisible(); // Little League: the Series fields
+  await page.locator('#league').selectOption('pro');
+  await page.locator('#park').selectOption('redsox-fenway');
+  await page.locator('#settings [data-close]').click();
+  await expect(page.locator('.wall-dist').nth(1)).toHaveText('390');
+  await expect(page.locator('.wall-dist').nth(0)).toHaveText('310');
+  await expect(page.locator('#quick-list h4').first()).toContainText('90 ft');
+  await page.locator('#quick-list .lib-item').first().click();
+  expect(await page.evaluate(() => (window as any).SimpleFielding.state.plan.geo.park)).toBe('redsox-fenway');
+  // Back to softball: no parks, no 90 ft plays.
+  await page.locator('#sport-seg [data-sport="softball"]').click();
+  await expect(page.locator('#quick-list h4', { hasText: '90 ft' })).toHaveCount(0);
+});

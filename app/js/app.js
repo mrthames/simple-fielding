@@ -4,8 +4,9 @@
 (function () {
   'use strict';
 
-  const VERSION = '0.8.1';
-  const { POSITIONS, NAMES, LEAGUES } = window.Field;
+  const VERSION = '0.9.0';
+  const Field = window.Field;
+  const { POSITIONS, NAMES, LEAGUES } = Field;
   const $ = (s) => document.querySelector(s);
   const $$ = (s) => Array.from(document.querySelectorAll(s));
 
@@ -36,6 +37,7 @@
   };
   if (!LEAGUES[state.league]) state.league = 'littleLeague';
   state.leadoffs = store.get('leadoffs.' + state.league, LEAGUES[state.league].leadoffs);
+  state.park = store.get('park.' + state.league, null);
 
   const tester = { on: store.get('tester', false), url: store.get('testerUrl', '') };
   const view = new window.FieldView($('#field'));
@@ -60,7 +62,7 @@
   }
 
   function situation() {
-    return { runners: Object.assign({}, state.runners), outs: state.outs, batter: state.batter, league: state.league, leadoffs: state.leadoffs };
+    return { runners: Object.assign({}, state.runners), outs: state.outs, batter: state.batter, league: state.league, park: state.park || undefined, leadoffs: state.leadoffs };
   }
 
   // -------------------------------------------------------------------------------------------
@@ -572,7 +574,7 @@
     if (baseEl) return; // bases toggle on pointerup
     const p = view.toField(e.clientX, e.clientY);
     const handle = rollHandleAt();
-    if (handle && Math.hypot(p.x - handle.x, p.y - handle.y) < 11) {
+    if (handle && Math.hypot(p.x - handle.x, p.y - handle.y) < 11 * view.us) {
       stop();
       drag = { id: e.pointerId, start: p, fromRoll: handle, moved: false, at: p, cx: e.clientX };
       svg.setPointerCapture(e.pointerId);
@@ -580,7 +582,7 @@
       e.preventDefault();
       return;
     }
-    const nearPlate = Math.hypot(p.x, p.y - 1) < 16;
+    const nearPlate = Math.hypot(p.x, p.y - 1) < 16 * view.us;
     // Players are tapped, not dragged — except the catcher, who stands on top of the ball.
     if (!nearPlate && e.target.closest && e.target.closest('.player')) return;
     drag = { id: e.pointerId, start: p, fromPlate: nearPlate, moved: false, at: p, cx: e.clientX };
@@ -801,10 +803,26 @@
     return `<span class="lib-sit"><span class="lib-bases">${dot(r.third)}${dot(r.second)}${dot(r.first)}</span><span class="lib-outs">${it.outs} out${it.outs === 1 ? '' : 's'}</span></span>`;
   }
 
+  // The list's plays are written for a 60 ft field with a 200 ft fence. Infield spots scale with the bases;
+  // outfield spots scale with this field's fence in that direction, so a "single to left" lands in front of the
+  // left fielder on every field, and a gap double reaches the gap.
+  function scaleSpot(p) {
+    const r = Math.hypot(p.x, p.y);
+    const k = geo.base / 60;
+    const f = Field.isFair(p) ? geo.fenceAt(p) / 200 : k;
+    const t = Math.max(0, Math.min(1, (r - 110) / 40));
+    const s = k + (f - k) * t;
+    return { x: Math.round(p.x * s * 10) / 10, y: Math.round(p.y * s * 10) / 10 };
+  }
+
   function runScenario(idx) {
     const all = window.Scenarios.ALL;
-    const sc = all[(idx + all.length) % all.length];
-    state.scenarioIndex = (idx + all.length) % all.length;
+    // Skip plays that don't belong on this field, in whichever direction we're stepping.
+    const step = idx < state.scenarioIndex ? -1 : 1;
+    let i = (idx + all.length) % all.length;
+    for (let n = 0; n < all.length && !window.Scenarios.fits(all[i], state.league); n++) i = (i + step + all.length) % all.length;
+    const sc = all[i];
+    state.scenarioIndex = i;
     state.runners = Object.assign({ first: false, second: false, third: false }, sc.runners);
     state.outs = sc.outs || 0;
     if (sc.batter) state.batter = sc.batter;
@@ -816,8 +834,7 @@
     }
     const ev = Object.assign({}, sc.event);
     if (ev.at) {
-      const k = geo.base / 60;
-      ev.at = { x: ev.at.x * k, y: ev.at.y * k };
+      ev.at = sc.abs ? { ...ev.at } : scaleSpot(ev.at);
       state.kind = ev.kind;
       state.result = ev.result || 'auto';
     }
@@ -832,8 +849,15 @@
   function buildQuick() {
     const list = $('#quick-list');
     list.innerHTML = '';
-    let i = 0;
-    for (const g of window.Scenarios.GROUPS) {
+    // Each group's first index in Scenarios.ALL; a field's own plays are listed first.
+    let start = 0;
+    const groups = window.Scenarios.GROUPS.map((g) => { const o = { g, start }; start += g.items.length; return o; })
+      .filter(({ g }) => !g.levels || g.levels.includes(state.league))
+      .sort((a, b) => (b.g.levels ? 1 : 0) - (a.g.levels ? 1 : 0));
+    let shown = 0;
+    for (const { g, start: first } of groups) {
+      let i = first;
+      shown += g.items.length;
       const h = document.createElement('h4');
       h.textContent = g.name;
       list.appendChild(h);
@@ -849,6 +873,9 @@
         list.appendChild(btn);
       }
     }
+    const more = $('#quick-more');
+    if (more && !$('#quick-wrap').classList.contains('open')) more.textContent = `Show all ${shown} plays ▾`;
+    list.scrollTop = 0;
   }
   function markQuick(idx) {
     for (const b of $$('#quick-list .lib-item')) {
@@ -871,7 +898,7 @@
   $('#quick-more').addEventListener('click', () => {
     const open = $('#quick-wrap').classList.toggle('open');
     $('#quick-more').setAttribute('aria-expanded', String(open));
-    $('#quick-more').textContent = open ? 'Show fewer ▴' : `Show all ${window.Scenarios.ALL.length} plays ▾`;
+    $('#quick-more').textContent = open ? 'Show fewer ▴' : `Show all ${$$('#quick-list .lib-item').length} plays ▾`;
   });
 
   function setMode(mode) {
@@ -897,11 +924,50 @@
   // Settings
   const settings = $('#settings');
   const leagueSel = $('#league');
-  for (const k in LEAGUES) {
-    const o = document.createElement('option');
-    o.value = k; o.textContent = LEAGUES[k].label;
-    leagueSel.appendChild(o);
+  const GROUPS = [
+    ['Youth baseball', ['littleLeague', 'intermediate']],
+    ['Baseball, 90 ft', ['junior90', 'highSchool', 'college', 'pro']],
+    ['Fastpitch softball', ['softball', 'softball10']],
+  ];
+  for (const [name, keys] of GROUPS) {
+    const og = document.createElement('optgroup');
+    og.label = name;
+    for (const k of keys) {
+      if (!LEAGUES[k]) continue;
+      const o = document.createElement('option');
+      o.value = k; o.textContent = LEAGUES[k].label;
+      og.appendChild(o);
+    }
+    leagueSel.appendChild(og);
   }
+  const parkSel = $('#park');
+  function renderParks() {
+    const parks = Field.parksFor(state.league);
+    $('#park-row').hidden = !parks.length;
+    parkSel.innerHTML = '';
+    const add = (parent, value, text) => { const o = document.createElement('option'); o.value = value; o.textContent = text; parent.appendChild(o); };
+    add(parkSel, '', state.league === 'littleLeague' ? 'Standard field (200 ft)' : 'Standard field');
+    const now = parks.filter((p) => !p.historical), then = parks.filter((p) => p.historical);
+    const sorted = (list) => list.slice().sort((a, b) => (a.team + a.park).localeCompare(b.team + b.park));
+    for (const [label, list] of [[state.league === 'littleLeague' ? 'Little League World Series' : 'Major League parks', sorted(now)], ['Former parks', sorted(then)]]) {
+      if (!list.length) continue;
+      const og = document.createElement('optgroup');
+      og.label = label;
+      for (const p of list) add(og, p.key, `${p.team} — ${p.park}`);
+      parkSel.appendChild(og);
+    }
+    if (state.park && !parks.find((p) => p.key === state.park)) state.park = null;
+    parkSel.value = state.park || '';
+  }
+  parkSel.addEventListener('change', () => {
+    state.park = parkSel.value || null;
+    store.set('park.' + state.league, state.park);
+    if (board.on) closeBoard();
+    clearInkOnNewPlay();
+    const last = state.lastEvent;
+    setGeometry();
+    if (last) { state.lastEvent = last; rerun(); }
+  });
   leagueSel.value = state.league;
   function setLeague(key) {
     if (!LEAGUES[key]) return;
@@ -914,7 +980,10 @@
     if (LEAGUES[key].sport === 'baseball') store.set('baseballLeague', key);
     state.leadoffs = store.get('leadoffs.' + key, LEAGUES[key].leadoffs);
     $('#leadoffs').checked = state.leadoffs;
+    state.park = store.get('park.' + key, null);
+    renderParks();
     setGeometry();
+    buildQuick();
     renderSport();
   }
   function renderSport() {
@@ -994,7 +1063,7 @@
   });
 
   function setGeometry() {
-    geo = window.Field.geometry(state.league);
+    geo = window.Field.geometry(state.league, state.park);
     view.setGeometry(geo);
     view.setShowPaths(state.showPaths);
     applyLabels();
@@ -1168,6 +1237,11 @@
     if (s.league && LEAGUES[s.league] && s.league !== state.league) {
       setLeague(s.league);
     }
+    if ((s.park || null) !== (state.park || null)) {
+      state.park = s.park && Field.parksFor(state.league).find((p) => p.key === s.park) ? s.park : null;
+      renderParks();
+      setGeometry();
+    }
     state.runners = Object.assign({ first: false, second: false, third: false }, s.runners);
     state.outs = s.outs || 0;
     state.batter = s.batter === 'L' ? 'L' : 'R';
@@ -1182,9 +1256,9 @@
   window.SimpleFielding = { setMode, state, team, board, tester, openReport, buildReport, reportText, openBoard, closeBoard, runEvent, runScenario, hitTo, seekEnd() { if (state.plan) { stop(); endAsk(); state.t = state.plan.timeline.duration; view.seek(state.t); updateTransport(); } } };
 
   window.TeamUI.init({ team, onChange: (t) => { T.save(window.localStorage, t); applyLabels(); } });
+  renderParks();
   buildLibrary();
   buildQuick();
-  $('#quick-more').textContent = `Show all ${window.Scenarios.ALL.length} plays ▾`;
   setMode('coach');
   setAskFirst(state.askFirst);
   setGeometry();

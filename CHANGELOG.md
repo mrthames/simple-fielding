@@ -2,6 +2,30 @@
 
 ---
 
+## [2026-09-25] v0.9.0 — High school, college and pro fields, and real ballparks
+
+### Levels of play
+- **Four new fields**, all 90 ft: **13U–14U**, **High school (NFHS)**, **College (NCAA)** and **Pro (MLB / minor leagues)**. The field sets the speed of play, where fielders stand and how far out the cutoffs go:
+  - **Runners**: about 4.9 s home to 1st at 13U–14U, 4.6 at high school, 4.3 at pro.
+  - **Throws**: each position has its own arm strength. A shortstop throws about 86 mph and a right fielder about 90 at pro. Long throws lose speed past each level's carry.
+  - **Catchers**: steals are decided by the pitcher's time to the plate plus the catcher's pop time. At pro that's 1.35 s plus 2.0 s, so an average steal is safe by a step.
+  - **Balls in the air**: hang time, grounder speed, leads, tag time and when a coach sends a runner are all set per level.
+  - **Catchable fly balls** are worked out from hang time and the fielder's speed, not from a fixed reach.
+  - **Positions** come from each level's own depths, not a scaled-up Little League field: middle infielders at about 147 ft at pro, and double-play depth with a runner on 1st.
+  - **Cutoffs and relays**: the cutoff home stands about 45 ft from the plate. The relay goes out as far as its own throw can reach, with the trailer 20–25 ft behind (a tandem relay). A single cutoff lets a good throw go through.
+  - **Base running**: runners tag up on shorter flies, and taggers and stealers get a running start. A ball in the corner takes a moment to dig out.
+- **15 new plays for 90 ft fields**, listed first when one is chosen: double-play depth (6-4-3, 4-6-3, 5-4-3), deep in the hole, slow roller, plays at the plate, 1st to 3rd, tandem relays down both lines and in the gap, a triple, tag-ups, and a pop-up between the first baseman, second baseman and right fielder. The other plays scale to each field: infield spots with the bases, outfield spots with the fence.
+- The youth fields play exactly as before.
+
+### Ballparks
+- **Settings → Ballpark**: all 30 Major League parks, plus the Athletics' Oakland Coliseum, the Giants' Candlestick Park and the Rays' 2025 home, for the 90 ft fields. The two **Little League World Series** stadiums (225 ft) are available for Little League. Each park is listed by team and park name only, with no logos or branding.
+- **Parks draw their real shape** from published distances: Fenway's short left and deep center-field corner, Oracle Park's 415 ft right-center alley. The engine uses the wall in the ball's direction for home runs, extra bases and backups.
+- **Every field shows its left-field, center and right-field distances on the warning track.**
+- Players, runners, the ball and the chalk lines draw larger on big fields, so they stay readable.
+- Parks are saved in replay links.
+
+---
+
 ## [2026-09-25] v0.8.1 — One mode, the question in the title, Next on the field
 
 - **Basic mode is off.** There's one app again, with everything in it. The play list stays in the panel (it replaces the Plays button).

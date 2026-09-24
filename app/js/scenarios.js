@@ -95,13 +95,38 @@
         { name: 'Wild pitch, runner on 1st', runners: on('first'), outs: 1, event: { kind: 'passedBall' } },
       ],
     },
+    {
+      // Written in real feet for a 90 ft field (abs), and only listed on the 90 ft levels.
+      name: '90 ft: depth, relays and tags',
+      levels: ['junior90', 'highSchool', 'college', 'pro'],
+      abs: true,
+      items: [
+        { name: 'Double-play depth — 6-4-3', runners: on('first'), outs: 0, event: { kind: 'ground', at: { x: -38, y: 132 } } },
+        { name: 'Double-play depth — 4-6-3', runners: on('first'), outs: 1, event: { kind: 'ground', at: { x: 36, y: 132 } } },
+        { name: '5-4-3 around the horn', runners: on('first'), outs: 0, event: { kind: 'ground', at: { x: -66, y: 95 } } },
+        { name: 'Deep in the hole at short', runners: on(), outs: 1, event: { kind: 'ground', at: { x: -66, y: 125 } } },
+        { name: 'Slow roller — charge it', runners: on(), outs: 0, event: { kind: 'ground', at: { x: -30, y: 55 } } },
+        { name: 'Single to center, runner on 2nd — play at the plate', runners: on('second'), outs: 1, event: { kind: 'ground', at: { x: -10, y: 255 }, result: 'single' } },
+        { name: 'Single to right, runner on 1st — 1st to 3rd?', runners: on('first'), outs: 0, event: { kind: 'ground', at: { x: 125, y: 215 }, result: 'single' } },
+        { name: 'Single to left, 1st & 2nd — third baseman cuts', runners: on('first', 'second'), outs: 1, event: { kind: 'ground', at: { x: -125, y: 215 }, result: 'single' } },
+        { name: 'Double down the left-field line — tandem relay', runners: on('first'), outs: 0, event: { kind: 'line', at: { x: -205, y: 222 }, result: 'double' } },
+        { name: 'Double down the right-field line — tandem relay', runners: on('first'), outs: 1, event: { kind: 'line', at: { x: 205, y: 222 }, result: 'double' } },
+        { name: 'Gap double, left-center — tandem to 3rd', runners: on(), outs: 0, event: { kind: 'line', at: { x: -140, y: 310 }, result: 'double' } },
+        { name: 'Triple to the right-center gap', runners: on(), outs: 0, event: { kind: 'fly', at: { x: 150, y: 330 }, result: 'triple' } },
+        { name: 'Tag from 3rd — medium fly to center', runners: on('third'), outs: 1, event: { kind: 'fly', at: { x: 0, y: 285 } } },
+        { name: 'Tag from 2nd — fly to right', runners: on('second'), outs: 0, event: { kind: 'fly', at: { x: 150, y: 255 } } },
+        { name: 'Pop-up in the triangle — 1B, 2B, RF', runners: on(), outs: 1, event: { kind: 'pop', at: { x: 55, y: 145 } } },
+      ],
+    },
   ];
 
   // A flat list, handy for "next scenario".
   const ALL = [];
-  GROUPS.forEach((g) => g.items.forEach((it) => ALL.push(Object.assign({ group: g.name }, it))));
+  GROUPS.forEach((g) => g.items.forEach((it) => ALL.push(Object.assign({ group: g.name, levels: g.levels, abs: g.abs }, it))));
+  // Whether a play belongs on this field.
+  const fits = (sc, leagueKey) => !sc.levels || sc.levels.includes(leagueKey);
 
-  const api = { GROUPS, ALL };
+  const api = { GROUPS, ALL, fits };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.Scenarios = api;
 })(typeof window !== 'undefined' ? window : globalThis);
