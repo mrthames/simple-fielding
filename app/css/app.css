@@ -805,3 +805,10 @@ body.softball #batter-seg button { font-size: 13px; padding: 0 7px; }
 @media (min-width: 900px) { .field-hint:not(.top) { left: 12px; transform: none; } }
 body.no-dropped #other-plays [data-play="droppedThird"], body.no-dropped #build-result [data-res="dropped"] { display: none; }
 body:not(.softball) #other-plays [data-play="delayedSteal"] { display: none; }
+
+/* Where each player is looking. */
+.look { pointer-events: none; }
+.look.fielder { fill: rgba(255, 255, 255, .2); }
+.look.fielder.spot { fill: rgba(255, 214, 107, .35); }
+.look.runner { fill: rgba(255, 120, 110, .28); }
+body.board-on .layer-looks { display: none; }

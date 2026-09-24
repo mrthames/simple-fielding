@@ -2,6 +2,22 @@
 
 ---
 
+## [2026-09-25] v0.15.0 — Where everyone is looking, and runners who read the ball
+
+- **Vision cones.** A soft cone from each player shows where they're looking, moment by moment:
+  - **Fielders** watch the batter until contact, then the ball. With the ball in hand, they look where they're about to throw. A cutoff watches the outfielder, catches it, then turns to the base.
+  - **Runners** look where they're going. The batter looks down the line at 1st. Rounding 1st, a runner finds the ball. From 2nd to 3rd, the eyes go to the third-base coach; from 3rd, to the plate.
+  - **A runner who's waiting**, tagging up or holding, watches the ball.
+  - **Spotlight** a player to see only their cone, highlighted.
+  - Turn them off in Settings → **Show where players look**. The same data will aim the camera for the planned "be the player" 3D view.
+- **Runners read fly balls:**
+  - **A caught fly** with fewer than two outs: a runner who isn't tagging goes partway, then gets back to the bag when it's caught.
+  - **A fly that drops:** runners wait partway until it lands, then run.
+  - **A line drive into a gap:** they hesitate only a beat.
+  - **Two outs:** everybody still runs on contact.
+
+---
+
 ## [2026-09-25] v0.14.0 — Look-back, delayed steal, dropped third strike
 
 - **Softball look-back plays.** The catcher returns the ball to the pitcher in the circle, and the runner off the base:

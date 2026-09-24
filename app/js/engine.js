@@ -589,7 +589,7 @@
       r.push({ id: 'second', from: 'second', to: 'third', tagUp: true });
     }
     for (const base of ['first', 'second', 'third']) {
-      if (run[base] && !r.find((x) => x.id === base)) r.push({ id: base, from: base, to: base });
+      if (run[base] && !r.find((x) => x.id === base)) r.push({ id: base, from: base, to: base, halfway: situation.outs < 2 && base !== 'third' });
     }
     plan.runners = r;
     plan.target = target;
@@ -1608,6 +1608,89 @@
    * tracks[id] = [{ t, x, y, h?, o? }]  — linear between keyframes; renderer eases.
    * events     = [{ t, type, text, at }] — "OUT!", "SAFE" style captions and throw arrows.
    */
+
+  /*
+   * Where everyone is looking, moment by moment: tracks['look:' + id] = [{ t, x, y }] (the point they're looking at).
+   * Fielders watch the batter until contact, then the ball; with the ball in hand they look where they're throwing.
+   * Runners look where they're going: the batter at 1st; rounding 1st, for the ball; 2nd to 3rd, at the third-base
+   * coach; 3rd to home, at the plate. A runner waiting (tagging up, holding, leading off) watches the ball.
+   */
+  function computeLooks(plan, tracks, events, T0, duration) {
+    const geo = plan.geo;
+    const b = geo.bases;
+    const k = geo.base / 60;
+    const out = {};
+    const DT = 0.1;
+    const ballAt = (t) => sampleTrack(tracks.ball || [], t);
+    const throwsEv = events.filter((e) => e.type === 'throw');
+    const coach3 = { x: b.third.x - 12 * k, y: b.third.y - 4 * k };
+    const home = { x: 0, y: 0 };
+    const segs = [['home', 'first'], ['first', 'second'], ['second', 'third'], ['third', 'home']];
+    const at = (n) => (n === 'home' ? home : b[n]);
+    const lookAtBallOr = (p, t, fallback) => {
+      const q = ballAt(t);
+      return Math.hypot(q.x - p.x, q.y - p.y) > 3 ? { x: q.x, y: q.y } : fallback;
+    };
+    const pre = plan.pitchOnly ? 0 : T0;
+    for (const pos of POSITIONS) {
+      const tr = tracks[pos];
+      if (!tr) continue;
+      const keys = [];
+      let last = { x: 0, y: 0 };
+      for (let t = 0; t <= duration + 1e-6; t += DT) {
+        const p = sampleTrack(tr, t);
+        let q;
+        if (t < pre) q = pos === 'C' ? geo.mound : home;
+        else {
+          // Holding the ball, about to throw: look at the target.
+          const next = throwsEv.find((e) => t >= e.t - 1.2 && t <= e.t && Math.hypot(e.from.x - p.x, e.from.y - p.y) < 8);
+          q = next ? next.to : lookAtBallOr(p, t, last);
+        }
+        if (Math.hypot(q.x - p.x, q.y - p.y) < 1.5) q = last;
+        keys.push({ t: Math.round(t * 100) / 100, x: q.x, y: q.y });
+        last = q;
+      }
+      out['look:' + pos] = keys;
+    }
+    for (const r of plan.runners || []) {
+      const tr = tracks['runner:' + r.id];
+      if (!tr) continue;
+      const keys = [];
+      let last = r.from === 'home' ? b.first : at(nextBase(r.from) || 'home');
+      for (let t = 0; t <= duration + 1e-6; t += DT) {
+        const p = sampleTrack(tr, t);
+        const p2 = sampleTrack(tr, t + 0.25);
+        const moving = Math.hypot(p2.x - p.x, p2.y - p.y) > 1.2;
+        let q;
+        if (!moving) {
+          // Standing: before the pitch, watch the pitcher; after, the ball.
+          q = t < pre || (plan.pitchOnly && t < geo.tempo.delivery) ? geo.mound : lookAtBallOr(p, t, last);
+        } else {
+          // Which base path they're on, heading which way.
+          let best = null;
+          for (const [a, c] of segs) {
+            const A = at(a), C = at(c);
+            const vx = C.x - A.x, vy = C.y - A.y, L2 = vx * vx + vy * vy;
+            const u = Math.max(0, Math.min(1, ((p.x - A.x) * vx + (p.y - A.y) * vy) / L2));
+            const d = Math.hypot(p.x - (A.x + vx * u), p.y - (A.y + vy * u));
+            const ahead = (p2.x - p.x) * vx + (p2.y - p.y) * vy > 0;
+            if (ahead && (!best || d < best.d)) best = { a, c, d };
+          }
+          if (!best) q = lookAtBallOr(p, t, last);
+          else if (best.a === 'home') q = b.first;
+          else if (best.a === 'first') q = r.id === 'batter' ? lookAtBallOr(p, t, b.second) : lookAtBallOr(p, t, b.second);
+          else if (best.a === 'second') q = coach3;
+          else q = home;
+        }
+        if (Math.hypot(q.x - p.x, q.y - p.y) < 1.5) q = last;
+        keys.push({ t: Math.round(t * 100) / 100, x: q.x, y: q.y });
+        last = q;
+      }
+      out['look:runner:' + r.id] = keys;
+    }
+    return out;
+  }
+
   function buildTimeline(plan) {
     const { geo, ready } = plan;
     const b = geo.bases;
@@ -1624,6 +1707,7 @@
     ball.push({ t: 0, x: mound.x, y: mound.y - 1, h: 5 });
 
     let contact = T0;
+    let landTime = null;
     let fieldPos = plan.fielder;
     let tBallAtFielder;
 
@@ -1665,6 +1749,7 @@
         default: flight = hangTime(geo, 'fly', d);
       }
       const landT = contact + flight;
+      landTime = landT;
       const peak = { ground: 2, bunt: 1, line: 7, pop: 85, fly: 60 }[plan.ball.kind] || 40;
       const air = plan.ball.kind === 'fly' || plan.ball.kind === 'pop' || plan.ball.kind === 'line';
 
@@ -1852,6 +1937,34 @@
         : r.start === 'afterFirstCatch' ? (firstThrowCatch || 1) + 0.1
         : r.start === 'onFirstThrow' ? (firstThrowRelease || 1)
         : r.start;
+      // A fly ball that might be caught: runners read it. (A line drive into a gap is plainly a hit almost at once.)
+      const airHit = plan.classification === 'outfieldHit' && plan.ball.kind === 'fly' && landTime;
+      if (plan.classification === 'outfieldHit' && plan.ball.kind === 'line' && r.from !== 'home' && plan.situation.outs < 2 && r.start === undefined) t0 = runnerStart + 0.3;
+      if (r.halfway) {
+        // Caught fly, not tagging: go partway so you can advance if it drops, and get back when it's caught.
+        const H = along(b[r.from], baseAt(nextBase(r.from)), Math.min(0.4 * geo.base, 26 * (geo.base / 60)));
+        const tc = tBallAtFielder;
+        keys.push({ t: runnerStart, x: keys[0].x, y: keys[0].y, o: 1 });
+        keys.push({ t: Math.min(tc - 0.3, runnerStart + 2), x: H.x, y: H.y, o: 1 });
+        keys.push({ t: tc, x: H.x, y: H.y, o: 1 });
+        keys.push({ t: tc + returnTime(geo, dist(H, b[r.from]), false), x: b[r.from].x, y: b[r.from].y, o: 1 });
+        runnerTracks[r.id] = keys;
+        taken.add(r.from);
+        continue;
+      }
+      if (airHit && r.from !== 'home' && !r.tagUp && plan.situation.outs < 2 && !r.forced) {
+        // A ball in the air with less than two outs: go partway, read it, and run once it drops.
+        const H = along(b[r.from], baseAt(nextBase(r.from)), Math.min(0.4 * geo.base, 26 * (geo.base / 60)));
+        keys.push({ t: runnerStart, x: keys[0].x, y: keys[0].y, o: 1 });
+        keys.push({ t: Math.max(runnerStart + 0.3, landTime), x: H.x, y: H.y, o: 1 });
+        t0 = Math.max(runnerStart + 0.3, landTime) + 0.15;
+      } else if (airHit && r.from !== 'home' && !r.tagUp && plan.situation.outs < 2 && r.forced) {
+        // Forced, but it could be caught: a few steps less aggressive, then go when it drops.
+        const H = along(b[r.from], baseAt(nextBase(r.from)), Math.min(0.5 * geo.base, 32 * (geo.base / 60)));
+        keys.push({ t: runnerStart, x: keys[0].x, y: keys[0].y, o: 1 });
+        keys.push({ t: Math.max(runnerStart + 0.3, landTime), x: H.x, y: H.y, o: 1 });
+        t0 = Math.max(runnerStart + 0.3, landTime) + 0.1;
+      }
       if (r.tagUp) {
         // Back to the bag, wait for the catch, then go.
         keys.push({ t: runnerStart, x: b[r.from].x, y: b[r.from].y, o: 1 });
@@ -2016,6 +2129,7 @@
 
     let end = endBall;
     for (const id in tracks) end = Math.max(end, tracks[id][tracks[id].length - 1].t);
+    Object.assign(tracks, computeLooks(plan, tracks, events, T0, end + 1.0));
     return { tracks, events, duration: end + 1.0, contact: T0 };
   }
 
@@ -2156,6 +2270,7 @@
       events.push({ t: times[i], type, text: cap.slice(0, 40), at: st.ball || { x: 0, y: 1.5 } });
       plan.notes.push(`Step ${i}: ${cap}`);
     });
+    Object.assign(tracks, computeLooks(Object.assign(plan, { pitchOnly: true }), tracks, events, 0, t + 1.2));
     plan.timeline = { tracks, events, duration: t + 1.2, contact: 0 };
     plan.jobs = [];
     return plan;

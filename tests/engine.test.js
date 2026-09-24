@@ -291,3 +291,38 @@ test('a grounder that gets through the infield is played where it ends up', () =
   assert.ok(!q.through);
   assert.equal(q.fielder, 'SS');
 });
+
+test('where players look: fielders watch the ball, a thrower looks at the target, a runner rounding 2nd looks to the coach', () => {
+  const p = Engine.planPlay({ runners: { first: true }, outs: 0 }, { kind: 'line', at: { x: -52, y: 172 }, result: 'double' });
+  const tr = p.timeline.tracks;
+  assert.ok(tr['look:SS'] && tr['look:runner:first'], 'look tracks exist');
+  // Before contact the infielders look at the plate.
+  const s0 = Engine.sampleTrack(tr['look:SS'], 0);
+  assert.ok(Math.hypot(s0.x, s0.y) < 2);
+  // The runner from 1st, on the way from 2nd to 3rd, looks toward the third-base coach (foul side of 3rd).
+  const g = Field.geometry('littleLeague');
+  const rt = tr['runner:first'];
+  const t = rt.find((k) => Math.hypot(k.x - g.bases.second.x, k.y - g.bases.second.y) < 1).t + 0.6;
+  const q = Engine.sampleTrack(tr['look:runner:first'], t);
+  assert.ok(q.x < g.bases.third.x && Math.abs(q.x) > q.y, JSON.stringify(q));
+  // The relay, holding the ball before the throw home, looks toward home.
+  const th = p.timeline.events.filter((e) => e.type === 'throw')[1];
+  const r = Engine.sampleTrack(tr['look:SS'], th.t - 0.2);
+  assert.ok(Math.hypot(r.x - th.to.x, r.y - th.to.y) < 3, JSON.stringify(r));
+});
+
+test('runner reads: halfway on a caught fly and back; on a fly that drops, they wait at halfway and then run', () => {
+  const g = Field.geometry('littleLeague');
+  const caught = Engine.planPlay({ runners: { first: true }, outs: 0 }, { kind: 'fly', at: { x: -90, y: 146 } });
+  const k = caught.timeline.tracks['runner:first'];
+  const far = Math.max(...k.map((q) => Math.hypot(q.x - g.bases.first.x, q.y - g.bases.first.y)));
+  assert.ok(far > 15, 'goes partway');
+  const last = k[k.length - 1];
+  assert.ok(Math.hypot(last.x - g.bases.first.x, last.y - g.bases.first.y) < 1, 'and gets back');
+  const drop = Engine.planPlay({ runners: { second: true }, outs: 0 }, { kind: 'fly', at: { x: -60, y: 185 }, result: 'double' });
+  const d = drop.timeline.tracks['runner:second'];
+  const land = drop.timeline.events.length ? null : null; void land;
+  // The runner is between 2nd and 3rd, not past 3rd, a moment before the ball lands.
+  const mid = Engine.sampleTrack(d, 1.5);
+  assert.ok(Math.hypot(mid.x - g.bases.third.x, mid.y - g.bases.third.y) > 10, JSON.stringify(mid));
+});

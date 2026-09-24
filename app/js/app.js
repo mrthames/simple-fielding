@@ -4,7 +4,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '0.14.0';
+  const VERSION = '0.15.0';
   const Field = window.Field;
   const BATTED = ['ground', 'line', 'fly', 'pop', 'bunt'];
   const { POSITIONS, NAMES, LEAGUES } = Field;
@@ -26,6 +26,7 @@
     result: 'auto',
     speed: store.get('speed', 1),
     showPaths: store.get('showPaths', true),
+    showLooks: store.get('showLooks', true),
     plan: null,
     lastEvent: null,
     playing: false,
@@ -1084,6 +1085,8 @@
   renderSport();
   $('#leadoffs').checked = state.leadoffs;
   $('#leadoffs').addEventListener('change', (e) => { state.leadoffs = e.target.checked; store.set('leadoffs.' + state.league, state.leadoffs); rerun(); if (!state.lastEvent) showReady(); });
+  $('#show-looks').checked = state.showLooks;
+  $('#show-looks').addEventListener('change', (e) => { state.showLooks = e.target.checked; store.set('showLooks', state.showLooks); view.setShowLooks(state.showLooks); });
   $('#show-paths').checked = state.showPaths;
   $('#show-paths').addEventListener('change', (e) => { state.showPaths = e.target.checked; store.set('showPaths', state.showPaths); view.setShowPaths(state.showPaths); });
   $('#btn-settings').addEventListener('click', () => openSheet(settings));
@@ -1141,6 +1144,7 @@
     geo = window.Field.geometry(state.league, state.park);
     view.setGeometry(geo);
     view.setShowPaths(state.showPaths);
+    view.setShowLooks(state.showLooks);
     applyLabels();
     showReady();
   }

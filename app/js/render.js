@@ -63,6 +63,7 @@
       this.drawField();
       this.layers = {
         paths: el('g', { class: 'layer-paths' }, this.svg),
+        looks: el('g', { class: 'layer-looks' }, this.svg),
         marks: el('g', { class: 'layer-marks' }, this.svg),
         target: el('g', { class: 'layer-target' }, this.svg),
         throws: el('g', { class: 'layer-throws' }, this.svg),
@@ -351,6 +352,7 @@
         node.style.opacity = p.o;
       }
       this.placeBall(sample(tr.ball, t, false), false);
+      this.drawLooks(t);
 
       // Throw arrows while a throw is in the air, captions after events.
       this.clearLayer('throws');
@@ -368,6 +370,35 @@
       }
     }
 
+    // A soft cone from each player toward where they're looking.
+    setShowLooks(v) { this.showLooks = v; if (this.plan) this.drawLooks(this.t); else this.clearLayer('looks'); }
+    drawLooks(t) {
+      this.clearLayer('looks');
+      const plan = this.plan;
+      if (!plan || this.showLooks === false || this.boardMode) return;
+      const tr = plan.timeline.tracks;
+      const R = 24 * this.us, half = 22 * Math.PI / 180;
+      const cone = (p, q, cls) => {
+        const a = Math.atan2(q.y - p.y, q.x - p.x);
+        const x1 = p.x + Math.cos(a - half) * R, y1 = p.y + Math.sin(a - half) * R;
+        const x2 = p.x + Math.cos(a + half) * R, y2 = p.y + Math.sin(a + half) * R;
+        el('path', { d: `M${p.x},${-p.y} L${x1},${-y1} A${R},${R} 0 0 0 ${x2},${-y2} Z`, class: 'look ' + cls }, this.layers.looks);
+      };
+      for (const pos of POSITIONS) {
+        const keys = tr['look:' + pos];
+        if (!keys || !tr[pos]) continue;
+        if (this.spotlight && this.spotlight !== pos) continue;
+        cone(sample(tr[pos], t, true), sample(keys, t, false), 'fielder' + (this.spotlight === pos ? ' spot' : ''));
+      }
+      if (!this.spotlight) for (const r of plan.runners) {
+        const keys = tr['look:runner:' + r.id], rt = tr['runner:' + r.id];
+        if (!keys || !rt) continue;
+        const p = sample(rt, t, false);
+        if (p.o !== undefined && p.o < 0.5) continue;
+        cone(p, sample(keys, t, false), 'runner');
+      }
+    }
+
     setShowPaths(v) {
       this.showPaths = v;
       if (this.layers) {
@@ -376,7 +407,7 @@
       }
     }
 
-    setSpotlight(pos) { this.spotlight = pos; this.applySpotlight(); }
+    setSpotlight(pos) { this.spotlight = pos; this.applySpotlight(); if (this.plan) this.drawLooks(this.t); }
 
     applySpotlight() {
       this.svg.classList.toggle('has-spotlight', !!this.spotlight);
