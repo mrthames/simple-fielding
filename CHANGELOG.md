@@ -2,6 +2,13 @@
 
 ---
 
+## [2026-09-25] v0.35.1 — Where your progress is kept
+
+- **The fielding lessons say where your progress is kept**, at the bottom of the list. It's in this browser, on this device. Clearing the browser's cache and data for the website removes it, and so does closing a private or incognito window.
+- **Settings says the same for everything the app keeps**: your team's names, My plays, lesson progress and your settings. There's no account, so export My plays if you want a backup.
+
+---
+
 ## [2026-09-25] v0.35.0 — Start here, and a way back
 
 - **"Start here: How lessons work"** opens both courses. It shows a small picture of everything on the field and what it means:

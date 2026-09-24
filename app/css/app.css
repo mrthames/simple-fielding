@@ -957,3 +957,4 @@ body.tr-waiting .player:not(.trainee) .ring { stroke: transparent !important; }
 .tb-choices button { width: 100%; }
 .tb-what { margin: 6px 0 0; font-size: 15px; color: #0f1b2d; }
 .tb-what span { color: #44546b; white-space: nowrap; }
+.learn-note { margin-top: 18px; }
