@@ -812,3 +812,4 @@ body:not(.softball) #other-plays [data-play="delayedSteal"] { display: none; }
 .look.fielder.spot { fill: rgba(255, 214, 107, .35); }
 .look.runner { fill: rgba(255, 120, 110, .28); }
 body.board-on .layer-looks { display: none; }
+body.no-steals #build-result [data-res="passed"], body.no-steals #build-result [data-res="dropped"] { display: none; }

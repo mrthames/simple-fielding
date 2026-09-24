@@ -108,7 +108,7 @@
         { name: 'Drag bunt by a slapper — first baseman crashes', runners: on(), outs: 0, batter: 'S', event: { kind: 'bunt', at: { x: 16, y: 26 } } },
         { name: 'Slap with a runner on 1st — take the sure out', runners: on('first'), outs: 0, batter: 'S', event: { kind: 'ground', at: { x: -24, y: 56 }, slap: 'soft' } },
         { name: 'Sacrifice bunt, runners on 1st & 2nd', runners: on('first', 'second'), outs: 0, event: { kind: 'bunt', at: { x: -14, y: 28 } } },
-        { name: 'Squeeze — take the out at 1st', runners: on('third'), outs: 1, event: { kind: 'bunt', at: { x: 6, y: 22 } } },
+        { name: 'Squeeze — take the out at 1st', runners: on('third'), outs: 1, event: { kind: 'bunt', at: { x: 6, y: 22 }, squeeze: true } },
         { name: 'Bunt, runner on 1st — catcher covers 3rd', runners: on('first'), outs: 0, event: { kind: 'bunt', at: { x: -12, y: 30 } } },
         { name: 'Steal of 2nd — shortstop covers', runners: on('first'), outs: 0, event: { kind: 'steal2' } },
         { name: 'Steal of 3rd', runners: on('second'), outs: 1, event: { kind: 'steal3' } },

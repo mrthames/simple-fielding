@@ -267,6 +267,8 @@
       event = Object.assign({}, event, { at: event.through });
       delete event.through;
     }
+    plan.squeeze = !!event.squeeze && !!situation.runners.third;
+    plan.T0 = geo.tempo.pitchFlight;
     const out = planBattedBallAt(plan, geo, situation, event);
     if (tryAt) missedGrounder(out, tryAt);
     return out;
@@ -671,22 +673,65 @@
       return [best];
     }
     if (isBunt) {
+      if (plan.squeeze) return ['first'];
       // Bases loaded, less than two outs: whoever fields it close to the plate takes the force at home.
       if (forced.home && dist(at, b.home) < 35 * (geo.base / 60)) return ['home', 'first'];
       return ['first'];
     }
+    // A slow roller or a slap: the force at 2nd is too late unless a middle infielder fields it near the bag.
+    if ((plan.ball.slow || situation.batter === 'S') && !forced.home && !(['SS', '2B'].includes(F) && dist(at, b.second) < 30 * (geo.base / 60))) return ['first'];
     if (forced.home) return ['home', 'first'];
     if (forced.third && F === '3B') return ['third', 'first'];
     if (forced.second) return ['second', 'first'];
     return ['first'];
   }
 
+  // Where a fielder charging a bunt or a slow roller meets it: the first spot on the ball's way in that they can get
+  // to before it does. (A ball that stops is fielded where it stops.)
+  function meetBall(plan, pos, at, isBunt) {
+    const geo = plan.geo;
+    const T = geo.tempo;
+    const roll = isBunt ? T.bunt : { a: 0.3, v: 40 };
+    const d = dist(at, geo.bases.home);
+    for (let s = 4; s < d; s += 1) {
+      const p = along(geo.bases.home, at, s);
+      if (0.05 + dist(plan.ready[pos], p) / T.fielder <= roll.a + s / roll.v) return { p, t: roll.a + s / roll.v };
+    }
+    return { p: at, t: Math.max(roll.a + d / roll.v, 0.05 + dist(plan.ready[pos], at) / T.fielder) };
+  }
+
   function planInfieldGround(plan, isBunt) {
     const { geo, situation, ready } = plan;
     const b = geo.bases;
     const run = situation.runners;
-    const at = plan.ball.at;
-    const F = infieldFielder(plan, at, isBunt);
+    let at = plan.ball.at;
+    let F = infieldFielder(plan, at, isBunt);
+    // A slow roller or a soft slap: whoever can charge it and get there first takes it (nobody backs up to it).
+    if (plan.ball.slow && !isBunt) {
+      let best = null;
+      for (const pos of ['P', '1B', '2B', 'SS', '3B']) {
+        const m = meetBall(plan, pos, at, false);
+        const back = dist(ready[pos], b.home) < dist(m.p, b.home) - 6 ? 0.6 : 0;   // running away from the plate
+        const t = m.t + back + (pos === 'P' ? 0.2 : 0);
+        if (!best || t < best.t) best = { pos, t };
+      }
+      F = best.pos;
+    }
+    // Older levels: a bunt goes to whoever can get to it first (a corner playing back can't).
+    if (isBunt && geo.older) {
+      let best = null;
+      for (const pos of ['P', 'C', '1B', '3B']) {
+        const t = meetBall(plan, pos, at, true).t + (pos === 'C' ? 0.15 : 0);
+        if (!best || t < best.t) best = { pos, t };
+      }
+      F = best.pos;
+    }
+    if (isBunt || plan.ball.slow) {
+      const m = meetBall(plan, F, at, isBunt);
+      at = round(m.p);
+      plan.ball.landing = at;
+      plan.ball.fieldPoint = at;
+    }
     plan.fielder = F;
     const targets = groundBallTargets(plan, F, at, isBunt);
     plan.target = targets[0];
@@ -699,6 +744,8 @@
     for (const base of ['first', 'second', 'third']) {
       if (!run[base]) continue;
       const nb = nextBase(base);
+      // Squeeze: the runner on 3rd goes on the pitch.
+      if (base === 'third' && plan.squeeze) { r.push({ id: base, from: base, to: 'home', start: Math.max(0, (plan.T0 || 0.5) - 0.35), commit: true }); continue; }
       if (forced[nb]) r.push({ id: base, from: base, to: nb, forced: true });
       else if (situation.outs === 2) r.push({ id: base, from: base, to: nb });
       else r.push({ id: base, from: base, to: base });
@@ -719,7 +766,8 @@
     const softball = geo.league.sport === 'softball';
     const leftSide = at.x < -3;
     // On a bunt the second baseman covers 1st, so the shortstop always has 2nd (or 3rd, below).
-    const coverSecond = isBunt ? 'SS' : F === 'SS' ? '2B' : F === '2B' ? 'SS' : leftSide ? '2B' : 'SS';
+    const slapD = softball && situation.batter === 'S';
+    const coverSecond = isBunt || (slapD && F !== 'SS') ? 'SS' : F === 'SS' ? '2B' : F === '2B' ? 'SS' : leftSide ? '2B' : 'SS';
     // Covering 1st: come up the inside of the line (fair side) and take the inside of the bag.
     const firstInside = { x: b.first.x + FAIR_1.x * 1.6, y: b.first.y + FAIR_1.y * 1.6 };
     const lineApproach = { x: (b.first.x - 12 * k * Math.SQRT1_2) + FAIR_1.x * 3, y: (b.first.y - 12 * k * Math.SQRT1_2) + FAIR_1.y * 3 };
@@ -738,8 +786,8 @@
         'Ball hit to your left? Run to 1st! Get to the baseline a few steps short of the bag, run up the INSIDE of the line, and take the throw on the inside of the bag.', {
           delay: 0.1, path: [lineApproach, firstInside],
         });
-    } else if (isBunt) {
-      assign(plan, '2B', 'cover', firstInside, 'Cover 1st base on the bunt — the first baseman is charging.', { delay: 0.1 });
+    } else if (isBunt || (slapD && F !== '2B')) {
+      assign(plan, '2B', 'cover', firstInside, isBunt ? 'Cover 1st base on the bunt — the first baseman is charging.' : 'Cover 1st — against a slapper the first baseman is in, so 1st is yours.', { delay: 0.1 });
       assign(plan, '1B', 'hold', charge1,
         'Charge in on the bunt! If someone else fields it, peel off to the inside — stay out of the runner\'s lane.', { delay: 0.05 });
     } else {
@@ -940,7 +988,8 @@
     const lead = ['third', 'second', 'first'].find((x) => run[x]);
     if (line && lead && situation.outs < 2) {
       plan.target = lead;
-      plan.throws.push({ fromPos: F, to: lead });
+      const own = { first: '1B', third: '3B' }[lead] === F || dist(at, b[lead]) < 20 * k;
+      plan.throws.push({ fromPos: F, to: lead, step: own });
       plan.summary = `${The(F)} catches the line drive and throws to ${baseName(lead)} in case the runner was caught off the base.`;
       plan.notes.push('On a line drive, runners freeze. If a runner is caught off the base, throw to the base they left — that\'s a double play.');
     } else {
@@ -1110,8 +1159,8 @@
       return plan;
     };
 
-    // The pitcher throws over.
-    if (event.move === 'pickoff') {
+    // The pitcher throws over. (Not in softball: a leftover setting plays as a pitch.)
+    if (event.move === 'pickoff' && geo.league.sport !== 'softball') {
       const base = run[event.pickoff] ? event.pickoff : ['first', 'second', 'third'].find((x) => run[x]);
       if (!base) return planSituationPlay(geo, situation, { kind: 'none' });
       return pickoffPlay(geo, situation, base, leadOf(base));
@@ -1134,7 +1183,7 @@
     if (g2) return setLeads(planSituationPlay(geo, situation, { kind: 'steal3' }));
 
     // Nobody is going. The catcher throws behind the runner the throw can beat by the most, if any.
-    const exch = T.popTime ? Math.max(0.5, T.popTime - throwTime(geo, geo.bases.second.y + 3, 'C')) : 0.35;
+    const exch = T.backPickExch || (T.popTime ? Math.max(0.5, T.popTime - throwTime(geo, geo.bases.second.y + 3, 'C')) : 0.35);
     const shuffle = geo.older ? 6 : situation.leadoffs ? 6 : 4;
     let best = null;
     for (const base of ['first', 'second', 'third']) {
@@ -1211,7 +1260,9 @@
     plan.title = `Back-pick at ${baseName(base)}`;
     plan.summary = `The runner on ${baseName(base)} strays too far after the pitch. The catcher throws behind them.`;
     assign(plan, 'C', 'field', { x: 0, y: -3 }, `Catch it and snap a throw to ${baseName(base)} — the runner is too far off.`, { delay: 0 });
-    const cover = base === 'first' ? '1B' : base === 'third' ? '3B' : 'SS';
+    // Softball corners play in: the second baseman sneaks in behind the runner at 1st, the shortstop at 3rd.
+    const farFrom = (pos, bag) => dist(ready[pos], b[bag]) > 15 * k;
+    const cover = base === 'first' ? (farFrom('1B', 'first') ? '2B' : '1B') : base === 'third' ? (farFrom('3B', 'third') ? 'SS' : '3B') : 'SS';
     assign(plan, cover, 'cover', { x: b[base].x + (base === 'first' ? -1 : 1), y: b[base].y + (base === 'second' ? -1 : 1) },
       base === 'first' ? 'After the pitch, sneak back to the bag behind the runner. Catch and tag low.' : 'Get to the bag behind the runner. Catch and tag low.', { delay: 0.5 });
     if (base === 'first') {
@@ -1351,7 +1402,7 @@
         plan.fielder = 'C';
         assign(plan, 'C', 'field', { x: 0, y: -3 }, `Catch it and throw to 3rd — the lead runner. Step toward the base${lefty ? '' : ', around the right-handed batter'}.`, { delay: 0 });
         assign(plan, '3B', 'cover', { x: b.third.x + 1, y: b.third.y + 1 }, 'Cover 3rd! Catch the throw and tag the runner.', { delay: 0.8 });
-        assign(plan, lefty ? '2B' : 'SS', 'cover', b.second, 'Cover 2nd base.', { delay: 0.8 });
+        assign(plan, lefty && !softball ? '2B' : 'SS', 'cover', b.second, 'Cover 2nd base.', { delay: 0.8 });
         assign(plan, 'LF', 'backup', behind(geo, b.third, b.home, 45), 'Charge in to back up the throw to 3rd.', { delay: 0.8 });
         assign(plan, 'P', 'hold', { x: 8, y: geo.mound.y - 4 }, 'After the pitch, get out of the throwing lane.', { delay: 0.8 });
         plan.throws.push({ fromPos: 'C', to: 'third' });
@@ -1743,7 +1794,7 @@
       let flight;
       switch (plan.ball.kind) {
         case 'ground': flight = plan.ball.slow ? 0.3 + d / 40 : TP.ground.a + d / TP.ground.v; break;
-        case 'bunt': flight = 0.4 + d / 20; break;
+        case 'bunt': flight = TP.bunt.a + d / TP.bunt.v; break;
         case 'line': flight = hangTime(geo, 'line', d); break;
         case 'pop': flight = hangTime(geo, 'pop', d); break;
         default: flight = hangTime(geo, 'fly', d);
@@ -1855,7 +1906,7 @@
           const tr = TP.transfer;
           // A catcher throwing on a steal: the level's pop time sets the exchange.
           const popX = TP.popTime && plan.pitchOnly && thrower === 'C' && li === 0
-            ? Math.max(0.5, TP.popTime - throwTime(geo, b.second.y + 3, 'C')) : null;
+            ? (th.to !== 'second' && TP.backPickExch ? TP.backPickExch : Math.max(0.5, TP.popTime - throwTime(geo, b.second.y + 3, 'C'))) : null;
           // Older levels: an outfielder digging a ball out at the wall takes longer to get rid of it.
           const atWall = geo.older && fromOF && dist(from, b.home) > geo.fenceAt(from) - 12 ? 0.35 : 0;
           const pivot = TP.pivot && li === 0 && plan.throws.indexOf(th) > 0 && !th.via ? TP.pivot - tr.inf : 0;
@@ -2055,7 +2106,7 @@
         // A runner already rounding a base is faster than one starting from a standstill.
         // From high school up, a stealing runner leaves from a crossover, and a tagging runner times the catch with a
         // rolling start, so both leave faster than a runner starting cold.
-        const jump = !geo.older || bi !== 0 ? 1 : r.tagUp ? 1.12 : r.commit ? 1.05 : 1;
+        const jump = !geo.older || bi !== 0 ? 1 : r.tagUp ? 1.12 : r.commit ? (TP.stealFactor || 1.05) : 1;
         tt += dist(cur, q) / (bi === 0 ? RS * jump : RS * 1.12);
         keys.push({ t: tt, x: q.x, y: q.y, o: 1 });
         reachAt[base] = tt;

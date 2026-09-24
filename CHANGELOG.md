@@ -2,6 +2,28 @@
 
 ---
 
+## [2026-09-25] v0.15.1 — Fixes from the fastpitch review
+
+A review by a D-I softball defensive coach and a 10U/12U rec and travel coach ran over 16,000 plays across the new softball levels.
+
+- **Sacrifice bunts are outs again.** Bunts roll at each level's own speed, and a fielder charging a bunt or a slow roller meets the ball on its way in instead of waiting where it stops. At 90 ft, whoever can get to the bunt first (pitcher, catcher or a corner) fields it.
+- **Soft slaps** go to whoever can charge them first; nobody backs up 20 ft to reach one. A slow ball or a slap takes the sure out at 1st unless a middle infielder fields it near 2nd. On slaps the second baseman covers 1st, as on bunts.
+- **Steals:** each softball level has its own steal speed, so 14U and high school steals are close instead of easy. The double steal uses the shortstop to cover in softball.
+- **Back-picks:**
+  - The catcher's throw on a back-pick uses each level's own time, so they happen at high school and college.
+  - Softball runners can take bigger leads in the builder.
+  - With the corners in, the second baseman sneaks in behind the runner at 1st, and the shortstop covers 3rd.
+- **The squeeze** sends the runner on 3rd on the pitch.
+- **A corner who catches a line drive** steps on their own bag instead of throwing to it.
+- **8U:** the builder has no leads, passed balls or steals. A leftover baseball pickoff setting plays as a pitch in softball.
+- **The right fielder** comes in a little against a slapper.
+- **Changed on purpose, and worth knowing:**
+  - Youth softball steals of 2nd are now covered by the shortstop, so some that were safe are now out.
+  - 90 ft catchers' throws use the real distance to 2nd, which makes them a hair slower.
+  - Youth bunts are also met on the way in.
+
+---
+
 ## [2026-09-25] v0.15.0 — Where everyone is looking, and runners who read the ball
 
 - **Vision cones.** A soft cone from each player shows where they're looking, moment by moment:

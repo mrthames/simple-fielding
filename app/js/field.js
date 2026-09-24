@@ -79,6 +79,7 @@
         hang: { fly: [1.6, 105], line: [0.2, 85], pop: [3.0, 200] }, pivot: 0.8, pBack3: 25,
         lead: { steal: 0, first: 9, second: 12, third: 8 },
         tagTime: 0.38, sendMargin: 0.35, cutHome: 30, relayReach: 110, trail: 15, pBackHome: 20,
+        bunt: { a: 0.25, v: 35 }, stealFactor: 0.95, backPickExch: 0.7,
       },
     },
     softballHS: {
@@ -101,6 +102,7 @@
         hang: { fly: [1.8, 108], line: [0.2, 90], pop: [3.3, 190] }, pivot: 0.7, pBack3: 25,
         lead: { steal: 0, first: 10, second: 13, third: 9 },
         tagTime: 0.33, sendMargin: 0.3, cutHome: 30, relayReach: 125, trail: 15, pBackHome: 20,
+        bunt: { a: 0.25, v: 35 }, stealFactor: 0.97, backPickExch: 0.65,
       },
     },
     softballCollege: {
@@ -123,6 +125,7 @@
         hang: { fly: [1.9, 110], line: [0.2, 95], pop: [3.5, 175] }, pivot: 0.65, pBack3: 25,
         lead: { steal: 0, first: 11, second: 14, third: 9 },
         tagTime: 0.26, sendMargin: 0.3, cutHome: 30, relayReach: 140, trail: 16, pBackHome: 20,
+        bunt: { a: 0.25, v: 35 }, stealFactor: 1.03, backPickExch: 0.55,
       },
     },
     softballPro: {
@@ -145,6 +148,7 @@
         hang: { fly: [2.0, 110], line: [0.2, 100], pop: [3.7, 170] }, pivot: 0.6, pBack3: 25,
         lead: { steal: 0, first: 12, second: 15, third: 10 },
         tagTime: 0.22, sendMargin: 0.25, cutHome: 30, relayReach: 150, trail: 18, pBackHome: 20,
+        bunt: { a: 0.25, v: 35 }, stealFactor: 1.05, backPickExch: 0.5,
       },
     },
 
@@ -161,6 +165,7 @@
       dp: { '2B': [28, 118], SS: [-28, 118] },
       outfield: { corner: 240, cf: 262 },
       tempo: {
+        bunt: { a: 0.3, v: 32 },
         runner: 19.4, fielder: 19, pitchFlight: 0.55, delivery: 1.6, popTime: 2.35,
         arms: { SS: 68, '3B': 68, '2B': 64, '1B': 64, LF: 70, CF: 70, RF: 72, C: 65, P: 60 }, carry: 150, vLong: 60,
         transfer: { inf: 0.6, of: 0.4, relay: 0.1 }, ground: { a: 0.15, v: 70 }, roll: 40, through: 40,
@@ -180,6 +185,7 @@
       dp: { '2B': [30, 122], SS: [-30, 122] },
       outfield: { corner: 260, cf: 285 },
       tempo: {
+        bunt: { a: 0.3, v: 32 },
         runner: 20.7, fielder: 20, pitchFlight: 0.46, delivery: 1.5, popTime: 2.15,
         arms: { SS: 77, '3B': 77, '2B': 73, '1B': 73, LF: 80, CF: 80, RF: 82, C: 74, P: 70 }, carry: 200, vLong: 70,
         transfer: { inf: 0.55, of: 0.35, relay: 0.07 }, ground: { a: 0.15, v: 77 }, roll: 43, through: 43,
@@ -199,6 +205,7 @@
       dp: { '2B': [30, 126], SS: [-30, 126] },
       outfield: { corner: 280, cf: 305 },
       tempo: {
+        bunt: { a: 0.3, v: 32 },
         runner: 21.4, fielder: 21, pitchFlight: 0.43, delivery: 1.4, popTime: 2.05,
         arms: { SS: 83, '3B': 83, '2B': 79, '1B': 79, LF: 85, CF: 85, RF: 87, C: 79, P: 75 }, carry: 240, vLong: 80,
         transfer: { inf: 0.5, of: 0.3, relay: 0.05 }, ground: { a: 0.15, v: 83 }, roll: 46, through: 46,
@@ -218,6 +225,7 @@
       dp: { '2B': [30, 128], SS: [-30, 128] },
       outfield: { corner: 302, cf: 320 },
       tempo: {
+        bunt: { a: 0.3, v: 32 },
         runner: 22.2, fielder: 22, pitchFlight: 0.4, delivery: 1.35, popTime: 2.0,
         arms: { SS: 86, '3B': 86, '2B': 81, '1B': 78, LF: 86, CF: 88, RF: 90.5, C: 81, P: 78 }, carry: 270, vLong: 85,
         transfer: { inf: 0.45, of: 0.25, relay: 0.05 }, ground: { a: 0.15, v: 87 }, roll: 48, through: 48,
@@ -238,6 +246,7 @@
     reach: { fly: 55, pop: 55, line: 28 },
     lead: { steal: 8, first: 8, second: 8, third: 8 },
     tagTime: 0.4, sendMargin: 0.4, cutHome: null, relayReach: null, trail: 18, pBackHome: 22, pivot: null, pBack3: 30,
+    bunt: { a: 0.4, v: 20 }, stealFactor: null, backPickExch: null,
   };
 
   const POSITIONS = ['P', 'C', '1B', '2B', 'SS', '3B', 'LF', 'CF', 'RF'];
@@ -412,9 +421,9 @@
     if (geo.league.sport === 'softball' && situation && situation.batter === 'S') {
       const sl = (align && align.slap) || { '1B': [24.7, 31.8], '3B': [-21.2, 29.7], '2B': [24, 70], SS: [-30, 72], ofIn: 10 };
       for (const p of ['1B', '3B', '2B', 'SS']) r[p] = { x: sl[p][0], y: sl[p][1] };
-      for (const p of ['LF', 'CF']) {
+      for (const p of ['LF', 'CF', 'RF']) {
         const d = Math.hypot(r[p].x, r[p].y);
-        const f = (d - sl.ofIn) / d;
+        const f = (d - sl.ofIn * (p === 'RF' ? 0.6 : 1)) / d;
         r[p] = { x: r[p].x * f, y: r[p].y * f };
       }
     }

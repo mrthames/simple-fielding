@@ -4,7 +4,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '0.15.0';
+  const VERSION = '0.15.1';
   const Field = window.Field;
   const BATTED = ['ground', 'line', 'fly', 'pop', 'bunt'];
   const { POSITIONS, NAMES, LEAGUES } = Field;
@@ -1414,7 +1414,8 @@
   const DEFAULT_BALL_TO = () => ({ x: 12, y: Math.max(geo.backstop + 4, -40) });
   function leadMax() {
     const L = LEAGUES[state.league];
-    if (L.sport === 'softball') return 12;       // off the base on the release
+    if (geo.rules.leave === 'contact') return 0; // 8U: runners leave on contact
+    if (L.sport === 'softball') return geo.older ? 16 : 12;   // off the base on the release
     if (!state.leadoffs) return 0;               // 60 ft Little League: no leadoffs
     return geo.base >= 90 ? 30 : 22;
   }
@@ -1436,7 +1437,8 @@
   function buildEvent() {
     const b = state.build;
     const runners = {};
-    for (const base of ['first', 'second', 'third']) if (state.runners[base]) runners[base] = { lead: buildRunner(base).lead, go: b.what === 'pitch' && buildRunner(base).go };
+    const canSteal = geo.rules.stealing !== 'none';
+    for (const base of ['first', 'second', 'third']) if (state.runners[base]) runners[base] = { lead: buildRunner(base).lead, go: canSteal && b.what === 'pitch' && buildRunner(base).go };
     return b.what === 'pickoff'
       ? { kind: 'pitch', move: 'pickoff', pickoff: state.runners[b.pickoff] ? b.pickoff : Object.keys(runners)[0], runners }
       : { kind: 'pitch', move: 'pitch', result: b.result, ballTo: b.result === 'passed' || b.result === 'dropped' ? (b.ballTo || DEFAULT_BALL_TO()) : undefined, runners };

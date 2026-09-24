@@ -61,3 +61,30 @@ test('the youth softball fields play exactly as before', () => {
   assert.equal(p.fielder, 'LF');
   assert.equal(Field.geometry('softball').older, false);
 });
+
+// ---- 2026-09-25 softball adversarial review
+test('review C1: a sacrifice bunt is an out at 1st from 14U up (the fielder meets the ball)', () => {
+  for (const L of ['softball14', 'softballHS', 'softballCollege', 'softballPro']) {
+    const p = play(L, on('first'), { kind: 'bunt', at: { x: -12, y: 30 } });
+    assert.equal(call(p, 'batter'), 'out', L);
+    assert.ok(Math.hypot(p.ball.fieldPoint.x, p.ball.fieldPoint.y) < 32, 'fielded on the way in');
+  }
+});
+test('review C2: slap with a runner on 1st — the sure out at 1st', () => {
+  for (const L of ['softball14', 'softballHS', 'softballCollege']) {
+    const p = play(L, on('first'), { kind: 'ground', at: { x: -24, y: 56 }, slap: 'soft' }, { batter: 'S' });
+    assert.equal(p.target, 'first', L);
+    assert.equal(call(p, 'batter'), 'out', L);
+  }
+});
+test('review M5/M6/M7/M9: back-pick at HS, 2B covers 1st on a slap, squeeze runner goes, a corner steps on the bag', () => {
+  const bp = play('softballHS', on('first'), { kind: 'pitch', move: 'pitch', result: 'caught', runners: { first: { lead: 16 } } });
+  assert.equal(bp.title, 'Back-pick at 1st');
+  assert.equal(bp.assignments['2B'].role, 'cover', 'the second baseman sneaks in behind the runner');
+  const sl = play('softballHS', {}, { kind: 'ground', at: { x: -26, y: 50 }, slap: 'soft' }, { batter: 'S' });
+  assert.ok(Math.hypot(sl.assignments['2B'].to.x - 42.4, sl.assignments['2B'].to.y - 42.4) < 5, '2B covers 1st');
+  const sq = play('softballHS', on('third'), { kind: 'bunt', at: { x: 6, y: 22 }, squeeze: true }, { outs: 1 });
+  assert.equal(sq.runners.find((r) => r.id === 'third').to, 'home');
+  const ld = play('softball', on('third'), { kind: 'line', at: { x: -30, y: 36 } });
+  if (ld.fielder === '3B') assert.ok(ld.throws[0].step, '3B steps on the bag');
+});

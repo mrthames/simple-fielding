@@ -141,7 +141,7 @@
     }
     if (event.at) {
       put16(out, event.at.x); put16(out, event.at.y);
-      out.push((event.through ? 1 : 0) | (event.slap === 'soft' ? 2 : 0) | (event.slap === 'hard' ? 4 : 0));
+      out.push((event.through ? 1 : 0) | (event.slap === 'soft' ? 2 : 0) | (event.slap === 'hard' ? 4 : 0) | (event.squeeze ? 8 : 0));
       if (event.through) { put16(out, event.through.x); put16(out, event.through.y); }
     }
     if (nameBytes.length) { out.push(nameBytes.length); out.push(...nameBytes); }
@@ -198,6 +198,7 @@
         event.at = { x: get16(b, i), y: get16(b, i + 2) }; i += 4;
         const fl = b[i++];
         if (fl & 2) event.slap = 'soft'; else if (fl & 4) event.slap = 'hard';
+        if (fl & 8) event.squeeze = true;
         if (fl & 1) { event.through = { x: get16(b, i), y: get16(b, i + 2) }; i += 4; }
       }
       let name = '';
