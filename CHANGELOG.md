@@ -2,6 +2,27 @@
 
 ---
 
+## [2026-09-25] v0.28.0 — 3D, round two: rounder players, an umpire and a scoreboard
+
+- **Rounder, smoother players**, more early-2000s than '90s:
+  - rounded limbs, a real torso and head, eyes, and dark undershirt sleeves
+  - a baseball emblem on the blue jerseys and a diamond on the red ones
+  - each fielder's scorebook number on the back (1 pitcher through 9 right field)
+- **Caps sit on the head**: a proper crown with a button and a curved brim, instead of a flat box.
+- **The home-plate umpire** sets up in the slot between the catcher and the batter, and stands up once the ball is in play.
+- **A scoreboard** beyond the right-center fence shows:
+  - the level and a line score
+  - ball, strike and out lamps, with the play's outs lit
+  - the inning and a pitch count
+  - which bases are taken
+- **The base paths run the same width all the way** to 1st and 3rd, instead of narrowing to a point at the plate.
+- **The foul lines start at the front corner of the batter's box** instead of running through it, and **the running lane** is chalked on the second half of the way to 1st.
+- **Walls have their real heights** where a park is known for one: Fenway's 37-foot Green Monster, Oracle Park's 24-foot right-field wall.
+- **Name tags ride on each player's head**, so they sit just above it at any distance and follow a crouching catcher.
+- **A bigger ball**, about three times real size, so it's easy to follow on a phone.
+
+---
+
 ## [2026-09-25] v0.27.0 — 3D players that move like ballplayers
 
 - **Real players in the 3D view**, built low-poly in the style of a late-'90s baseball game: blue defense in caps and gloves, red offense in batting helmets.

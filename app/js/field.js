@@ -310,6 +310,9 @@
     const profile = fenceProfile(L);
     const fenceAt = (p) => fenceAtAngle(profile, angleOf(p));
     const fenceDir = (a) => fenceAtAngle(profile, a);
+    // The wall's height by angle: the park's own where it has one (the Green Monster), otherwise a standard fence.
+    const wallProfile = park && park.wall ? park.wall.slice().sort((p, q) => p.a - q.a) : null;
+    const wallDir = (a) => wallProfile ? fenceAtAngle(wallProfile, a) : (base.tempo && base.base === 90 ? 10 : 6);
     const b = L.base;
     const s = b / Math.SQRT2;
     const k = b / 60;
@@ -353,6 +356,7 @@
       // Older levels (13U-14U baseball and up, 14U softball and up) play by their own tables and speed; the
       // youth fields keep the numbers the engine was built on. 90 ft baseball adds a few rules of its own.
       older: !!(L.tempo && L.level !== 'youth8'),
+      wallDir,
       big: !!(L.tempo && L.base === 90),
       rules: Object.assign({ leave: L.sport === 'softball' ? 'release' : 'pitch', droppedThird: true, stealing: 'full', pitcher: 'player' }, L.rules || {}),
       fenceMax: Fmax,

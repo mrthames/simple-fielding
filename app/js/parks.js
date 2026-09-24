@@ -2,7 +2,7 @@
  * Ballpark outfield shapes, drawn from published fence distances (team and ballpark sites, Wikipedia infoboxes,
  * ballparksofbaseball.com), as of 2026. Distances are what each park posts; `approx` marks a distance the sources
  * disagree on, or an angle placed by eye from a diagram. `a` is degrees from the 1st-base line (0) through
- * straightaway center (45) to the 3rd-base line (90).
+ * straightaway center (45) to the 3rd-base line (90). `wall`, where given, is the wall's height (ft) by the same angle.
  *
  * Append-only: share links store a park by its place in this list, so add new parks at the end.
  *
@@ -16,7 +16,9 @@
   { key: 'orioles-camden', team: "Orioles", park: "Oriole Park at Camden Yards", sport: 'baseball', for: 'pro',
     fence: [{ a: 0, ft: 318 }, { a: 22.5, ft: 373 }, { a: 45, ft: 400 }, { a: 55, ft: 410, approx: true }, { a: 67.5, ft: 376 }, { a: 90, ft: 333 }] },
   { key: 'redsox-fenway', team: "Red Sox", park: "Fenway Park", sport: 'baseball', for: 'pro',
-    fence: [{ a: 0, ft: 302 }, { a: 22.5, ft: 380 }, { a: 35, ft: 420, approx: true }, { a: 45, ft: 390 }, { a: 67.5, ft: 379 }, { a: 90, ft: 310 }] },
+    fence: [{ a: 0, ft: 302 }, { a: 22.5, ft: 380 }, { a: 35, ft: 420, approx: true }, { a: 45, ft: 390 }, { a: 67.5, ft: 379 }, { a: 90, ft: 310 }],
+    // The Green Monster: 37 ft from the left-field line to left-center. Low in right, by Pesky's Pole.
+    wall: [{ a: 0, ft: 4 }, { a: 20, ft: 5 }, { a: 30, ft: 17 }, { a: 62, ft: 17 }, { a: 65, ft: 37 }, { a: 90, ft: 37 }] },
   { key: 'yankees-stadium', team: "Yankees", park: "Yankee Stadium", sport: 'baseball', for: 'pro',
     fence: [{ a: 0, ft: 314 }, { a: 22.5, ft: 385 }, { a: 45, ft: 408 }, { a: 67.5, ft: 399 }, { a: 90, ft: 318 }] },
   { key: 'rays-tropicana', team: "Rays", park: "Tropicana Field", sport: 'baseball', for: 'pro',
@@ -72,7 +74,9 @@
   { key: 'padres-petco', team: "Padres", park: "Petco Park", sport: 'baseball', for: 'pro',
     fence: [{ a: 0, ft: 322 }, { a: 22.5, ft: 391 }, { a: 45, ft: 396 }, { a: 67.5, ft: 386 }, { a: 90, ft: 336 }] },
   { key: 'giants-oracle', team: "Giants", park: "Oracle Park", sport: 'baseball', for: 'pro',
-    fence: [{ a: 0, ft: 309 }, { a: 10, ft: 365, approx: true }, { a: 22.5, ft: 415 }, { a: 45, ft: 391 }, { a: 67.5, ft: 399 }, { a: 80, ft: 354, approx: true }, { a: 90, ft: 339 }] },
+    fence: [{ a: 0, ft: 309 }, { a: 10, ft: 365, approx: true }, { a: 22.5, ft: 415 }, { a: 45, ft: 391 }, { a: 67.5, ft: 399 }, { a: 80, ft: 354, approx: true }, { a: 90, ft: 339 }],
+    // The right-field wall on the bay: about 24 ft, from the line to right-center.
+    wall: [{ a: 0, ft: 24 }, { a: 20, ft: 24 }, { a: 24, ft: 8 }, { a: 90, ft: 8 }] },
   { key: 'giants-candlestick', team: "Giants", park: "Candlestick Park", sport: 'baseball', for: 'pro', historical: true,
     fence: [{ a: 0, ft: 328 }, { a: 22.5, ft: 365 }, { a: 45, ft: 400 }, { a: 67.5, ft: 365 }, { a: 90, ft: 335 }] },
   { key: 'athletics-coliseum', team: "Athletics", park: "Oakland Coliseum", sport: 'baseball', for: 'pro', historical: true,

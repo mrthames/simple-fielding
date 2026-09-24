@@ -98,9 +98,15 @@
       dirt.push({ x: -xi, y: xi });
       this.flat(dirt, 0xc68c52, 0.04);
       const s = geo.side, k = geo.base / 60;
+      // Base paths: dirt the same width the whole way, 3 ft either side of each baseline (scaled for youth).
+      const path = Math.max(2.2, 3 * geo.base / 90), pd = path * Math.SQRT2;
       if (geo.league.sport !== 'softball') {
-        const inset = 9 * k;
-        this.flat([{ x: 0, y: inset * 1.3 }, { x: s - inset, y: s }, { x: 0, y: 2 * s - inset }, { x: -(s - inset), y: s }], 0x3f8f3a, 0.06);
+        this.flat([{ x: 0, y: pd }, { x: s - pd, y: s }, { x: 0, y: 2 * s - pd }, { x: -(s - pd), y: s }], 0x3f8f3a, 0.06);
+      }
+      for (const sgn of [-1, 1]) {
+        // The outside half of each path, in foul ground, from home to 1st and to 3rd.
+        const o = { x: sgn * path / Math.SQRT2, y: -path / Math.SQRT2 };
+        this.flat([{ x: 0, y: 0 }, { x: sgn * s, y: s }, { x: sgn * s + o.x, y: s + o.y }, { x: o.x, y: o.y }], 0xc68c52, 0.045);
       }
       const circ = (x, y, r, color, h) => {
         const g = new THREE.CircleGeometry(r, 32);
@@ -126,27 +132,41 @@
       }
       // Chalk: foul lines to the poles.
       const lineMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+      // Bases, the plate, the batter's and catcher's boxes and the rubber, at each level's real size.
+      this.buildDiamond(geo);
+      const chalk = (x0, y0, x1, y1) => {
+        const len = Math.hypot(x1 - x0, y1 - y0);
+        const m = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.05, len), lineMat);
+        m.position.copy(this.w((x0 + x1) / 2, (y0 + y1) / 2, 0.1));
+        m.lookAt(this.w(x1, y1, 0.1));
+        this.field.add(m);
+      };
       for (const sign of [-1, 1]) {
         const a = sign > 0 ? 0 : 90, r = geo.fenceDir(a), t = (a + 45) * Math.PI / 180;
         const end = { x: Math.cos(t) * r, y: Math.sin(t) * r };
-        const len = Math.hypot(end.x, end.y);
-        const box = new THREE.Mesh(new THREE.BoxGeometry(0.33, 0.05, len), lineMat);
-        box.position.copy(this.w(end.x / 2, end.y / 2, 0.1));
-        box.lookAt(this.w(end.x, end.y, 0.1));
-        this.field.add(box);
+        // Chalked from the front corner of the batter's box, not through it.
+        const f0 = this.box.front;
+        chalk(sign * f0, f0, end.x, end.y);
         // Foul pole.
-        const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.4, 40, 8), new THREE.MeshLambertMaterial({ color: 0xffd400 }));
-        pole.position.copy(this.w(end.x, end.y, 20)); this.field.add(pole);
+        const ph = Math.max(40, (geo.wallDir ? geo.wallDir(a) : 10) + 30);
+        const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.4, ph, 8), new THREE.MeshLambertMaterial({ color: 0xffd400 }));
+        pole.position.copy(this.w(end.x, end.y, ph / 2)); this.field.add(pole);
       }
-      // Bases, the plate, the batter's and catcher's boxes and the rubber, at each level's real size.
-      this.buildDiamond(geo);
+      // The running lane: the second half of the way to 1st, 3 ft into foul ground.
+      {
+        const half = geo.base / 2, n = { x: 3 / Math.SQRT2, y: -3 / Math.SQRT2 }, u = 1 / Math.SQRT2;
+        const a = { x: half * u + n.x, y: half * u + n.y }, b = { x: geo.base * u + n.x, y: geo.base * u + n.y };
+        chalk(a.x, a.y, b.x, b.y);
+        chalk(half * u, half * u, a.x, a.y);
+      }
       // The wall: a dark green fence along the park's shape, with the distances on it.
       const wallMat = new THREE.MeshLambertMaterial({ color: 0x1f3b2a, side: THREE.DoubleSide });
-      const H = geo.big ? 10 : 6;
+      const wallH = (x, y) => geo.wallDir ? geo.wallDir(Math.atan2(y, x) * 180 / Math.PI - 45) : (geo.big ? 10 : 6);
       const pts = wall(0).slice(1);
       for (let i = 1; i < pts.length; i++) {
         const a = pts[i - 1], b = pts[i];
         const len = Math.hypot(b.x - a.x, b.y - a.y);
+        const H = wallH((a.x + b.x) / 2, (a.y + b.y) / 2);
         const seg = new THREE.Mesh(new THREE.BoxGeometry(len + 0.4, H, 0.8), wallMat);
         seg.position.copy(this.w((a.x + b.x) / 2, (a.y + b.y) / 2, H / 2));
         seg.rotation.y = Math.atan2(b.y - a.y, b.x - a.x);
@@ -155,10 +175,11 @@
       for (const a of [88, 45, 2]) {
         const r = geo.fenceDir(a) - 1.2, t = (a + 45) * Math.PI / 180;
         const lbl = this.textSprite(String(Math.round(geo.fenceDir(a === 88 ? 90 : a === 2 ? 0 : 45))), '#ffffff', 'rgba(0,0,0,0)', 64);
-        lbl.position.copy(this.w(Math.cos(t) * r, Math.sin(t) * r, H * 0.55));
+        lbl.position.copy(this.w(Math.cos(t) * r, Math.sin(t) * r, Math.min(8, wallH(Math.cos(t) * r, Math.sin(t) * r) * 0.55)));
         lbl.scale.set(12 * (geo.fence / 200), 6 * (geo.fence / 200), 1);
         this.field.add(lbl);
       }
+      this.buildScoreboard(geo, wallH);
       // A coach on the rubber at 8U.
       if (geo.rules && geo.rules.pitcher === 'adult') {
         const F3 = root.Figures3D;
@@ -176,6 +197,7 @@
       const sp = this.textSprite(text, fg, bg, 44);
       sp.material.sizeAttenuation = false;
       sp.scale.set(0.042 * sp.userData.aspect, 0.042, 1);
+      sp.center.set(0.5, 0);          // hang from the bottom edge, so the tag sits above the head at any distance
       sp.position.y = height;
       return sp;
     }
@@ -229,7 +251,7 @@
         const x0 = sgn * (hw + gap), x1 = sgn * (hw + gap + bw);
         line(x0, back, x0, front); line(x1, back, x1, front); line(x0, front, x1, front); line(x0, back, x1, back);
       }
-      this.box = { inner: hw + gap, width: bw, mid: (front + back) / 2 };
+      this.box = { inner: hw + gap, width: bw, mid: (front + back) / 2, front };
       // Catcher's box, behind: 43 in wide and 8 ft deep (youth 6 ft); softball 8 ft 5 in by 10 ft.
       const cw = soft ? 8.42 : 43 / 12, cd = soft ? 10 : geo.big ? 8 : 6;
       line(-cw / 2, back, -cw / 2, back - cd); line(cw / 2, back, cw / 2, back - cd); line(-cw / 2, back - cd, cw / 2, back - cd);
@@ -239,6 +261,96 @@
       const rub = new THREE.Mesh(new THREE.BoxGeometry(rw, 0.08, rd), white);
       rub.position.copy(this.w(0, geo.mound.y + rd / 2, top + 0.04)); this.field.add(rub);
     }
+
+    // A scoreboard beyond the fence in right-center: the level, a line score, the count and the outs from the
+    // play's situation, the inning, a pitch count, and which bases are taken.
+    buildScoreboard(geo, wallH) {
+      const THREE = this.THREE;
+      const a = 28, t = (a + 45) * Math.PI / 180;
+      const r = geo.fenceDir(a) + Math.max(14, geo.fence * 0.06);
+      const P = { x: Math.cos(t) * r, y: Math.sin(t) * r };
+      const W = Math.max(26, Math.min(64, geo.fence * 0.16)), H = W / 2;
+      const lift = wallH(P.x, P.y) + 4 + H / 2;
+      const c = document.createElement('canvas');
+      c.width = 1024; c.height = 512;
+      this.scoreCanvas = c;
+      this.scoreTex = new THREE.CanvasTexture(c);
+      const board = new THREE.Mesh(new THREE.PlaneGeometry(W, H), new THREE.MeshBasicMaterial({ map: this.scoreTex }));
+      board.position.copy(this.w(P.x, P.y, lift));
+      board.rotation.y = Math.atan2(-P.x, P.y);
+      const frame = new THREE.Mesh(new THREE.BoxGeometry(W + 1.5, H + 1.5, 1), new THREE.MeshLambertMaterial({ color: 0x1b2a22 }));
+      frame.position.copy(board.position); frame.rotation.copy(board.rotation);
+      frame.translateZ(-0.6);
+      this.field.add(frame, board);
+      for (const sx of [-0.35, 0.35]) {
+        const post = new THREE.Mesh(new THREE.BoxGeometry(1.2, lift, 1.2), new THREE.MeshLambertMaterial({ color: 0x3a4a40 }));
+        post.position.copy(board.position); post.rotation.copy(board.rotation);
+        post.translateX(sx * W); post.translateZ(-1.2);
+        post.position.y = lift / 2;
+        this.field.add(post);
+      }
+      this.score = this.score || { outs: 0, runners: {} };
+      this.drawScore();
+    }
+
+    setScore(s) {
+      this.score = Object.assign({}, this.score, s);
+      this.drawScore();
+    }
+
+    drawScore() {
+      const c = this.scoreCanvas;
+      if (!c) return;
+      const g = c.getContext('2d');
+      const S = this.score || { outs: 0, runners: {} };
+      g.fillStyle = '#0f2a1d'; g.fillRect(0, 0, 1024, 512);
+      g.fillStyle = '#e8c547'; g.font = '800 38px system-ui, sans-serif'; g.textAlign = 'center';
+      g.fillText(((this.geo && this.geo.league.label) || '').toUpperCase(), 512, 52);
+      // Line score: top of the 1st, nobody has scored yet.
+      const cols = 9, x0 = 190, cw = 58;
+      g.font = '700 30px ui-monospace, monospace'; g.fillStyle = '#9fb8a8';
+      for (let i = 0; i < cols; i++) g.fillText(String(i + 1), x0 + cw * i + cw / 2, 108);
+      ['R', 'H', 'E'].forEach((h, j) => g.fillText(h, x0 + cw * cols + 30 + j * 62, 108));
+      [['RED', '#ff6b61'], ['BLUE', '#6fa0ff']].forEach(([name, col], row) => {
+        const y = 160 + row * 62;
+        g.textAlign = 'left'; g.fillStyle = col; g.font = '800 40px system-ui, sans-serif'; g.fillText(name, 40, y);
+        g.textAlign = 'center'; g.font = '700 38px ui-monospace, monospace';
+        if (row === 0) {
+          g.fillStyle = '#26453a'; g.fillRect(x0 + 4, y - 38, cw - 8, 50);
+          g.fillStyle = '#ffe36b'; g.fillText('0', x0 + cw / 2, y);
+        }
+        g.fillStyle = '#f5f5f0';
+        for (let j = 0; j < 3; j++) g.fillText('0', x0 + cw * cols + 30 + j * 62, y);
+      });
+      // Ball, strike and out lamps. The outs are the play's.
+      const lamps = (label, n, max, on, y) => {
+        g.textAlign = 'left'; g.fillStyle = '#9fb8a8'; g.font = '800 32px system-ui, sans-serif'; g.fillText(label, 40, y + 11);
+        for (let i = 0; i < max; i++) {
+          g.beginPath(); g.arc(190 + i * 50, y, 17, 0, Math.PI * 2);
+          g.fillStyle = i < n ? on : '#23382e'; g.fill();
+        }
+      };
+      lamps('BALL', 0, 3, '#5fd36b', 330);
+      lamps('STRIKE', 0, 2, '#ffd23f', 385);
+      lamps('OUT', S.outs || 0, 2, '#ff5a4e', 440);
+      // The inning and the pitch count.
+      g.textAlign = 'center'; g.fillStyle = '#9fb8a8'; g.font = '800 30px system-ui, sans-serif';
+      g.fillText('INNING', 540, 316); g.fillText('PITCHES', 540, 416);
+      g.fillStyle = '#ffe36b'; g.font = '800 54px ui-monospace, monospace';
+      g.fillText('▲1', 540, 370); g.fillText('0', 540, 470);
+      // Bases: a diamond with the occupied bases lit.
+      const bx = 830, by = 395, d = 46;
+      const base = (x, y, on, fill) => {
+        g.save(); g.translate(x, y); g.rotate(Math.PI / 4);
+        g.fillStyle = fill || (on ? '#ffe36b' : '#23382e'); g.fillRect(-18, -18, 36, 36);
+        g.restore();
+      };
+      const R = S.runners || {};
+      base(bx + d, by, R.first); base(bx, by - d, R.second); base(bx - d, by, R.third);
+      base(bx, by + d, false, '#f5f5f0');
+      if (this.scoreTex) this.scoreTex.needsUpdate = true;
+    }
+
 
     // Players are sized to the level: about 6 ft from high school up, smaller for younger kids.
     figScale() {
@@ -263,18 +375,21 @@
       this.us = us;
       this.fs = this.figScale();
       const skins = { P: 0, C: 2, '1B': 1, '2B': 3, SS: 1, '3B': 0, LF: 2, CF: 3, RF: 0 };
+      // Each fielder wears their scorebook number: 1 pitcher, 2 catcher... 9 right field.
+      const nums = { P: 1, C: 2, '1B': 3, '2B': 4, '3B': 5, SS: 6, LF: 7, CF: 8, RF: 9 };
       for (const pos of POSITIONS) {
-        const g = this.newPlayer('defense', { glove: true, skin: skins[pos] });
+        const g = this.newPlayer('defense', { glove: true, skin: skins[pos], number: nums[pos] });
         const ring = new THREE.Mesh(root.Figures3D.kit(THREE).ring, new THREE.MeshBasicMaterial({ color: 0xcbd5e1, transparent: true, opacity: 0.9 }));
         ring.rotation.x = -Math.PI / 2; ring.position.y = 0.12;
         g.add(ring);
-        const lbl = this.tag(this.labels[pos] || pos, '#ffffff', 'rgba(15,40,90,.85)', 7.6);
-        g.add(lbl);
+        // The tag rides on the head, so it stays just above it when the player crouches or bends.
+        const lbl = this.tag(this.labels[pos] || pos, '#ffffff', 'rgba(15,40,90,.85)', 0.85);
+        g.userData.joints.head.add(lbl);
         g.userData.label = lbl;
         this.actors[pos] = g;
         this.rings[pos] = ring;
       }
-      const r = 0.2 * us;
+      const r = 0.42 * us;             // about three times a real ball, so it reads on a phone
       this.ballR = r;
       this.ball = new THREE.Mesh(new THREE.IcosahedronGeometry(r, 1), new THREE.MeshLambertMaterial({ color: 0xffffff, emissive: 0x444444, flatShading: true }));
       this.ballShadow = new THREE.Mesh(new THREE.CircleGeometry(r * 1.2, 12), new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.3 }));
@@ -282,6 +397,16 @@
       this.field.add(this.ball, this.ballShadow);
       this.runnerMeshes = {};
       this.batter = null;
+      // The home-plate umpire, in the slot between the catcher and the batter.
+      this.ump = this.newPlayer('ump', { skin: 3 });
+    }
+
+    placeUmp(standing) {
+      const F3 = root.Figures3D;
+      const c = this.plan ? sample(this.plan.timeline.tracks.C, 0) : (this.readyC || { x: 0, y: -3 });
+      const side = this.side === 'L' || this.side === 'S' ? 1 : -1;
+      this.place(this.ump, { x: side * 1.1, y: c.y - 2.6 * this.fs }, { x: side * 1.1, y: 60 });
+      F3.apply(this.ump, F3.pose(standing ? 'stand' : 'umpire'));
     }
 
     setLabels(labels) {
@@ -297,10 +422,10 @@
     }
     makeRunner(id, label, opts = {}) {
       const g = this.newPlayer('offense', Object.assign({ skin: id.length }, opts));
-      const lbl = this.tag(label, '#ffffff', 'rgba(170,25,25,.9)', 7.4);
+      const lbl = this.tag(label, '#ffffff', 'rgba(170,25,25,.9)', 0.85);
       lbl.scale.multiplyScalar(0.85);
       if (opts.lefty) lbl.scale.x *= -1;       // the mirrored figure would mirror its label too
-      g.add(lbl);
+      g.userData.joints.head.add(lbl);
       this.runnerMeshes[id] = g;
       return g;
     }
@@ -319,7 +444,7 @@
       if (g.userData.joints.bat) g.userData.joints.bat.visible = true;
     }
 
-    showReady(ready, runners, batter) {
+    showReady(ready, runners, batter, outs) {
       this.plan = null;
       if (!this.actors) return;
       const F3 = root.Figures3D;
@@ -339,8 +464,12 @@
         F3.apply(g, F3.pose('stand'));
       }
       const side = batter || 'R';
+      this.side = side;
       this.batter = this.newPlayer('offense', { bat: true, lefty: side !== 'R', skin: 1 });
       this.standBatter(this.batter, side);
+      this.readyC = ready.C;
+      this.placeUmp(false);
+      this.setScore({ outs: outs || 0, runners: runners || {} });
       this.ball.position.copy(this.w(0, this.geo.mound.y - 1, 5 * this.fs + (this.moundTop || 0)));
       this.ballShadow.position.copy(this.w(0, this.geo.mound.y - 1, (this.moundTop || 0) + 0.05));
       this.render();
@@ -362,6 +491,7 @@
         this.standBatter(this.batter, side);
       }
       this.side = side;
+      this.setScore({ outs: (plan.situation && plan.situation.outs) || 0, runners: (plan.situation && plan.situation.runners) || {} });
       this.actions = this.readActions(plan);
       // How far each person has gone along their track, for a stride that matches their feet to the ground.
       this.cum = {};
@@ -537,6 +667,7 @@
         g.visible = p.o === undefined || p.o > 0.4;
       }
       if (this.batter) this.standBatter(this.batter, this.side);
+      this.placeUmp(t > contact + 0.4);
       // The ball: true heights. The batted ball's flight and each throw are drawn as smooth curves.
       const bp = sample(tr.ball, t);
       let h = bp.h * this.fs;

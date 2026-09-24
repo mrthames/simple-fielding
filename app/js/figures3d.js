@@ -1,7 +1,7 @@
 /*
- * Ballplayers for the 3D view: low-poly figures built from boxes, flat-shaded, in the spirit of a late-'90s
- * baseball game. Nothing is downloaded: every figure is a handful of shared boxes, so the view stays light and
- * all the work happens on the viewer's device.
+ * Ballplayers for the 3D view: rounded, smooth-shaded figures in the spirit of an early-2000s baseball game, built
+ * from a few shared shapes (capsules, spheres, cylinders) plus two small canvas decals: a chest emblem and a number
+ * on the back. Nothing is downloaded, so the view stays light and all the work happens on the viewer's device.
  *
  * A figure is a tree of pivots (hips, knees, shoulders, elbows, torso, head) posed each frame from a few numbers.
  * The pose is worked out from the play itself: how fast the player is moving, and what the ball is doing to them
@@ -13,35 +13,85 @@
 (function (root) {
   'use strict';
 
-  // Blue defense, red offense.
+  // Blue defense, red offense, a gray coach and a navy umpire.
   const KITS = {
-    defense: { jersey: 0x1f5fd6, trim: 0x0d2f73, pants: 0xf1f0ea, socks: 0x0d2f73, cap: 0x0d2f73 },
-    offense: { jersey: 0xd33131, trim: 0x7d1515, pants: 0xd9d9d4, socks: 0x7d1515, cap: 0x7d1515, helmet: true },
-    coach: { jersey: 0x6b7280, trim: 0x374151, pants: 0x9ca3af, socks: 0x374151, cap: 0x374151 },
+    defense: { jersey: 0x2a66d9, trim: 0x10306e, pants: 0xf2f1ec, socks: 0x10306e, cap: 0x10306e, sleeve: 0x10306e, emblem: 'ball' },
+    offense: { jersey: 0xd23a32, trim: 0x7a1712, pants: 0xdcdcd6, socks: 0x7a1712, cap: 0x7a1712, sleeve: 0x7a1712, helmet: true, emblem: 'diamond' },
+    coach: { jersey: 0x6b7280, trim: 0x374151, pants: 0x9ca3af, socks: 0x374151, cap: 0x374151, sleeve: 0x374151 },
+    ump: { jersey: 0x1c2533, trim: 0x0b0f16, pants: 0x8e939b, socks: 0x0b0f16, cap: 0x0b0f16, sleeve: 0x1c2533 },
   };
   const SKIN = [0xf1c9a5, 0xd9a47a, 0xa8714a, 0x7a4b2c];
-  const THIGH = 1.5, SHIN = 1.4, FOOT = 0.18;          // leg lengths, ft
+  const THIGH = 1.5, SHIN = 1.4, FOOT = 0.2;           // leg lengths, ft
   const UPPER = 1.05, LOWER = 0.95;                      // arm lengths, ft
 
   let shared = null;
   function kit(THREE) {
     if (shared) return shared;
     const mats = {};
-    const mat = (hex) => mats[hex] || (mats[hex] = new THREE.MeshLambertMaterial({ color: hex, flatShading: true }));
-    const box = (w, h, d) => new THREE.BoxGeometry(w, h, d);
+    const mat = (hex) => mats[hex] || (mats[hex] = new THREE.MeshLambertMaterial({ color: hex }));
+    const cap = (r, len, rad = 12) => new THREE.CapsuleGeometry(r, Math.max(0.01, len - 2 * r), 4, rad);
+    const shoe = new THREE.CapsuleGeometry(0.16, 0.5, 4, 10); shoe.rotateX(Math.PI / 2); shoe.scale(1, 0.75, 1);
+    const glove = new THREE.SphereGeometry(0.3, 14, 10); glove.scale(1, 1.2, 0.5);
+    const torso = new THREE.CylinderGeometry(0.64, 0.54, 1.55, 18); torso.scale(1, 1, 0.64);
+    const chest = new THREE.SphereGeometry(0.64, 18, 10, 0, Math.PI * 2, 0, Math.PI / 2); chest.scale(1, 0.42, 0.64);
+    const pelvis = new THREE.SphereGeometry(0.58, 16, 10); pelvis.scale(1, 0.55, 0.7);
+    const head = new THREE.SphereGeometry(0.4, 18, 14); head.scale(1, 1.12, 1);
+    const crown = new THREE.SphereGeometry(0.44, 18, 10, 0, Math.PI * 2, 0, Math.PI / 2); crown.scale(1, 0.95, 1.02);
+    const brim = new THREE.CylinderGeometry(0.34, 0.34, 0.045, 18, 1, false, -Math.PI / 2, Math.PI); brim.scale(1.05, 1, 1.25);
+    const helmet = new THREE.SphereGeometry(0.47, 18, 12, 0, Math.PI * 2, 0, Math.PI * 0.58);
     shared = {
       mat,
-      thigh: box(0.5, THIGH, 0.55), shin: box(0.42, SHIN, 0.46), shoe: box(0.46, 0.3, 0.85),
-      torso: box(1.3, 1.85, 0.72), belt: box(1.32, 0.18, 0.74),
-      upper: box(0.36, UPPER, 0.38), lower: box(0.32, LOWER, 0.34), hand: box(0.28, 0.28, 0.3),
-      glove: box(0.62, 0.66, 0.26),
-      head: new THREE.IcosahedronGeometry(0.42, 0), neck: box(0.3, 0.25, 0.3),
-      cap: box(0.86, 0.34, 0.86), brim: box(0.8, 0.07, 0.5),
-      helmet: new THREE.SphereGeometry(0.5, 7, 4, 0, Math.PI * 2, 0, Math.PI / 2), flap: box(0.08, 0.45, 0.45),
-      bat: new THREE.CylinderGeometry(0.075, 0.04, 2.8, 6),
-      ring: new THREE.RingGeometry(1.25, 1.7, 24),
+      thigh: cap(0.27, THIGH), knee: new THREE.SphereGeometry(0.25, 12, 8), shin: cap(0.21, SHIN), shoe,
+      pelvis, torso, chest, belt: new THREE.CylinderGeometry(0.56, 0.56, 0.13, 18),
+      upper: cap(0.17, UPPER), sleeve: new THREE.CylinderGeometry(0.21, 0.19, 0.5, 12), lower: cap(0.14, LOWER),
+      hand: new THREE.SphereGeometry(0.13, 10, 8), glove, pocket: new THREE.SphereGeometry(0.16, 10, 8),
+      head, eye: new THREE.SphereGeometry(0.045, 6, 4), neck: new THREE.CylinderGeometry(0.17, 0.2, 0.3, 12),
+      crown, brim, button: new THREE.SphereGeometry(0.05, 6, 4), helmet, flap: new THREE.SphereGeometry(0.2, 10, 8),
+      bat: new THREE.CylinderGeometry(0.085, 0.038, 2.8, 12), knob: new THREE.CylinderGeometry(0.06, 0.06, 0.04, 10),
+      ring: new THREE.RingGeometry(1.25, 1.7, 32),
+      decal: new THREE.PlaneGeometry(1, 1),
+      textures: {},
     };
     return shared;
+  }
+
+  // A small canvas decal, cached: the chest emblem for a team, or a number for the back.
+  function decal(THREE, key, draw) {
+    const S = kit(THREE);
+    if (S.textures[key]) return S.textures[key];
+    const c = document.createElement('canvas');
+    c.width = 128; c.height = 128;
+    draw(c.getContext('2d'));
+    const tex = new THREE.CanvasTexture(c);
+    const m = new THREE.MeshLambertMaterial({ map: tex, transparent: true, depthWrite: false });
+    S.textures[key] = m;
+    return m;
+  }
+  function emblem(THREE, kind) {
+    return decal(THREE, 'emblem-' + kind, (g) => {
+      g.lineWidth = 9;
+      if (kind === 'ball') {
+        // A baseball: white, with red stitching, ringed in the team color.
+        g.fillStyle = '#ffffff'; g.beginPath(); g.arc(64, 64, 52, 0, Math.PI * 2); g.fill();
+        g.strokeStyle = '#10306e'; g.stroke();
+        g.strokeStyle = '#d23a32'; g.lineWidth = 6;
+        g.beginPath(); g.arc(18, 64, 34, -0.95, 0.95); g.stroke();
+        g.beginPath(); g.arc(110, 64, 34, Math.PI - 0.95, Math.PI + 0.95); g.stroke();
+      } else {
+        // A diamond with a white base at each corner.
+        g.fillStyle = '#ffffff'; g.beginPath(); g.moveTo(64, 10); g.lineTo(118, 64); g.lineTo(64, 118); g.lineTo(10, 64); g.closePath(); g.fill();
+        g.fillStyle = '#7a1712'; g.beginPath(); g.moveTo(64, 30); g.lineTo(98, 64); g.lineTo(64, 98); g.lineTo(30, 64); g.closePath(); g.fill();
+        g.fillStyle = '#ffffff';
+        for (const [x, y] of [[64, 36], [92, 64], [64, 92], [36, 64]]) g.fillRect(x - 6, y - 6, 12, 12);
+      }
+    });
+  }
+  function number(THREE, n, color) {
+    return decal(THREE, 'num-' + n + '-' + color, (g) => {
+      g.font = '900 96px system-ui, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+      g.lineWidth = 10; g.strokeStyle = color; g.strokeText(String(n), 64, 70);
+      g.fillStyle = '#ffffff'; g.fillText(String(n), 64, 70);
+    });
   }
 
   // A pivot group at (x, y, z) with meshes hung from it.
@@ -59,57 +109,78 @@
   }
 
   /**
-   * Build a player. team: 'defense' | 'offense' | 'coach'. opts.glove puts a glove on the left hand; opts.bat
-   * gives them a bat; opts.skin picks a skin tone.
+   * Build a player. team: 'defense' | 'offense' | 'coach' | 'ump'. opts.glove puts a glove on the left hand;
+   * opts.bat gives them a bat; opts.skin picks a skin tone; opts.number goes on the back.
    */
   function makePlayer(THREE, team, opts = {}) {
     const S = kit(THREE);
     if (!UP) { UP = new THREE.Vector3(0, 1, 0); AIM = new THREE.Vector3(); }
     const K = KITS[team] || KITS.defense;
-    const jersey = S.mat(K.jersey), trim = S.mat(K.trim), pants = S.mat(K.pants), socks = S.mat(K.socks);
-    const skin = S.mat(SKIN[(opts.skin || 0) % SKIN.length]), black = S.mat(0x1d1d1f), leather = S.mat(0x8a5a2b);
+    const jersey = S.mat(K.jersey), trim = S.mat(K.trim), pants = S.mat(K.pants), socks = S.mat(K.socks), sleeve = S.mat(K.sleeve);
+    const skin = S.mat(SKIN[(opts.skin || 0) % SKIN.length]), black = S.mat(0x1b1b1d), leather = S.mat(0x8a5a2b);
 
     const fig = new THREE.Group();
     const body = joint(THREE, fig, 0, THIGH + SHIN + FOOT, 0);    // the hips; raised or lowered to keep feet down
     const J = { fig, body };
-    for (const [side, x] of [['L', 0.34], ['R', -0.34]]) {
+    part(body, S.pelvis, pants, 0, 0.05, 0);
+    for (const [side, x] of [['L', 0.3], ['R', -0.3]]) {
       const hip = joint(THREE, body, x, 0, 0);
       part(hip, S.thigh, pants, 0, -THIGH / 2, 0);
       const knee = joint(THREE, hip, 0, -THIGH, 0);
+      part(knee, S.knee, pants, 0, 0, 0);
       part(knee, S.shin, socks, 0, -SHIN / 2, 0);
-      part(knee, S.shoe, black, 0, -SHIN - 0.02, 0.18);
+      part(knee, S.shoe, black, 0, -SHIN - 0.02, 0.17);
       J['hip' + side] = hip; J['knee' + side] = knee;
     }
     const torso = joint(THREE, body, 0, 0, 0);
-    part(torso, S.torso, jersey, 0, 0.12 + 1.85 / 2, 0);
-    part(torso, S.belt, trim, 0, 0.12, 0);
+    part(torso, S.torso, jersey, 0, 0.2 + 1.55 / 2, 0);
+    part(torso, S.chest, jersey, 0, 0.2 + 1.55, 0);
+    part(torso, S.belt, trim, 0, 0.2, 0);
+    if (K.emblem) {
+      const e = part(torso, S.decal, emblem(THREE, K.emblem), 0, 1.4, 0.415);
+      e.scale.set(0.42, 0.42, 1);
+    }
+    if (opts.number !== undefined) {
+      const n = part(torso, S.decal, number(THREE, opts.number, '#' + K.trim.toString(16).padStart(6, '0')), 0, 1.25, -0.415);
+      n.rotation.y = Math.PI; n.scale.set(0.8, 0.8, 1);
+    }
     J.torso = torso;
-    const neck = joint(THREE, torso, 0, 2.05, 0);
-    part(neck, S.neck, skin, 0, 0.1, 0);
-    const head = joint(THREE, neck, 0, 0.5, 0);
+    const neck = joint(THREE, torso, 0, 2.02, 0);
+    part(neck, S.neck, skin, 0, 0.12, 0);
+    const head = joint(THREE, neck, 0, 0.52, 0);
     part(head, S.head, skin, 0, 0, 0);
+    for (const x of [0.14, -0.14]) part(head, S.eye, black, x, 0.06, 0.37);
     if (K.helmet) {
-      part(head, S.helmet, trim, 0, 0.02, 0);
-      part(head, S.flap, trim, opts.lefty ? 0.46 : -0.46, -0.2, 0);    // the ear flap faces the pitcher
+      part(head, S.helmet, trim, 0, -0.02, 0);
+      part(head, S.brim, trim, 0, 0.06, 0.3).scale.set(0.8, 1, 0.7);
+      part(head, S.flap, trim, opts.lefty ? 0.38 : -0.38, -0.16, 0).scale.set(0.45, 1, 1);   // faces the pitcher
     } else {
-      part(head, S.cap, S.mat(K.cap), 0, 0.28, 0);
-      part(head, S.brim, S.mat(K.cap), 0, 0.14, 0.52);
+      // A cap that sits on the head: a dome over the top, a button, and a brim curving out in front.
+      const cmat = S.mat(K.cap);
+      part(head, S.crown, cmat, 0, 0.08, 0);
+      part(head, S.button, cmat, 0, 0.5, 0);
+      const b = part(head, S.brim, cmat, 0, 0.1, 0.3);
+      b.rotation.x = 0.12;
     }
     J.head = head;
-    for (const [side, x] of [['L', 0.83], ['R', -0.83]]) {
-      const sh = joint(THREE, torso, x, 1.8, 0);
-      part(sh, S.upper, jersey, 0, -UPPER / 2, 0);
+    for (const [side, x] of [['L', 0.76], ['R', -0.76]]) {
+      const sh = joint(THREE, torso, x, 1.72, 0);
+      part(sh, S.sleeve, jersey, 0, -0.18, 0);
+      part(sh, S.upper, sleeve, 0, -UPPER / 2, 0);
       const el = joint(THREE, sh, 0, -UPPER, 0);
-      part(el, S.lower, skin, 0, -LOWER / 2, 0);
+      part(el, S.lower, sleeve, 0, -LOWER / 2, 0);
       const hand = joint(THREE, el, 0, -LOWER, 0);
-      if (side === 'L' && opts.glove) part(hand, S.glove, leather, 0, -0.12, 0.05);
-      else part(hand, S.hand, skin, 0, -0.1, 0);
+      if (side === 'L' && opts.glove) {
+        part(hand, S.glove, leather, 0, -0.16, 0.06);
+        part(hand, S.pocket, S.mat(0x6b4220), 0, -0.14, 0.17).scale.set(1, 1.1, 0.35);
+      } else part(hand, S.hand, skin, 0, -0.06, 0);
       J['sh' + side] = sh; J['el' + side] = el; J['hand' + side] = hand;
     }
     if (opts.bat) {
       // The hands, just in front of the back shoulder; the bat is aimed from there each frame (see apply).
       const bat = joint(THREE, torso, -0.3, 1.45, 0.55);
       part(bat, S.bat, S.mat(0xc8995a), 0, 1.3, 0);
+      part(bat, S.knob, S.mat(0xa8793a), 0, -0.1, 0);
       J.bat = bat;
     }
     fig.userData.joints = J;
@@ -123,11 +194,12 @@
   //   shL/shR: arm raised forward (+, π = straight up), shLz/shRz: arm out to the side (+), elL/elR: elbow bent (+).
   //   bat: 0 = held up behind the head, 1 = swung through.
   const ZERO = { hipL: 0, hipR: 0, kneeL: 0, kneeR: 0, legSpread: 0.08, lean: 0, twist: 0, headYaw: 0, headPitch: 0,
-    shL: 0, shR: 0, shLz: 0.08, shRz: 0.08, elL: 0.15, elR: 0.15, bat: 0 };
+    shL: 0, shR: 0, shLz: 0.1, shRz: 0.1, elL: 0.15, elR: 0.15, bat: 0 };
   const P = {
     stand: {},
     set: { hipL: 0.45, hipR: 0.45, kneeL: 0.75, kneeR: 0.75, legSpread: 0.28, lean: 0.45, shL: 0.55, shR: 0.55, elL: 0.35, elR: 0.35, headPitch: 0.35 },
     squat: { hipL: 1.55, hipR: 1.55, kneeL: 2.3, kneeR: 2.3, legSpread: 0.45, lean: 0.2, shL: 1.25, shR: 0.35, elL: 0.35, elR: 0.9, headPitch: 0.1 },
+    umpire: { hipL: 1.0, hipR: 1.0, kneeL: 1.5, kneeR: 1.5, legSpread: 0.4, lean: 0.55, shL: 0.35, shR: 0.35, shLz: 0.1, shRz: 0.1, elL: 1.2, elR: 1.2, headPitch: 0.3 },
     grounder: { hipL: 1.0, hipR: 1.0, kneeL: 1.35, kneeR: 1.35, legSpread: 0.5, lean: 1.05, shL: 1.05, shR: 0.95, elL: 0.1, elR: 0.25, headPitch: 0.6 },
     chest: { hipL: 0.15, hipR: 0.15, kneeL: 0.25, kneeR: 0.25, legSpread: 0.22, lean: 0.12, shL: 1.5, shR: 1.2, elL: 0.35, elR: 0.9 },
     high: { lean: -0.12, shL: 2.85, shR: 2.5, elL: 0.2, elR: 0.35, headPitch: 0.75 },
@@ -158,7 +230,7 @@
       lean: 0.25, shL: -0.7 * s, shR: 0.7 * s, elL: 1.45, elR: 1.45, legSpread: 0.1,
     });
     const out = lerpPose(base, r, amt);
-    // Keep the head and anything the arms are busy with from the base pose's intent.
+    // Keep the head where the base pose had it.
     out.headYaw = base.headYaw; out.headPitch = base.headPitch;
     return out;
   }
@@ -186,5 +258,8 @@
     J.body.position.y = Math.max(leg(p.hipL, p.kneeL), leg(p.hipR, p.kneeR)) + bob;
   }
 
-  root.Figures3D = { makePlayer, pose, lerpPose, run, apply, kit, KITS };
+  // Top of the head, for hanging a name tag above it.
+  const HEAD_TOP = THIGH + SHIN + FOOT + 2.02 + 0.52 + 0.55;
+
+  root.Figures3D = { makePlayer, pose, lerpPose, run, apply, kit, KITS, HEAD_TOP };
 })(typeof window !== 'undefined' ? window : globalThis);
