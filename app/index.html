@@ -77,10 +77,15 @@
         <svg viewBox="0 0 24 24" class="i-pause" aria-hidden="true"><path d="M7 5h4v14H7zM13 5h4v14h-4z"/></svg>
         <svg viewBox="0 0 24 24" class="i-replay" aria-hidden="true"><path d="M12 5V2L7 6l5 4V7a5 5 0 1 1-5 5H5a7 7 0 1 0 7-7z"/></svg>
       </button>
-      <input type="range" id="scrub" min="0" max="1000" value="0" aria-label="Play timeline">
+      <div class="scrub-wrap">
+        <input type="range" id="scrub" min="0" max="1000" value="0" aria-label="Play timeline">
+        <div class="scrub-marks" id="scrub-marks" aria-label="Moments in the play"></div>
+      </div>
       <button class="text-btn view3d-btn" id="btn-3d" type="button" aria-pressed="false" title="See the play in 3D, or through a player's eyes">3D</button>
       <button class="text-btn ask-btn" id="btn-ask" type="button" aria-pressed="false" title="Stop at the hit and hide the paths, so you can ask the team first">Ask<span class="wide-only"> first</span></button>
+      <button class="text-btn speed-cycle" id="speed-cycle" type="button" aria-label="Speed">1×</button>
       <div class="seg" role="group" aria-label="Speed">
+        <button type="button" data-speed="0.25">¼×</button>
         <button type="button" data-speed="0.5">½×</button>
         <button type="button" data-speed="1" class="on">1×</button>
       </div>

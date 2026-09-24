@@ -4,7 +4,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '0.21.0';
+  const VERSION = '0.22.0';
   const Field = window.Field;
   const BATTED = ['ground', 'line', 'fly', 'pop', 'bunt'];
   const { POSITIONS, NAMES, LEAGUES } = Field;
@@ -242,6 +242,7 @@
     view.showRollHandle(null);
     $('#result').hidden = true;
     $('#tv-caption').textContent = '';
+    renderMarks(null);
     $('#play-title').hidden = true;
     $('#field-hint').hidden = false;
     setSpotlight(null);
@@ -330,7 +331,30 @@
   $('#cam').addEventListener('change', (e) => { if (v3) { v3.setMode(e.target.value); v3.seek(state.t); } });
   $('#field-next').addEventListener('click', () => runScenario(state.scenarioIndex + 1));
 
+  // Markers under the timeline for the moments that matter; tap one to jump there (a beat before it happens).
+  function renderMarks(plan) {
+    const box = $('#scrub-marks');
+    box.innerHTML = '';
+    if (!plan) return;
+    const dur = plan.timeline.duration;
+    const words = { throw: 'Throw', out: 'Out', safe: 'Safe', catch: 'Caught', hold: 'Holds', note: 'Note' };
+    const seen = [];
+    for (const e of plan.timeline.events) {
+      if (!words[e.type] || seen.some((t) => Math.abs(t - e.t) < dur * 0.02)) continue;
+      seen.push(e.t);
+      const m = document.createElement('button');
+      m.type = 'button';
+      m.className = 'scrub-mark ' + e.type;
+      m.style.left = `${(e.t / dur) * 100}%`;
+      m.title = `${words[e.type]} — ${e.t.toFixed(1)} s`;
+      m.setAttribute('aria-label', m.title);
+      m.addEventListener('click', () => { stop(); endAsk(); state.t = Math.max(0, e.t - 0.25); view.seek(state.t); updateTransport(); });
+      box.appendChild(m);
+    }
+  }
+
   function renderResult(plan) {
+    renderMarks(plan);
     $('#result').hidden = false;
     $('#result-title').textContent = plan.title;
     $('#result-summary').textContent = plan.summary;
@@ -913,12 +937,23 @@
     view.seek(state.t);
     updateTransport();
   });
+  // Phones: one button cycles the speed.
+  const speedLabel = (v) => ({ 0.25: '¼×', 0.5: '½×', 1: '1×' })[v] || '1×';
+  $('#speed-cycle').textContent = speedLabel(state.speed);
+  $('#speed-cycle').addEventListener('click', () => {
+    const order = [1, 0.5, 0.25];
+    state.speed = order[(order.indexOf(state.speed) + 1) % order.length];
+    store.set('speed', state.speed);
+    $('#speed-cycle').textContent = speedLabel(state.speed);
+    for (const x of $$('.transport .seg button')) x.classList.toggle('on', Number(x.dataset.speed) === state.speed);
+  });
   for (const b of $$('.transport .seg button')) {
     b.classList.toggle('on', Number(b.dataset.speed) === state.speed);
     b.addEventListener('click', () => {
       state.speed = Number(b.dataset.speed);
       store.set('speed', state.speed);
       for (const x of $$('.transport .seg button')) x.classList.toggle('on', x === b);
+      $('#speed-cycle').textContent = speedLabel(state.speed);
     });
   }
   $('#btn-reset').addEventListener('click', () => { if (board.on) closeBoard(); clearInkOnNewPlay(); showReady(); });

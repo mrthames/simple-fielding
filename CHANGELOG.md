@@ -2,6 +2,15 @@
 
 ---
 
+## [2026-09-25] v0.22.0 — Timeline markers, ¼× speed, and plainer words for kids
+
+- **Timeline markers:** a tick under the timeline for each catch, throw, out and safe, in their colors. Tap one to jump just before that moment.
+- **¼× speed** for walking young players through a play. On a phone, one speed button cycles 1× → ½× → ¼×.
+- **Plainer words on 60 ft fields:** the cutoff home lines up "just in front of the pitcher's mound, in line with home", not "36 feet in front of the plate", and the trailer stands "about six big steps behind" the relay.
+- **The first baseman takes 1st unassisted** at 13U–14U and up when they field it close enough to beat the runner, and waves the pitcher off.
+
+---
+
 ## [2026-09-25] v0.21.0 — Quiz: drag a player to answer
 
 - While a play waits at the hit (**Ask first**), drag any fielder to where you think they go.

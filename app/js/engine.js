@@ -393,7 +393,9 @@
         { delay: 0.15 });
       const trailFt = geo.tempo.trail;
       assign(plan, trail, 'trail', along(relaySpot, tgt, trailFt),
-        `Trail the relay — stand about ${Math.round(trailFt / 5) * 5} feet behind them in case the throw is off.`, { delay: 0.25 });
+        geo.older || geo.base >= 70
+          ? `Trail the relay — stand about ${Math.round(trailFt / 5) * 5} feet behind them in case the throw is off.`
+          : 'Trail the relay — stand about six big steps behind them in case the throw is off.', { delay: 0.25 });
       plan.throws.push({ fromPos: F, via: relay, to: target });
 
       assign(plan, '3B', 'cover', b.third, 'Cover 3rd base — straddle the bag, ready for the throw.');
@@ -471,7 +473,9 @@
       const cutD = Math.round(geo.tempo.cutHome || 36 * k);
       cutSpot = lineUp(b.home, fieldPoint, cutD);
       assign(plan, cut, 'cutoff', cutSpot,
-        `Be the cutoff for home — line up about ${cutD} feet in front of the plate, between the ball and home. Listen for the catcher!`,
+        geo.older || geo.base >= 70
+          ? `Be the cutoff for home — line up about ${cutD} feet in front of the plate, between the ball and home. Listen for the catcher!`
+          : 'Be the cutoff for home — line up just in front of the pitcher\'s mound, in a straight line between the ball and home. Listen for the catcher!',
         { delay: 0.15 });
       assign(plan, 'C', 'cover', HOME_TAG,
         (geo.older
@@ -774,7 +778,10 @@
     plan.title = `${label} to ${the(F)}`;
     const dp = targets.length > 1;
     const first = targets[0];
-    const stepSelf = dist(at, b[first]) < 18 * (geo.base / 60) && F !== 'C' || (F === 'C' && first === 'home');
+    // Close enough to beat the runner to the bag: step on it yourself. (An older first baseman does this from
+    // further out and waves the pitcher off.)
+    const selfRange = (F === '1B' && first === 'first' && geo.older ? 30 : 18) * (geo.base / 60);
+    const stepSelf = dist(at, b[first]) < selfRange && F !== 'C' || (F === 'C' && first === 'home');
     plan.summary = dp
       ? `${The(F)} gets the lead runner at ${baseName(first)}, then the throw goes to 1st — a double play!`
       : `${The(F)} fields it and ${stepSelf ? 'steps on' : 'throws to'} ${baseName(first)}${first === 'home' ? '' : ' base'}.`;

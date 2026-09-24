@@ -659,3 +659,14 @@ test('quiz: drag a fielder while the play waits at the hit; it grades the guess 
   await expect(page.locator('#toast')).toContainText('Yes!');
   await expect(page.locator('.quiz-guess.right')).toHaveCount(1);
 });
+
+test('timeline markers jump to a moment in the play; ¼× speed exists', async ({ page }) => {
+  await page.locator('#quick-list .lib-item', { hasText: 'Single to left, runner on 1st' }).click();
+  const marks = page.locator('#scrub-marks .scrub-mark');
+  expect(await marks.count()).toBeGreaterThan(1);
+  const last = marks.last();
+  await last.click();
+  const t = await page.evaluate(() => (window as any).SimpleFielding.state.t);
+  expect(t).toBeGreaterThan(1);
+  await expect(page.locator('.transport [data-speed="0.25"]')).toHaveCount(1);
+});
