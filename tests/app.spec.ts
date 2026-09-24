@@ -702,3 +702,20 @@ test('projector mode survives the browser dropping full screen on a touch device
   await page.locator('#fs-exit').click();
   await expect(page.locator('body')).not.toHaveClass(/projector/);
 });
+
+test('playlist: with a saved play open, Next steps through My plays in order', async ({ page }) => {
+  for (const n of ['Single to left, runner on 1st', 'Fly ball to left, nobody on']) {
+    await page.locator('#quick-list .lib-item', { hasText: n }).first().click();
+    await page.locator('#btn-save').click();
+    await page.locator('#save-name').fill('Tonight: ' + n);
+    await page.locator('#save-go').click();
+  }
+  // My plays lists newest first: "Fly ball…" then "Single…".
+  await page.locator('#quick-list .lib-item.mine').first().click();
+  await expect(page.locator('#play-title .pt-name')).toHaveText('Tonight: Fly ball to left, nobody on');
+  await page.locator('#quick-next').click();
+  await expect(page.locator('#play-title .pt-name')).toHaveText('Tonight: Single to left, runner on 1st');
+  await expect(page.locator('#quick-list .lib-item.mine.on')).toHaveCount(1);
+  await page.locator('#quick-next').click();
+  await expect(page.locator('#play-title .pt-name')).toHaveText('Tonight: Fly ball to left, nobody on');
+});

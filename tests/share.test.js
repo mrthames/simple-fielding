@@ -75,3 +75,14 @@ test('drawn plays: steps, captions and runners leaving the field survive a link'
   const p = Engine.planPlay(d.situation, d.event);
   assert.ok(p.drawn && p.timeline.events.some((e) => e.type === 'out'));
 });
+
+test('My plays order: move up and down', () => {
+  const st = memStorage();
+  const code = Share.encode({ league: 'littleLeague', runners: {}, outs: 0 }, { kind: 'fly', at: { x: -80, y: 135 } });
+  const a = Share.add(st, 'A', code), b = Share.add(st, 'B', code);
+  assert.deepEqual(Share.list(st).map((p) => p.name), ['B', 'A']);
+  Share.move(st, a.id, -1);
+  assert.deepEqual(Share.list(st).map((p) => p.name), ['A', 'B']);
+  assert.equal(Share.move(st, a.id, -1), false, 'already first');
+  void b;
+});

@@ -253,6 +253,14 @@
     p.name = String(name || p.name).slice(0, 80); p.code = code; p.saved = new Date().toISOString();
     return write(storage, plays) ? p : null;
   }
+  // Move a play up (-1) or down (+1) in My plays: the order Next play steps through.
+  function move(storage, id, dir) {
+    const plays = list(storage);
+    const i = plays.findIndex((x) => x.id === id), j = i + dir;
+    if (i < 0 || j < 0 || j >= plays.length) return false;
+    [plays[i], plays[j]] = [plays[j], plays[i]];
+    return write(storage, plays);
+  }
   function copy(storage, id) {
     const p = list(storage).find((x) => x.id === id);
     return p ? add(storage, `${p.name} (copy)`, p.code) : null;
@@ -280,7 +288,7 @@
     return { added, team: data.team || null };
   }
 
-  const api = { encode, decode, list, add, update, copy, rename, remove, exportData, importData, LEAGUES, KINDS };
+  const api = { encode, decode, list, add, update, copy, move, rename, remove, exportData, importData, LEAGUES, KINDS };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.Share = api;
 })(typeof window !== 'undefined' ? window : globalThis);

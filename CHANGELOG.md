@@ -2,6 +2,13 @@
 
 ---
 
+## [2026-09-25] v0.24.0 — My plays is a playlist
+
+- **Next play steps through My plays** when a saved play is open. Save tonight's plays, open the first, and click through them in order, in projector mode or on the iPad. The open play is highlighted in the list. Shift+→ and Shift+← (or N) step with a keyboard.
+- **▲ ▼ in My plays** set the order.
+
+---
+
 ## [2026-09-25] v0.23.1 — Full screen stays put while you draw
 
 - **iPad (Chrome, Safari, any browser there) drawing on the whiteboard in projector mode could drop out of full screen.** Two fixes:

@@ -4,7 +4,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '0.23.1';
+  const VERSION = '0.24.0';
   const Field = window.Field;
   const BATTED = ['ground', 'line', 'fly', 'pop', 'bunt'];
   const { POSITIONS, NAMES, LEAGUES } = Field;
@@ -329,7 +329,18 @@
   $('#btn-ask').addEventListener('click', () => setAskFirst(!state.askFirst));
   $('#btn-3d').addEventListener('click', () => set3d(!on3d()));
   $('#cam').addEventListener('change', (e) => { if (v3) { v3.setMode(e.target.value); v3.seek(state.t); } });
-  $('#field-next').addEventListener('click', () => runScenario(state.scenarioIndex + 1));
+  // Next: through My plays when a saved play is open (a playlist for the team meeting), otherwise the play list.
+  function nextPlay(step = 1) {
+    const mine = window.Share.list(localStorage);
+    const i = state.savedId ? mine.findIndex((p) => p.id === state.savedId) : -1;
+    if (i >= 0 && mine.length > 1) {
+      const p = mine[(i + step + mine.length) % mine.length];
+      openCode(p.code, p.name, p.id);
+      return;
+    }
+    runScenario(state.scenarioIndex + step);
+  }
+  $('#field-next').addEventListener('click', () => nextPlay(1));
 
   // Markers under the timeline for the moments that matter; tap one to jump there (a beat before it happens).
   function renderMarks(plan) {
@@ -1106,7 +1117,7 @@
       }
     }
   }
-  $('#quick-next').addEventListener('click', () => runScenario(state.scenarioIndex + 1));
+  $('#quick-next').addEventListener('click', () => nextPlay(1));
   function quickEdge() {
     const l = $('#quick-list');
     $('#quick-wrap').classList.toggle('at-end', l.scrollTop + l.clientHeight >= l.scrollHeight - 4);
@@ -1325,8 +1336,8 @@
       view.seek(state.t);
       updateTransport();
     }
-    else if (e.key === 'n' || e.key === 'N' || (e.key === 'ArrowRight' && e.shiftKey)) runScenario(state.scenarioIndex + 1);
-    else if (e.key === 'ArrowLeft' && e.shiftKey) runScenario(state.scenarioIndex - 1);
+    else if (e.key === 'n' || e.key === 'N' || (e.key === 'ArrowRight' && e.shiftKey)) nextPlay(1);
+    else if (e.key === 'ArrowLeft' && e.shiftKey) nextPlay(-1);
     else if (e.key === 'p' || e.key === 'P') toggleProjector();
     else if (e.key === 'r' || e.key === 'R') showReady();
     else if (e.key === 'a' || e.key === 'A') setAskFirst(!state.askFirst);
@@ -1883,6 +1894,7 @@
     if (d.event.kind === 'drawn' && name) d.event.title = name;
     runEvent(d.event, { name, savedId });
     if (name) { setTitle(name); state.playName = name; }
+    for (const x of $$('#quick-list .lib-item.mine')) x.classList.toggle('on', x.dataset.mine === savedId);
     scrollToResultOnPhone();
     return true;
   }
@@ -1953,12 +1965,16 @@
       const row = document.createElement('div');
       row.className = 'mp-row';
       row.innerHTML = `<button type="button" class="mp-name"></button>
+        <button type="button" class="icon-btn" data-act="up" aria-label="Move up">▲</button>
+        <button type="button" class="icon-btn" data-act="down" aria-label="Move down">▼</button>
         <button type="button" class="icon-btn" data-act="share" aria-label="Share">${ICON.share}</button>
         <button type="button" class="icon-btn" data-act="copy" aria-label="Make a copy">${ICON.copy}</button>
         <button type="button" class="icon-btn" data-act="edit" aria-label="Rename">${ICON.edit}</button>
         <button type="button" class="icon-btn danger" data-act="del" aria-label="Delete">${ICON.del}</button>`;
       row.querySelector('.mp-name').textContent = p.name;
       row.querySelector('.mp-name').addEventListener('click', () => { closeSheet(mySheet); openCode(p.code, p.name, p.id); });
+      row.querySelector('[data-act="up"]').addEventListener('click', () => { window.Share.move(localStorage, p.id, -1); renderMyPlays(); buildQuick(); });
+      row.querySelector('[data-act="down"]').addEventListener('click', () => { window.Share.move(localStorage, p.id, 1); renderMyPlays(); buildQuick(); });
       row.querySelector('[data-act="copy"]').addEventListener('click', () => {
         const c = window.Share.copy(localStorage, p.id);
         renderMyPlays(); buildQuick();

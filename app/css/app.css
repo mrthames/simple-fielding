@@ -887,3 +887,4 @@ body.projector .fs-exit {
 /* Drawing: no text selection or callouts from a long press. */
 body.board-on, body.projector { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
 body.board-on .field-wrap, body.projector .field-wrap { overscroll-behavior: none; }
+.mp-row [data-act="up"], .mp-row [data-act="down"] { width: 30px; font-size: 12px; }
