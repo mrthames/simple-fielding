@@ -2,6 +2,29 @@
 
 ---
 
+## [2026-09-25] v0.34.0 — Fielding lessons
+
+- **Learn**, a new button at the top, holds fielding lessons in **two separate courses, baseball and softball**. Each is a ladder of stages as a player moves up:
+  - **Baseball:** T-ball, coach pitch, kid pitch, Majors, 13U and up.
+  - **Softball:** 8U, 10U, 12U, 14U and up.
+- **Filter by position**: pick "SS" to see what a shortstop needs to know, at every stage.
+- **How a lesson works:**
+  - A short read, in the words youth coaches use: "alligator hands", "Ball, base, backup", "I got it!".
+  - Then plays where you're one fielder. The play starts and **freezes at the moment you'd decide**. You **drag yourself the way you'd run**, or tap **Stay here**.
+  - You're graded on heading the right way (about 25° counts, and "close" counts too), not on an exact spot.
+  - Then you watch the play, with your job in plain words. Try again or move on.
+  - Some lessons are questions: calling the ball, where the throw goes.
+- **Talking on defense and sportsmanship** are lessons at every stage:
+  - saying the outs and where the runners are
+  - the shortstop and center fielder leading
+  - the catcher's cutoff calls
+  - picking up a teammate after an error
+  - respecting the umpire
+- **Built on published programs**: Little League's tee-ball and coaching curriculum, Little League Softball, the ABCA's cutoff system and the Positive Coaching Alliance. Little League Majors keeps its no-leadoff rule: leads and pickoffs start at 13U.
+- **Scores are saved on the device only**, and a finished lesson shows a check mark.
+
+---
+
 ## [2026-09-25] v0.33.0 — Ask first: tap a player to see their job
 
 - **While a play asks "Where does everybody go?", tap a player** to see their job card and their route, with the other routes still hidden. Tap another player to see theirs.

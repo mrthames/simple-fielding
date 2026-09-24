@@ -4,7 +4,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '0.33.0';
+  const VERSION = '0.34.0';
   const Field = window.Field;
   const BATTED = ['ground', 'line', 'fly', 'pop', 'bunt'];
   const { POSITIONS, NAMES, LEAGUES } = Field;
@@ -264,6 +264,8 @@
   }
 
   function runEvent(event, opts) {
+    // Picking any other play ends a lesson.
+    if (state.trainer && !(opts && opts.trainer)) exitTrainer();
     if (board.on) closeBoard();
     clearInkOnNewPlay();
     const ev = Object.assign({}, event);
@@ -1782,10 +1784,8 @@
   });
   $('#build-fielders-reset').addEventListener('click', () => { state.build.start = {}; saveBuild(); showReady(); });
 
-  // Quiz: while a play waits at the hit, drag a fielder to where you think they go. The app checks the answer against
-  // where the play sends them, marks both spots, and plays it.
+  // The trainer's drag: while a lesson play is frozen, drag your own player the way you'd run (see answerPlay).
   let qdrag = null;
-  const quiz = { tries: 0, right: 0 };
   svg.addEventListener('pointerdown', (e) => {
     // Only in the trainer, and only your own player. Everywhere else a tap on a player shows their job.
     if (!state.trainer || !state.trainer.waiting || !state.plan || board.on) return;
@@ -1814,23 +1814,223 @@
     e.stopImmediatePropagation();
     const q = qdrag; qdrag = null;
     if (!q.moved) return;
-    const a = state.plan.assignments[q.pos];
-    const want = a.path && a.path.length ? a.path[a.path.length - 1] : a.to;
-    const off = Math.hypot(q.at.x - want.x, q.at.y - want.y);
-    const k = geo.base / 60;
-    quiz.tries++;
-    const grade = off < 12 * k * (view.us || 1) ? 'right' : off < 28 * k * (view.us || 1) ? 'close' : 'miss';
-    if (grade === 'right') quiz.right++;
-    const name = Field.PLAYERS[q.pos];
-    const msg = grade === 'right' ? `Yes! That's the ${name}'s spot.` : grade === 'close' ? `Close — the ${name} goes a little further. Watch.` : `Not quite — watch where the ${name} goes.`;
-    view.showQuiz(q.at, want, grade);
-    toast(`${msg}  (${quiz.right} of ${quiz.tries})`);
-    setSpotlight(q.pos);
-    // Show the answer: the play runs from the hit, with the guess still marked.
-    setTimeout(() => { if (state.plan) { endAsk(); play(); } }, 900);
+    answerPlay(q.at);
   };
   svg.addEventListener('pointerup', endQ, true);
   svg.addEventListener('pointercancel', endQ, true);
+
+  // ------------------------------------------------------------------------------------ the fielding trainer
+  // Lessons by track (baseball, softball), stage and position (training.js). A play starts, freezes at the decision,
+  // and the learner drags their own player where they'd go, or taps "Stay here". Graded on heading the right way.
+  const TR = window.Training;
+  const learn = $('#learn');
+  const tbar = $('#trainer-bar');
+  const POS_ORDER = ['P', 'C', '1B', '2B', 'SS', '3B', 'LF', 'CF', 'RF'];
+  let learnTrack = store.get('learnTrack', LEAGUES[state.league].sport === 'softball' ? 'softball' : 'baseball');
+  let learnPos = store.get('learnPos', 'all');
+  const doneOf = (id) => store.get('train.' + id, null);
+  const lessonPositions = (l) => l.positions || [...new Set(l.steps.filter((s) => s.pos).map((s) => s.pos))];
+  const fitsPos = (l) => learnPos === 'all' || lessonPositions(l).includes(learnPos) || (l.positions || []).includes('all');
+
+  function renderLearn() {
+    for (const b of $$('#learn-track button')) b.classList.toggle('on', b.dataset.track === learnTrack);
+    const chips = $('#learn-pos');
+    chips.innerHTML = '';
+    for (const p of ['all', ...POS_ORDER]) {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.textContent = p === 'all' ? 'Everyone' : p;
+      b.classList.toggle('on', p === learnPos);
+      b.addEventListener('click', () => { learnPos = p; store.set('learnPos', p); renderLearn(); });
+      chips.appendChild(b);
+    }
+    const body = $('#learn-list');
+    body.innerHTML = '';
+    for (const st of TR.TRACKS[learnTrack].stages) {
+      const ls = st.lessons.filter(fitsPos);
+      if (!ls.length) continue;
+      const h = document.createElement('h3');
+      h.textContent = `${st.title}${st.ages ? ' · ages ' + st.ages : ''}`;
+      body.appendChild(h);
+      for (const l of ls) {
+        const d = doneOf(l.id);
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'learn-item' + (d ? ' done' : '');
+        const tags = lessonPositions(l);
+        btn.innerHTML = `<strong></strong><span class="li-tags"></span><span class="li-done">${d ? `✓ ${d.right} of ${d.of}` : ''}</span>`;
+        btn.querySelector('strong').textContent = l.title;
+        btn.querySelector('.li-tags').textContent = tags.includes('all') || !tags.length ? 'Everyone' : tags.join(' · ');
+        btn.addEventListener('click', () => showIntro(Object.assign({ stage: st }, l)));
+        body.appendChild(btn);
+      }
+    }
+    if (!body.children.length) body.innerHTML = '<p class="learn-empty">No lessons for this position yet.</p>';
+    $('#learn-home').hidden = false;
+    $('#learn-intro').hidden = true;
+  }
+  function showIntro(l) {
+    const box = $('#learn-intro');
+    box.innerHTML = '';
+    const h = document.createElement('h3'); h.textContent = `${l.stage.title} · ${l.title}`; box.appendChild(h);
+    for (const t of l.intro) { const p = document.createElement('p'); p.textContent = t; box.appendChild(p); }
+    const plays = l.steps.filter((s) => s.type === 'play').length, qs = l.steps.length - plays;
+    const meta = document.createElement('p'); meta.className = 'learn-meta';
+    meta.textContent = [plays ? `${plays} play${plays > 1 ? 's' : ''}` : '', qs ? `${qs} question${qs > 1 ? 's' : ''}` : ''].filter(Boolean).join(' and ') + (learnPos !== 'all' ? ` · as the ${Field.PLAYERS[learnPos]} where it applies` : '');
+    box.appendChild(meta);
+    const row = document.createElement('div'); row.className = 'learn-actions';
+    row.innerHTML = '<button type="button" class="primary-btn" data-go>Start the lesson</button><button type="button" class="text-btn" data-back>All lessons</button>';
+    row.querySelector('[data-go]').addEventListener('click', () => beginLesson(l));
+    row.querySelector('[data-back]').addEventListener('click', renderLearn);
+    box.appendChild(row);
+    $('#learn-home').hidden = true;
+    box.hidden = false;
+  }
+  $('#btn-learn').addEventListener('click', () => { renderLearn(); openSheet(learn); });
+  for (const b of $$('#learn-track button')) b.addEventListener('click', () => { learnTrack = b.dataset.track; store.set('learnTrack', learnTrack); renderLearn(); });
+  learn.addEventListener('click', (e) => { if (e.target === learn || e.target.closest('[data-close]')) closeSheet(learn); });
+
+  function beginLesson(l) {
+    closeSheet(learn);
+    if (on3d()) set3d(false);
+    if (board.on) closeBoard();
+    // With a position picked, a play step asks as that position when the lesson has a step for it.
+    const steps = l.steps.filter((s) => s.type !== 'play' || learnPos === 'all' || s.pos === learnPos || !l.steps.some((x) => x.pos === learnPos));
+    state.trainer = { lesson: l, steps, idx: 0, right: 0, of: 0, first: true };
+    document.body.classList.add('training');
+    runStep();
+  }
+  // The moment to decide: just after the ball is hit; on a pitch play, as the runners break or as your own player
+  // would start to move, whichever comes first. (A track records where each move ends, so a move starts at the last
+  // point before the first one that has moved.)
+  function decisionTime(plan, pos) {
+    const tl = plan.timeline;
+    if (tl.contact > 0) return tl.contact + 0.15;
+    const startOf = (k) => { if (!k || k.length < 2) return null; const i = k.findIndex((q) => Math.hypot(q.x - k[0].x, q.y - k[0].y) > 1); return i > 0 ? k[i - 1].t : null; };
+    let first = tl.duration;
+    const mine = startOf(tl.tracks[pos]);
+    if (mine !== null) first = Math.min(first, mine);
+    for (const r of plan.runners) {
+      const k = tl.tracks['runner:' + r.id];
+      const b = startOf(k);
+      if (b !== null) first = Math.min(first, b);
+    }
+    return Math.min(first + 0.05, tl.duration);
+  }
+  function runStep(retry) {
+    const T = state.trainer;
+    const s = T.steps[T.idx];
+    T.first = !retry;
+    tbar.hidden = false;
+    const head = `<span class="tb-head">${escapeHtml(T.lesson.title)} · ${T.idx + 1} of ${T.steps.length}<button type="button" class="tb-x" aria-label="End the lesson">✕</button></span>`;
+    if (s.type === 'choice') {
+      T.waiting = false;
+      if (state.plan) { stop(); showReady(); }
+      tbar.innerHTML = `${head}<p class="tb-q"></p><div class="tb-options"></div>`;
+      tbar.querySelector('.tb-q').textContent = s.q;
+      s.options.forEach((o) => {
+        const b = document.createElement('button');
+        b.type = 'button'; b.textContent = o.t;
+        b.addEventListener('click', () => answerChoice(o));
+        tbar.querySelector('.tb-options').appendChild(b);
+      });
+      return;
+    }
+    const level = s.level || T.lesson.stage.level;
+    if (state.league !== level) setLeague(level);
+    if (state.park) { state.park = null; renderParks(); setGeometry(); }
+    // A play from the library, by name (with its hit spot fitted to this field, as tapping it would), or spelled out.
+    const sc = s.scenario ? window.Scenarios.ALL.find((x) => x.name === s.scenario) : s;
+    state.runners = Object.assign({ first: false, second: false, third: false }, sc.runners);
+    state.outs = sc.outs || 0;
+    state.batter = sc.batter || 'R';
+    state.depth = s.depth || sc.depth || 'auto'; state.d13 = s.d13 || sc.d13 || 'auto'; state.buntD = s.buntD || sc.buntD || 'auto';
+    if (sc.leadoffs && !state.leadoffs && geo.league.sport === 'baseball') { state.leadoffs = true; $('#leadoffs').checked = true; }
+    const ev = Object.assign({}, sc.event);
+    if (s.scenario && ev.at && BATTED.includes(ev.kind)) ev.at = sc.abs ? scaleAbs(ev.at) : scaleSpot(ev.at);
+    renderSituation();
+    runEvent(ev, { autoplay: false, trainer: true });
+    setSpotlight(null);
+    state.t = decisionTime(state.plan, s.pos);
+    view.setShowPaths(false);
+    view.seek(state.t);
+    updateTransport();
+    const a = state.plan.assignments[s.pos];
+    T.pos = s.pos;
+    T.start = Object.assign({}, view.actorAt(s.pos));
+    T.want = a.path && a.path.length ? a.path[a.path.length - 1] : a.to;
+    T.waiting = true;
+    document.body.classList.add('tr-waiting');
+    view.actors[s.pos].classList.add('trainee');
+    tbar.innerHTML = `${head}<p class="tb-q">You're the <strong>${escapeHtml(Field.PLAYERS[s.pos])}</strong>. Where do you go?</p>
+      <p class="tb-hint">Drag yourself the way you'd run, or:</p><div class="tb-options"><button type="button" data-stay>Stay here</button></div>`;
+    tbar.querySelector('[data-stay]').addEventListener('click', () => answerPlay(T.start));
+  }
+  const VERDICT = { right: 'Yes!', close: 'Close: good read.', miss: 'Not quite.' };
+  function feedback(grade, text, canRetry) {
+    const T = state.trainer;
+    tbar.innerHTML = `<span class="tb-head">${escapeHtml(T.lesson.title)} · ${T.idx + 1} of ${T.steps.length}</span>
+      <p class="tb-verdict ${grade}">${VERDICT[grade]}</p><p class="tb-why"></p>
+      <div class="tb-options">${canRetry && grade !== 'right' ? '<button type="button" data-retry>Try again</button>' : ''}<button type="button" class="primary" data-next>${T.idx + 1 < T.steps.length ? 'Next ›' : 'Finish'}</button></div>`;
+    tbar.querySelector('.tb-why').textContent = text;
+    const r = tbar.querySelector('[data-retry]');
+    if (r) r.addEventListener('click', () => runStep(true));
+    tbar.querySelector('[data-next]').addEventListener('click', nextStep);
+  }
+  function score(grade) {
+    const T = state.trainer;
+    if (!T.first) return;
+    T.of++;
+    if (grade !== 'miss') T.right++;
+    T.first = false;
+  }
+  function answerPlay(guess) {
+    const T = state.trainer;
+    if (!T || !T.waiting) return;
+    T.waiting = false;
+    document.body.classList.remove('tr-waiting');
+    view.actors[T.pos].classList.remove('trainee');
+    const grade = TR.grade(T.start, T.want, guess, geo.base / 60);
+    score(grade);
+    view.showQuiz(guess, T.want, grade);
+    const job = state.plan.assignments[T.pos].job;
+    feedback(grade, job, true);
+    // Then watch it: the play runs on from the freeze, with the routes showing and your player spotlit.
+    setTimeout(() => { if (state.trainer === T && state.plan) { view.setShowPaths(true); setSpotlight(T.pos); play(); } }, 700);
+  }
+  function answerChoice(o) {
+    const T = state.trainer;
+    const grade = o.right ? 'right' : 'miss';
+    score(grade);
+    const right = T.steps[T.idx].options.find((x) => x.right);
+    feedback(grade, o.right ? (o.why || '') : `${o.why || ''} The answer: ${right.t}.`.trim(), true);
+  }
+  function nextStep() {
+    const T = state.trainer;
+    if (!T) return;
+    if (T.idx + 1 < T.steps.length) { T.idx++; runStep(); return; }
+    const best = doneOf(T.lesson.id);
+    if (!best || T.right / (T.of || 1) >= best.right / (best.of || 1)) store.set('train.' + T.lesson.id, { right: T.right, of: T.of });
+    const all = TR.lessons(learnTrack).filter(fitsPos);
+    const i = all.findIndex((l) => l.id === T.lesson.id);
+    const next = all[i + 1];
+    tbar.innerHTML = `<span class="tb-head">${escapeHtml(T.lesson.title)}</span><p class="tb-verdict right">Lesson done: ${T.right} of ${T.of} on the first try.</p>
+      <div class="tb-options">${next ? '<button type="button" class="primary" data-next>Next lesson ›</button>' : ''}<button type="button" data-all>All lessons</button><button type="button" data-exit>Done</button></div>`;
+    if (next) tbar.querySelector('[data-next]').addEventListener('click', () => { exitTrainer(); beginLesson(next); });
+    tbar.querySelector('[data-all]').addEventListener('click', () => { exitTrainer(); renderLearn(); openSheet(learn); });
+    tbar.querySelector('[data-exit]').addEventListener('click', exitTrainer);
+  }
+  tbar.addEventListener('click', (e) => { if (e.target.closest('.tb-x')) exitTrainer(); });
+  function exitTrainer() {
+    const T = state.trainer;
+    if (!T) return;
+    if (T.pos && view.actors[T.pos]) view.actors[T.pos].classList.remove('trainee');
+    state.trainer = null;
+    tbar.hidden = true;
+    document.body.classList.remove('training', 'tr-waiting');
+    view.setShowPaths(state.showPaths);
+  }
+
 
   // Builder, on the field: drag a fielder to where they start. (Registered in the capture phase so it wins over
   // tapping a player; only while building and before a play is set.)
@@ -2137,6 +2337,14 @@
   window.SimpleFielding = { setMode, state, team, board, tester, openReport, buildReport, reportText, openBoard, closeBoard, runEvent, runScenario, hitTo, seekEnd() { if (state.plan) { stop(); endAsk(); state.t = state.plan.timeline.duration; view.seek(state.t); updateTransport(); } },
     // Paused at time t (seconds): used by scripts/render-hero-video.mjs to film a play frame by frame.
     view3d: () => v3,
+    // The trainer, for tests: start a lesson by id (with a position filter), answer, choose, move on.
+    lesson: {
+      start(id, pos) { learnPos = pos || 'all'; const l = TR.lessons('baseball').concat(TR.lessons('softball')).find((x) => x.id === id); if (l) beginLesson(l); return !!l; },
+      answer(pt) { answerPlay(pt || state.trainer.want); },
+      choose(i) { const s = state.trainer.steps[state.trainer.idx]; answerChoice(s.options[i]); },
+      next() { nextStep(); },
+      exit() { exitTrainer(); },
+    },
     seek(t) { if (state.plan) { stop(); endAsk(); state.t = Math.max(0, Math.min(t, state.plan.timeline.duration)); view.seek(state.t); updateTransport(); } } };
 
   window.TeamUI.init({ team, onChange: (t) => { T.save(window.localStorage, t); applyLabels(); } });

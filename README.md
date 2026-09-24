@@ -35,6 +35,11 @@ A companion to [Simple Pitch Counter](https://github.com/mrthames/simple-pitch-c
   field can show position, first name, last name, initials or number, so a coach can talk to their own
   players. Stored on the device only.
 - **Projector mode** (`P`): full screen, with the field only.
+- **Fielding lessons** (Learn): separate baseball and softball courses, from T-ball and 8U up to 13U/14U and beyond,
+  that you can filter by position. Each lesson is a short read, then plays where you're one fielder: the play freezes
+  at the decision and you drag yourself the way you'd go. You're graded on heading the right way, not on hitting an
+  exact spot. Communication and sportsmanship are lessons too. The coaching cues follow Little League's curriculum
+  and other published youth programs. Progress is stored on the device only.
 
 [`docs/SCENARIOS.md`](docs/SCENARIOS.md) is the coaching reference: every play, every job, and the youth
 conventions the app follows where coaches disagree.
@@ -52,6 +57,7 @@ simple-fielding/
 │   ├── js/team.js        the roster: players, positions, label styles (stored on the device)
 │   ├── js/teamui.js      the Team sheet, drag-and-drop, the press-and-hold position editor
 │   ├── js/playlog.js     the play log and replay codes (used by tester reports)
+│   ├── js/training.js    the fielding lessons: tracks, stages, lessons, and grading
 │   ├── js/render.js      SVG drawing and animation playback
 │   └── js/app.js         UI: situation, drag-to-hit, playback
 ├── website/              the companion site: homepage, guides, privacy (guides are generated, see below)

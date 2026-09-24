@@ -802,3 +802,43 @@ test('changing the level starts a clean slate: no runners, a fresh builder, and 
   await page.locator('.mini-base.b1').click();
   await expect(page.locator('#build-runners .br-lead span').first()).toHaveText('No lead');
 });
+
+test('fielding lessons: pick a track and position, answer by dragging your player, get graded, finish the lesson', async ({ page }) => {
+  await page.locator('#btn-learn').click();
+  await page.locator('#learn-track [data-track="baseball"]').click();
+  await page.locator('#learn-pos button', { hasText: '1B' }).click();
+  // Filtered to what a first baseman needs.
+  await expect(page.locator('.learn-item', { hasText: 'Pitcher, cover first' })).toBeVisible();
+  await expect(page.locator('.learn-item', { hasText: 'Outfield: throw it in' })).toHaveCount(0);
+  await page.locator('.learn-item', { hasText: 'Ball, base, backup' }).click();
+  await page.locator('[data-go]').click();
+  await expect(page.locator('#trainer-bar')).toContainText("You're the first baseman");
+  // The answers stay hidden while you decide.
+  await expect(page.locator('#result')).toBeHidden();
+  const pts = await page.evaluate(() => {
+    const T = (window as any).SimpleFielding.state.trainer;
+    const svg = document.getElementById('field') as unknown as SVGSVGElement;
+    const m = svg.getScreenCTM()!;
+    const pt = (x: number, y: number) => { const p = svg.createSVGPoint(); p.x = x; p.y = -y; const q = p.matrixTransform(m); return { x: q.x, y: q.y }; };
+    return { from: pt(T.start.x, T.start.y), to: pt(T.want.x, T.want.y) };
+  });
+  await page.mouse.move(pts.from.x, pts.from.y);
+  await page.mouse.down();
+  await page.mouse.move(pts.to.x, pts.to.y, { steps: 8 });
+  await page.mouse.up();
+  await expect(page.locator('.tb-verdict')).toHaveText('Yes!');
+  await expect(page.locator('.quiz-guess.right')).toHaveCount(1);
+  // The rest of the lesson; a wrong choice offers a retry.
+  while (await page.locator('[data-next]').count()) {
+    const label = await page.locator('[data-next]').textContent();
+    await page.locator('[data-next]').click();
+    if (label && label.includes('Finish')) break;
+    if (await page.locator('[data-stay]').count()) await page.locator('[data-stay]').click();
+    else if (await page.locator('.tb-options button').count()) await page.locator('.tb-options button').first().click();
+  }
+  await expect(page.locator('#trainer-bar')).toContainText('Lesson done');
+  await page.locator('[data-exit]').click();
+  await expect(page.locator('#trainer-bar')).toBeHidden();
+  await page.locator('#btn-learn').click();
+  await expect(page.locator('.learn-item.done', { hasText: 'Ball, base, backup' })).toHaveCount(1);
+});
