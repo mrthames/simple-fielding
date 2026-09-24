@@ -95,4 +95,7 @@ and the app under `/app/`. The tests and the personal-data check run on every pu
 
 ## License
 
+The settings gear icon is from [Lucide](https://lucide.dev) (ISC License, Copyright (c) Lucide Contributors).
+
+
 [PolyForm Noncommercial 1.0.0](LICENSE).

@@ -1,6 +1,6 @@
 {
   "name": "simple-fielding",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "private": true,
   "description": "Simple Fielding — youth baseball and softball defensive positioning trainer",
   "scripts": {

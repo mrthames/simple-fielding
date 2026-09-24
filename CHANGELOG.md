@@ -2,6 +2,13 @@
 
 ---
 
+## [2026-09-24] v0.5.1 — A gear for Settings
+
+### Fix
+- The Settings button's icon looked like a sun. It's now a gear: Lucide's "settings" icon (ISC License, credited in the README).
+
+---
+
 ## [2026-09-24] v0.5.0 — Softball field, cleaner backups, and a truthful hero
 
 ### App
