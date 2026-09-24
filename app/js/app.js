@@ -4,7 +4,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '0.6.1';
+  const VERSION = '0.7.0';
   const { POSITIONS, NAMES, LEAGUES } = window.Field;
   const $ = (s) => document.querySelector(s);
   const $$ = (s) => Array.from(document.querySelectorAll(s));
@@ -755,6 +755,10 @@
   }
   function renderSport() {
     const sport = LEAGUES[state.league].sport;
+    // Softball has no leadoffs (runners leave on the release), and the look-back rule replaces pickoffs.
+    $('#leadoffs-row').hidden = sport === 'softball';
+    const lead = $('#other-plays [data-play="primaryLead"]');
+    if (lead) lead.textContent = sport === 'softball' ? 'Look-back rule' : 'Lead & pickoff';
     for (const b of $$('#sport-seg button')) {
       b.classList.toggle('on', b.dataset.sport === sport);
       b.setAttribute('aria-pressed', String(b.dataset.sport === sport));

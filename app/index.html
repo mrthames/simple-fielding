@@ -9,8 +9,7 @@
 <meta name="apple-mobile-web-app-title" content="Simple Fielding">
 <meta name="description" content="Drag the ball anywhere on the field and watch all nine fielders go where they belong. Free, no ads, no accounts.">
 <title>Simple Fielding</title>
-<link rel="icon" type="image/svg+xml" href="icon.svg" media="(prefers-color-scheme: light)">
-<link rel="icon" type="image/svg+xml" href="icon-dark.svg" media="(prefers-color-scheme: dark)">
+<link rel="icon" type="image/svg+xml" href="icon.svg">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="stylesheet" href="css/app.css">
@@ -54,6 +53,12 @@
       </div>
       <div class="play-title" id="play-title" hidden></div>
       <div class="spot-card" id="spot-card" hidden></div>
+      <div class="field-key" id="field-key" aria-label="Color key">
+        <span class="fk role-field">Gets the ball</span>
+        <span class="fk role-cutoff">Cutoff / relay</span>
+        <span class="fk role-cover">Covers a base</span>
+        <span class="fk role-backup">Backs up</span>
+      </div>
       <div class="scrub-hint" id="scrub-hint" hidden aria-hidden="true">
         <span>◀ drag to scrub ▶</span>
         <span class="scrub-track"><span id="scrub-hint-fill"></span></span>
@@ -319,7 +324,7 @@
       <span>Field</span>
       <select id="league"></select>
     </label>
-    <label class="field-row">
+    <label class="field-row" id="leadoffs-row">
       <span>Runners can lead off</span>
       <input type="checkbox" id="leadoffs" class="switch">
     </label>

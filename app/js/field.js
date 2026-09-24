@@ -26,10 +26,17 @@
       leadoffs: true,
     },
     softball: {
-      label: 'Fastpitch softball',
-      short: 'Softball 60 ft',
+      label: 'Fastpitch softball (12U, 40 ft)',
+      short: 'Softball 12U',
       sport: 'softball',
       base: 60, mound: 40, fence: 200,
+      leadoffs: false,
+    },
+    softball10: {
+      label: 'Fastpitch softball (10U, 35 ft)',
+      short: 'Softball 10U',
+      sport: 'softball',
+      base: 60, mound: 35, fence: 175,
       leadoffs: false,
     },
   };
@@ -56,6 +63,11 @@
     const s = b / Math.SQRT2;
     const k = b / 60;
     const F = L.fence;
+    const softball = L.sport === 'softball';
+    // A point `along` feet from home up a baseline, `inside` feet into fair territory.
+    const onLine = (sign, along, inside) => ({ x: sign * (along - inside) / Math.SQRT2, y: (along + inside) / Math.SQRT2 });
+    // Outfielders play shallower in softball: about two thirds of the way to the fence, not 85%.
+    const of = softball ? 0.8 : 1;
 
     const bases = {
       home: { x: 0, y: 0 },
@@ -79,14 +91,17 @@
       ready: {
         P: { x: 0, y: L.mound },
         C: { x: 0, y: -5 },
-        '1B': { x: s - 2 * k, y: s + 14 * k },
+        // Baseball corners play behind the bag; softball corners play even with it or a step in
+        // front, because of the bunt and the slap.
+        '1B': softball ? onLine(1, 54 * k, 6 * k) : { x: s - 2 * k, y: s + 14 * k },
         '2B': { x: 22 * k, y: 2 * s - 5 * k },
         SS: { x: -22 * k, y: 2 * s - 5 * k },
-        '3B': { x: -s + 2 * k, y: s + 14 * k },
-        LF: { x: -0.45 * F, y: 0.72 * F },
-        CF: { x: 0, y: 0.85 * F },
-        RF: { x: 0.45 * F, y: 0.72 * F },
+        '3B': softball ? onLine(-1, 54 * k, 6 * k) : { x: -s + 2 * k, y: s + 14 * k },
+        LF: { x: -0.45 * F * of, y: 0.72 * F * of },
+        CF: { x: 0, y: 0.85 * F * of },
+        RF: { x: 0.45 * F * of, y: 0.72 * F * of },
       },
+      onLine,
     };
   }
 
@@ -106,6 +121,13 @@
     }
     if (run.first && !run.second && situation && situation.leadoffs) {
       r['1B'] = { x: geo.side - 2 * k, y: geo.side + 2 * k };
+    }
+    // Softball bunt/slap alignment: with a runner on 1st and less than two outs, the corners come in to
+    // 30-40 ft from the plate and the second baseman shades toward 1st to cover it on the bunt.
+    if (geo.league.sport === 'softball' && run.first && outs < 2) {
+      r['1B'] = geo.onLine(1, 38 * k, 5 * k);
+      r['3B'] = geo.onLine(-1, 38 * k, 5 * k);
+      r['2B'] = { x: 26 * k, y: 2 * geo.side - 12 * k };
     }
     return r;
   }

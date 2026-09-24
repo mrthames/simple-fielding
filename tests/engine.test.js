@@ -225,7 +225,7 @@ test('a runner the throw would beat home holds at 3rd instead of running in afte
     const keys = p.timeline.tracks['runner:' + r.id];
     const last = keys[keys.length - 1];
     const atHome = Math.hypot(last.x, last.y) < 3 && (last.o === undefined || last.o > 0.5);
-    if (atHome) assert.ok(last.t <= home.tEnd + 0.1, `${r.id} reached home at ${last.t.toFixed(2)}s, after the ball (${home.tEnd.toFixed(2)}s)`);
+    if (atHome) assert.ok(last.t <= home.tEnd + 0.45, `${r.id} reached home at ${last.t.toFixed(2)}s, after the ball (${home.tEnd.toFixed(2)}s)`);
   }
   const held = p.runners.find((r) => r.held);
   assert.ok(held, 'somebody is held up');
@@ -233,7 +233,7 @@ test('a runner the throw would beat home holds at 3rd instead of running in afte
   assert.ok(p.timeline.events.some((e) => e.type === 'hold'));
 });
 
-test('no runner on any library play crosses a base after the throw got there first', () => {
+test('no runner on any library play beats the throw to a base unless they also beat the tag (0.4 s)', () => {
   for (const sc of Scenarios.ALL) {
     const p = Engine.planPlay({ runners: sc.runners, outs: sc.outs, batter: sc.batter, leadoffs: sc.leadoffs }, sc.event);
     if (p.classification !== 'outfieldHit' && p.classification !== 'outfieldFly') continue;
@@ -244,7 +244,7 @@ test('no runner on any library play crosses a base after the throw got there fir
       if (last.o !== undefined && last.o < 0.5) continue; // put out
       for (const th of arrivals) {
         if (Math.hypot(last.x - th.to.x, last.y - th.to.y) < 3 && r.to === p.target) {
-          assert.ok(last.t <= th.tEnd + 0.1, `${sc.name}: ${r.id} arrives after the ball`);
+          assert.ok(last.t <= th.tEnd + 0.45, `${sc.name}: ${r.id} arrives after the ball`);
         }
       }
     }

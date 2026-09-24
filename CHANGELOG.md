@@ -2,6 +2,46 @@
 
 ---
 
+## [2026-09-24] v0.7.0 — Adversarial review fixes
+
+Two independent reviews ran the engine through about 1,000 situations: a professional baseball defensive coordinator and a fastpitch softball coach. Both called it not production-ready. This release fixes every critical and major finding, and the minor ones, each with a regression test (`tests/review.test.js`). The reports are kept in the private notes.
+
+### Safety
+- **Nobody runs or stands in the batter-runner's lane.** Covering 1st, the pitcher, or anyone else, gets to the line a few steps short and runs up the *inside* (fair side), taking the inside of the bag. On bunts, the first and third basemen charge on the fair side of their lines.
+- **Nobody parks on a base path.** The cutoff to 3rd stands 25–40 ft from the base, clear of the path the runner is rounding. On pickoffs the second baseman stays at their depth, off the 1st–2nd line.
+- **Home plate tag plays**: set up in front of the plate, leave the runner a path to the back of it, and sweep the tag. No blocking the plate (Little League collision rules). A force at home still stands on the plate.
+- **On the 1st & 3rd cut play**, the pitcher circles around the 1st-base side to back up home, and never crosses the plate.
+- **On a pop in front of the plate**, the pitcher steps aside instead of running through the catcher.
+
+### Fielding
+- **Pop-up priority by direction**, not a flat list. The corners take pops in front of them; the shortstop and second baseman take pops behind the corners (the shortstop when it's close); the catcher takes pops near the plate; an outfielder coming in beats an infielder going out; the pitcher never takes one. **Line drives** go to whoever is in the ball's path, runners freeze, and the throw goes behind the lead runner.
+- **Bunts**: the shortstop covers 2nd on every bunt (it was being left open). The catcher covers 3rd when the third baseman charges with a runner on 1st. Bases loaded with less than two outs: the force at home.
+- **Outfield backups**: on a ball to center, only the near corner backs up; the far corner backs up a base instead of running across the outfield. No two fielders ever end on the same spot.
+- **Foul flies**: out of play means out of play (no catches beyond the fence or behind the backstop). A deep foul fly with a runner on 3rd allows a tag-up, with a note about letting it drop late in a close game.
+- **Two outs**: everybody runs on contact. **1st & 3rd with two outs**: throw through to 2nd.
+- The **infield fly rule** is explained when it applies. With a runner on 2nd, the shortstop covers 3rd when the third baseman fields a grounder. The home cutoff distance scales with the field.
+
+### Safe or out, by the clock
+- Plays were being decided by rule of thumb: every steal was an out, and runners were held on almost every single. Now every runner's arrival is timed against the ball's, with youth-realistic speeds: throws that lose speed past about 90 ft, an outfielder setting their feet, a cutoff catching and turning, and runners who are faster once they're rounding a base. **Force outs need the catch; tag plays also need the tag.** A runner is held only when the throw would clearly beat them. There are **"Safe!"** calls now, and runners are resolved lead runner first, so a trailing runner never passes the one ahead.
+- A runner on 2nd scores on a clean single, a deep fly with a runner on 3rd scores, and a triple is a triple.
+
+### Softball
+- **Runners leave on the pitcher's release**, both on steals and on balls in play.
+- **Softball positions**: the corners play even with the bag and come in to 30–40 ft with a runner on 1st (bunt and slap threat), the second baseman shades toward 1st, and outfielders play shallower.
+- **The second baseman covers 1st** when the first baseman fields the ball.
+- **The look-back rule** is built around the lead runner, and the pitcher *holds* the ball; a throw releases the look-back.
+- **A 10U field** (35 ft pitching distance). The leadoffs setting is hidden for softball, and job text says "circle", not "mound".
+
+### App
+- A **color key on the field**: in the corner in side-by-side layouts, and as a strip between the field and the timeline in portrait on a phone.
+- The **timeline thumb is a fader**: a rectangular cap with grip ridges.
+- The **favicon** is always the navy icon.
+
+### Docs and guides
+- `docs/SCENARIOS.md` is rewritten to match, with new sections on safe/out timing and softball. The pop-up, bunt, steal, pitcher and cutoff guides are corrected; one new play was added to the pop-up guide.
+
+---
+
 ## [2026-09-24] v0.6.1 — The timeline slider works
 
 - **Fix:** dragging the timeline slider did nothing; the thumb snapped back on every move. Its handler paused the play *before* reading the slider, and pausing redraws the slider at the old time. It has been broken since v0.1 and was found testing in Helium and on iPhone. A new test drags the slider itself.
