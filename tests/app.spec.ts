@@ -737,3 +737,20 @@ test('the color key names the level and field', async ({ page }) => {
   await page.evaluate(() => { const s = document.getElementById('park') as HTMLSelectElement; s.value = [...s.options].find((o) => o.textContent!.includes('Fenway'))!.value; s.dispatchEvent(new Event('change')); });
   await expect(page.locator('#fk-level')).toHaveText('MLB · Red Sox — Fenway Park');
 });
+
+test('3D players: the fielder who gets the ball catches it and throws, and a batter stands in on a steal', async ({ page }) => {
+  await page.locator('#btn-3d').click();
+  await page.waitForFunction(() => document.body.classList.contains('view3d') || !!document.querySelector('#toast:not([hidden])'), null, { timeout: 15000 });
+  if (!(await page.evaluate(() => document.body.classList.contains('view3d')))) test.skip(true, 'no WebGL in this browser');
+  const lf = await page.evaluate(() => {
+    const sf = (window as any).SimpleFielding;
+    sf.runEvent({ kind: 'ground', at: { x: -80, y: 135 } });
+    return sf.view3d().actions.LF.map((a: any) => a.type + ':' + (a.style || ''));
+  });
+  expect(lf[0]).toBe('catch:grounder');
+  expect(lf).toContain('throw:');
+  // A steal has no batter-runner, but there's still a batter at the plate.
+  await page.evaluate(() => { const sf = (window as any).SimpleFielding; sf.state.runners = { first: true, second: false, third: false }; });
+  await page.locator('#other-plays [data-play="steal2"]').click();
+  expect(await page.evaluate(() => !!(window as any).SimpleFielding.view3d().batter)).toBe(true);
+});

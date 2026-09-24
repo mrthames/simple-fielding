@@ -4,7 +4,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '0.26.0';
+  const VERSION = '0.27.0';
   const Field = window.Field;
   const BATTED = ['ground', 'line', 'fly', 'pop', 'bunt'];
   const { POSITIONS, NAMES, LEAGUES } = Field;
@@ -57,7 +57,7 @@
   function sync3d() {
     if (!on3d()) return;
     if (state.plan) { v3.load(state.plan); v3.seek(state.t); }
-    else v3.showReady(window.Field.readyPositions(geo, situation()), state.runners);
+    else v3.showReady(window.Field.readyPositions(geo, situation()), state.runners, state.batter);
     renderCams();
   }
   for (const name of ['load', 'seek', 'showReady', 'setGeometry', 'setLabels']) {
@@ -68,7 +68,7 @@
       if (on3d()) {
         if (name === 'setLabels') v3.setLabels(args[0]);
         else if (name === 'setGeometry') { v3.setGeometry(args[0]); sync3d(); }
-        else if (name === 'showReady') v3.showReady(args[0], args[1]);
+        else if (name === 'showReady') v3.showReady(args[0], args[1], state.batter);
         else if (name === 'load') { v3.load(args[0]); renderCams(); }
         else v3.seek(args[0]);
       }
@@ -2109,6 +2109,7 @@
   // Test hook: lets the Playwright suite drive plays without synthesising drags.
   window.SimpleFielding = { setMode, state, team, board, tester, openReport, buildReport, reportText, openBoard, closeBoard, runEvent, runScenario, hitTo, seekEnd() { if (state.plan) { stop(); endAsk(); state.t = state.plan.timeline.duration; view.seek(state.t); updateTransport(); } },
     // Paused at time t (seconds): used by scripts/render-hero-video.mjs to film a play frame by frame.
+    view3d: () => v3,
     seek(t) { if (state.plan) { stop(); endAsk(); state.t = Math.max(0, Math.min(t, state.plan.timeline.duration)); view.seek(state.t); updateTransport(); } } };
 
   window.TeamUI.init({ team, onChange: (t) => { T.save(window.localStorage, t); applyLabels(); } });

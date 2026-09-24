@@ -2,6 +2,25 @@
 
 ---
 
+## [2026-09-25] v0.27.0 — 3D players that move like ballplayers
+
+- **Real players in the 3D view**, built low-poly in the style of a late-'90s baseball game: blue defense in caps and gloves, red offense in batting helmets.
+  - They **run** with a stride that matches their speed, turning their head to watch the ball.
+  - Fielders wait in a **ready crouch**, get **down for a grounder**, take a **liner at the chest** and reach **overhead for a fly or pop-up**, then **wind up and throw**.
+  - The **catcher squats** behind the plate. The **pitcher follows through** on the pitch.
+  - **The batter stands in the box on the correct side** (righty, lefty or slapper), **swings** at contact, drops the bat and runs. On a steal or pickoff, a batter still stands in.
+  - Players are sized to the level: about 6 ft from high school up, smaller for younger kids.
+- **The ball flies the way it was hit, at true height**: a grounder hops lower and lower, a liner stays flat, fly balls and pop-ups arc high, and throws carry on a gentle arc. Its shadow fades as it climbs.
+- **The diamond is to scale**:
+  - Home plate is the real 17-inch pentagon.
+  - The bases are 15 inches (18 in the pros).
+  - The batter's boxes are 4 x 6 ft (3 x 6 on youth fields, 3 x 7 in softball).
+  - The catcher's box, the rubber and a 10-inch mound all match their level.
+- **Name tags stay the same size on screen**, near or far.
+- It's all drawn on your device: nothing new to download, and a frame takes about a millisecond.
+
+---
+
 ## [2026-09-25] v0.26.0 — The level and field, on the field
 
 - **The color key on the field now names the level and field** the play is shown at: "Little League · 60 ft bases", "College softball · 60 ft bases", "MLB · Red Sox — Fenway Park". A play on the screen, or on a projector, says what level it's played at, without opening Settings.

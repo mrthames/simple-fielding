@@ -15,6 +15,7 @@
   const POSITIONS = ['P', 'C', '1B', '2B', 'SS', '3B', 'LF', 'CF', 'RF'];
   const ROLE_COLORS = { field: 0xffc400, cutoff: 0xff8c1a, relay: 0xff8c1a, trail: 0xff8c1a, cover: 0x22c55e, backup: 0xa855f7, hold: 0xcbd5e1 };
   const sample = (keys, t) => root.Engine.sampleTrack(keys || [], t);
+  const smooth = (f) => { f = Math.max(0, Math.min(1, f)); return f * f * (3 - 2 * f); };
 
   class Field3D {
     constructor(container) {
@@ -109,14 +110,19 @@
         this.field.add(mesh);
         return mesh;
       };
-      circ(0, 0, 13 * k, 0xc68c52, 0.07);
-      for (const bse of ['first', 'second', 'third']) circ(geo.bases[bse].x, geo.bases[bse].y, 7 * k, 0xc68c52, 0.07);
+      const q = geo.base / 90;                     // real sizes scale with the base distance
+      circ(0, 0, Math.max(9, 13 * q), 0xc68c52, 0.07);
+      for (const bse of ['first', 'second', 'third']) circ(geo.bases[bse].x, geo.bases[bse].y, 9 * q + 1, 0xc68c52, 0.07);
+      this.moundTop = 0;
       if (geo.league.sport === 'softball') {
         const ring = new THREE.Mesh(new THREE.RingGeometry(7.8, 8.2, 48), new THREE.MeshBasicMaterial({ color: 0xffffff }));
         ring.rotation.x = -Math.PI / 2; ring.position.copy(this.w(0, geo.mound.y, 0.09)); this.field.add(ring);
       } else {
-        const mound = new THREE.Mesh(new THREE.CylinderGeometry(7 * k, 9 * k, 0.9, 32), new THREE.MeshLambertMaterial({ color: 0xc68c52 }));
-        mound.position.copy(this.w(0, geo.mound.y, 0.45)); this.field.add(mound);
+        // An 18 ft mound, 10 inches high, centered 18 inches in front of the rubber (scaled down for youth fields).
+        const mh = 0.83 * q;
+        const mound = new THREE.Mesh(new THREE.CylinderGeometry(2.5 * q, 9 * q, mh, 24), new THREE.MeshLambertMaterial({ color: 0xc68c52, flatShading: true }));
+        mound.position.copy(this.w(0, geo.mound.y - 1.5 * q, mh / 2)); this.field.add(mound);
+        this.moundTop = mh;
       }
       // Chalk: foul lines to the poles.
       const lineMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
@@ -124,7 +130,7 @@
         const a = sign > 0 ? 0 : 90, r = geo.fenceDir(a), t = (a + 45) * Math.PI / 180;
         const end = { x: Math.cos(t) * r, y: Math.sin(t) * r };
         const len = Math.hypot(end.x, end.y);
-        const box = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.05, len), lineMat);
+        const box = new THREE.Mesh(new THREE.BoxGeometry(0.33, 0.05, len), lineMat);
         box.position.copy(this.w(end.x / 2, end.y / 2, 0.1));
         box.lookAt(this.w(end.x, end.y, 0.1));
         this.field.add(box);
@@ -132,13 +138,8 @@
         const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.4, 40, 8), new THREE.MeshLambertMaterial({ color: 0xffd400 }));
         pole.position.copy(this.w(end.x, end.y, 20)); this.field.add(pole);
       }
-      // Bases and the plate.
-      for (const bse of ['first', 'second', 'third']) {
-        const bag = new THREE.Mesh(new THREE.BoxGeometry(1.25, 0.4, 1.25), new THREE.MeshLambertMaterial({ color: 0xffffff }));
-        bag.position.copy(this.w(geo.bases[bse].x, geo.bases[bse].y, 0.2)); bag.rotation.y = Math.PI / 4; this.field.add(bag);
-      }
-      const plate = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.1, 1.4), new THREE.MeshLambertMaterial({ color: 0xffffff }));
-      plate.position.copy(this.w(0, 0, 0.1)); plate.rotation.y = Math.PI / 4; this.field.add(plate);
+      // Bases, the plate, the batter's and catcher's boxes and the rubber, at each level's real size.
+      this.buildDiamond(geo);
       // The wall: a dark green fence along the park's shape, with the distances on it.
       const wallMat = new THREE.MeshLambertMaterial({ color: 0x1f3b2a, side: THREE.DoubleSide });
       const H = geo.big ? 10 : 6;
@@ -160,12 +161,23 @@
       }
       // A coach on the rubber at 8U.
       if (geo.rules && geo.rules.pitcher === 'adult') {
-        const coach = this.person(0xf5f1e6, 1.1);
-        coach.position.copy(this.w(0, geo.mound.y - 1, 0));
+        const F3 = root.Figures3D;
+        const coach = F3.makePlayer(THREE, 'coach', {});
+        F3.apply(coach, F3.pose('stand'));
+        this.place(coach, { x: 0, y: geo.mound.y - 1 }, { x: 0, y: 0 });
         this.field.add(coach);
       }
       this.buildActors();
       this.render();
+    }
+
+    // A name tag that stays the same size on screen, near or far, like a player tag in a sports game.
+    tag(text, fg, bg, height) {
+      const sp = this.textSprite(text, fg, bg, 44);
+      sp.material.sizeAttenuation = false;
+      sp.scale.set(0.042 * sp.userData.aspect, 0.042, 1);
+      sp.position.y = height;
+      return sp;
     }
 
     textSprite(text, fg, bg, size = 48) {
@@ -186,18 +198,60 @@
       return sp;
     }
 
-    // A simple figure: body, head, and a colored ring at their feet for their job.
-    person(color, scale = 1) {
+    // The diamond's hardware to scale: plate, bags, batter's and catcher's boxes, the rubber.
+    buildDiamond(geo) {
       const THREE = this.THREE;
-      const g = new THREE.Group();
-      const mat = new THREE.MeshLambertMaterial({ color });
-      const body = new THREE.Mesh(new THREE.CylinderGeometry(0.9 * scale, 1.1 * scale, 3.6 * scale, 16), mat);
-      body.position.y = 1.9 * scale;
-      const head = new THREE.Mesh(new THREE.SphereGeometry(0.75 * scale, 16, 12), new THREE.MeshLambertMaterial({ color: 0xf1c9a5 }));
-      head.position.y = 4.3 * scale;
-      const cap = new THREE.Mesh(new THREE.SphereGeometry(0.8 * scale, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2), mat);
-      cap.position.y = 4.45 * scale;
-      g.add(body, head, cap);
+      const q = geo.base / 90;
+      const soft = geo.league.sport === 'softball';
+      const white = new THREE.MeshLambertMaterial({ color: 0xffffff });
+      // Home plate: 17 inches across the front, a pentagon with its point toward the catcher.
+      const hw = 17 / 24;
+      this.flat([{ x: 0, y: 0 }, { x: hw, y: hw }, { x: hw, y: 2 * hw }, { x: -hw, y: 2 * hw }, { x: -hw, y: hw }], 0xffffff, 0.1, white);
+      // Bags: 18 inches in the pros since 2023, 15 elsewhere, 3 inches high.
+      const bag = geo.key === 'pro' ? 1.5 : 1.25;
+      for (const bse of ['first', 'second', 'third']) {
+        const m = new THREE.Mesh(new THREE.BoxGeometry(bag, 0.25, bag), white);
+        m.position.copy(this.w(geo.bases[bse].x, geo.bases[bse].y, 0.125)); m.rotation.y = Math.PI / 4; this.field.add(m);
+      }
+      // Chalk, 3 inches wide.
+      const line = (x0, y0, x1, y1) => {
+        const len = Math.hypot(x1 - x0, y1 - y0);
+        const m = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.04, len + 0.25), white);
+        m.position.copy(this.w((x0 + x1) / 2, (y0 + y1) / 2, 0.09));
+        m.rotation.y = Math.atan2(x1 - x0, -(y1 - y0));
+        this.field.add(m);
+      };
+      // Batter's boxes: 4 x 6 ft, 6 in off the plate, from 13U-14U up; 3 x 6 ft, 4 in off, on youth fields;
+      // 3 x 7 ft in softball. The front line is 3 ft (softball 4 ft) in front of the middle of the plate.
+      const bw = soft ? 3 : geo.big ? 4 : 3, gap = soft || geo.big ? 0.5 : 1 / 3, bl = soft ? 7 : 6;
+      const front = hw + (soft ? 4 : 3), back = front - bl;
+      for (const sgn of [-1, 1]) {
+        const x0 = sgn * (hw + gap), x1 = sgn * (hw + gap + bw);
+        line(x0, back, x0, front); line(x1, back, x1, front); line(x0, front, x1, front); line(x0, back, x1, back);
+      }
+      this.box = { inner: hw + gap, width: bw, mid: (front + back) / 2 };
+      // Catcher's box, behind: 43 in wide and 8 ft deep (youth 6 ft); softball 8 ft 5 in by 10 ft.
+      const cw = soft ? 8.42 : 43 / 12, cd = soft ? 10 : geo.big ? 8 : 6;
+      line(-cw / 2, back, -cw / 2, back - cd); line(cw / 2, back, cw / 2, back - cd); line(-cw / 2, back - cd, cw / 2, back - cd);
+      // The rubber: 24 x 6 in (Little League 18 x 4), on top of the mound.
+      const rw = !soft && !geo.big && geo.base <= 60 ? 1.5 : 2, rd = !soft && !geo.big && geo.base <= 60 ? 1 / 3 : 0.5;
+      const top = soft ? 0 : 0.83 * q;
+      const rub = new THREE.Mesh(new THREE.BoxGeometry(rw, 0.08, rd), white);
+      rub.position.copy(this.w(0, geo.mound.y + rd / 2, top + 0.04)); this.field.add(rub);
+    }
+
+    // Players are sized to the level: about 6 ft from high school up, smaller for younger kids.
+    figScale() {
+      return ({ softball8: 0.66, softball10: 0.74, softball: 0.8, littleLeague: 0.8, intermediate: 0.86, softball14: 0.88,
+        junior90: 0.9, softballHS: 0.93, softballCollege: 0.95, softballPro: 0.96, highSchool: 0.97, college: 1, pro: 1 })[this.geo.key] || 0.9;
+    }
+
+    newPlayer(team, opts) {
+      const F3 = root.Figures3D;
+      const g = F3.makePlayer(this.THREE, team, opts);
+      g.scale.set(opts && opts.lefty ? -this.fs : this.fs, this.fs, this.fs);
+      F3.apply(g, F3.pose('stand'));
+      this.field.add(g);
       return g;
     }
 
@@ -207,24 +261,27 @@
       this.rings = {};
       const us = Math.max(1, Math.min(1.9, this.geo.fenceMax / 215));
       this.us = us;
+      this.fs = this.figScale();
+      const skins = { P: 0, C: 2, '1B': 1, '2B': 3, SS: 1, '3B': 0, LF: 2, CF: 3, RF: 0 };
       for (const pos of POSITIONS) {
-        const g = this.person(0x1f6fe5, 1.3);
-        const ring = new THREE.Mesh(new THREE.RingGeometry(2.2, 3.0, 32), new THREE.MeshBasicMaterial({ color: 0xcbd5e1, transparent: true, opacity: 0.9 }));
-        ring.rotation.x = -Math.PI / 2; ring.position.y = 0.15;
+        const g = this.newPlayer('defense', { glove: true, skin: skins[pos] });
+        const ring = new THREE.Mesh(root.Figures3D.kit(THREE).ring, new THREE.MeshBasicMaterial({ color: 0xcbd5e1, transparent: true, opacity: 0.9 }));
+        ring.rotation.x = -Math.PI / 2; ring.position.y = 0.12;
         g.add(ring);
-        const lbl = this.textSprite(this.labels[pos] || pos, '#ffffff', 'rgba(15,40,90,.85)', 44);
-        lbl.position.y = 8.6; lbl.scale.set(3.2 * lbl.userData.aspect * us * 0.8, 3.2 * us * 0.8, 1);
+        const lbl = this.tag(this.labels[pos] || pos, '#ffffff', 'rgba(15,40,90,.85)', 7.6);
         g.add(lbl);
         g.userData.label = lbl;
-        this.field.add(g);
         this.actors[pos] = g;
         this.rings[pos] = ring;
       }
-      this.ball = new THREE.Mesh(new THREE.SphereGeometry(0.45 * us, 16, 12), new THREE.MeshLambertMaterial({ color: 0xffffff, emissive: 0x333333 }));
-      this.ballShadow = new THREE.Mesh(new THREE.CircleGeometry(0.5 * us, 16), new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.3 }));
+      const r = 0.2 * us;
+      this.ballR = r;
+      this.ball = new THREE.Mesh(new THREE.IcosahedronGeometry(r, 1), new THREE.MeshLambertMaterial({ color: 0xffffff, emissive: 0x444444, flatShading: true }));
+      this.ballShadow = new THREE.Mesh(new THREE.CircleGeometry(r * 1.2, 12), new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.3 }));
       this.ballShadow.rotation.x = -Math.PI / 2;
       this.field.add(this.ball, this.ballShadow);
       this.runnerMeshes = {};
+      this.batter = null;
     }
 
     setLabels(labels) {
@@ -236,28 +293,56 @@
     clearRunners() {
       for (const id in this.runnerMeshes) this.field.remove(this.runnerMeshes[id]);
       this.runnerMeshes = {};
+      if (this.batter) { this.field.remove(this.batter); this.batter = null; }
     }
-    makeRunner(id, label) {
-      const g = this.person(0xe23b3b, 1.25);
-      const lbl = this.textSprite(label, '#ffffff', 'rgba(170,25,25,.9)', 44);
-      lbl.position.y = 8.2; lbl.scale.set(2.6 * lbl.userData.aspect * this.us * 0.8, 2.6 * this.us * 0.8, 1);
+    makeRunner(id, label, opts = {}) {
+      const g = this.newPlayer('offense', Object.assign({ skin: id.length }, opts));
+      const lbl = this.tag(label, '#ffffff', 'rgba(170,25,25,.9)', 7.4);
+      lbl.scale.multiplyScalar(0.85);
+      if (opts.lefty) lbl.scale.x *= -1;       // the mirrored figure would mirror its label too
       g.add(lbl);
-      this.field.add(g);
       this.runnerMeshes[id] = g;
       return g;
     }
 
-    showReady(ready, runners) {
+    // Where the batter stands: in the box on their side of the plate, facing it.
+    boxSpot(side) {
+      const b = this.box || { inner: 1.2, width: 4, mid: 0.7 };
+      const x = b.inner + b.width * 0.42;
+      return side === 'L' || side === 'S' ? { p: { x, y: b.mid - 0.3 }, face: { x: -10, y: b.mid - 0.3 } } : { p: { x: -x, y: b.mid - 0.3 }, face: { x: 10, y: b.mid - 0.3 } };
+    }
+    standBatter(g, side) {
+      const F3 = root.Figures3D;
+      const spot = this.boxSpot(side);
+      this.place(g, spot.p, spot.face);
+      F3.apply(g, F3.pose('stance'));
+      if (g.userData.joints.bat) g.userData.joints.bat.visible = true;
+    }
+
+    showReady(ready, runners, batter) {
       this.plan = null;
       if (!this.actors) return;
+      const F3 = root.Figures3D;
       for (const pos of POSITIONS) {
-        this.place(this.actors[pos], ready[pos], { x: 0, y: 0 });
+        const face = pos === 'C' ? { x: 0, y: 60 } : { x: 0, y: 0 };
+        this.place(this.actors[pos], ready[pos], face);
+        this.actors[pos].position.y = pos === 'P' ? this.moundTop || 0 : 0;
+        F3.apply(this.actors[pos], F3.pose(pos === 'C' ? 'squat' : pos === 'P' ? 'stand' : 'set'));
         this.rings[pos].material.color.setHex(0xcbd5e1);
       }
       this.clearRunners();
       const b = this.geo.bases;
-      for (const base of ['first', 'second', 'third']) if (runners && runners[base]) this.place(this.makeRunner(base, 'R'), b[base], b.home);
-      this.ball.position.copy(this.w(0, 1.5, 0.45)); this.ballShadow.position.copy(this.w(0, 1.5, 0.12));
+      for (const base of ['first', 'second', 'third']) {
+        if (!runners || !runners[base]) continue;
+        const g = this.makeRunner(base, 'R');
+        this.place(g, b[base], this.geo.mound);
+        F3.apply(g, F3.pose('stand'));
+      }
+      const side = batter || 'R';
+      this.batter = this.newPlayer('offense', { bat: true, lefty: side !== 'R', skin: 1 });
+      this.standBatter(this.batter, side);
+      this.ball.position.copy(this.w(0, this.geo.mound.y - 1, 5 * this.fs + (this.moundTop || 0)));
+      this.ballShadow.position.copy(this.w(0, this.geo.mound.y - 1, (this.moundTop || 0) + 0.05));
       this.render();
     }
 
@@ -266,43 +351,221 @@
       if (!this.actors) return;
       for (const pos of POSITIONS) this.rings[pos].material.color.setHex(ROLE_COLORS[plan.assignments[pos].role] || 0xcbd5e1);
       this.clearRunners();
-      for (const r of plan.runners) this.makeRunner(r.id, r.label || (r.id === 'batter' ? 'B' : 'R'));
+      const side = (plan.situation && plan.situation.batter) || 'R';
+      for (const r of plan.runners) {
+        const isBatter = r.id === 'batter';
+        this.makeRunner(r.id, r.label || (isBatter ? 'B' : 'R'), isBatter ? { bat: true, lefty: side !== 'R' } : {});
+      }
+      // A play without a batter-runner (a steal, a pickoff, a passed ball) still has someone at the plate.
+      if (!plan.runners.some((r) => r.id === 'batter')) {
+        this.batter = this.newPlayer('offense', { bat: true, lefty: side !== 'R', skin: 1 });
+        this.standBatter(this.batter, side);
+      }
+      this.side = side;
+      this.actions = this.readActions(plan);
+      // How far each person has gone along their track, for a stride that matches their feet to the ground.
+      this.cum = {};
+      const tr = plan.timeline.tracks;
+      for (const key in tr) {
+        if (key.startsWith('look')) continue;
+        const keys = tr[key], c = [0];
+        for (let i = 1; i < keys.length; i++) c.push(c[i - 1] + Math.hypot(keys[i].x - keys[i - 1].x, keys[i].y - keys[i - 1].y));
+        this.cum[key] = c;
+      }
       this.seek(0);
     }
 
-    // Stand a figure at a spot, facing toward `look`.
+    // Distance travelled along a track by time t.
+    travelled(key, t) {
+      const keys = this.plan.timeline.tracks[key], c = this.cum[key];
+      if (!keys || !keys.length) return 0;
+      if (t <= keys[0].t) return 0;
+      for (let i = 1; i < keys.length; i++) {
+        if (t <= keys[i].t) {
+          const f = (t - keys[i - 1].t) / ((keys[i].t - keys[i - 1].t) || 1);
+          return c[i - 1] + (c[i] - c[i - 1]) * f;
+        }
+      }
+      return c[c.length - 1];
+    }
+
+    /*
+     * What the ball does to each fielder, read from the play: who has it when, so each gets a catch (grounder,
+     * chest-high or overhead, by the ball's height when it arrives) and a throw when it leaves them. A fielder
+     * "has" the ball when it stays within reach of them for a moment; a ball flying past doesn't count.
+     */
+    readActions(plan) {
+      const tr = plan.timeline.tracks, T = plan.timeline.duration, hit = plan.timeline.hit;
+      const throws = plan.timeline.events.filter((e) => e.type === 'throw');
+      const dt = 0.04, reach = 4.5;
+      const holders = [];
+      for (let t = 0; t <= T; t += dt) {
+        const b = sample(tr.ball, t);
+        let best = null, bd = reach;
+        if (b.h < 11) for (const pos of POSITIONS) {
+          const p = sample(tr[pos], t);
+          const d = Math.hypot(p.x - b.x, p.y - b.y);
+          if (d < bd) { bd = d; best = pos; }
+        }
+        holders.push({ t, pos: best, h: b.h });
+      }
+      // Drop spells shorter than 0.16 s: that's a ball going by.
+      for (let i = 0; i < holders.length;) {
+        let j = i;
+        while (j < holders.length && holders[j].pos === holders[i].pos) j++;
+        if (holders[i].pos && j - i < 4 && i > 0) for (let k = i; k < j; k++) holders[k].pos = null;
+        i = j;
+      }
+      const acts = {};
+      for (const pos of POSITIONS) acts[pos] = [];
+      let prev = holders.length ? holders[0].pos : null;
+      for (let i = 1; i < holders.length; i++) {
+        const cur = holders[i].pos;
+        if (cur === prev) continue;
+        const t = holders[i].t;
+        if (prev) {
+          const ev = throws.find((e) => Math.abs(e.t - t) < 0.45);
+          acts[prev].push({ type: 'throw', t: ev ? ev.t : Math.max(0, t - 0.08) });
+        }
+        if (cur) {
+          const h = holders[i].h;
+          const air = hit && hit.caught && Math.abs(t - hit.t1) < 0.3;
+          const style = air ? (hit.kind === 'line' ? 'chest' : 'high') : h <= 1.6 ? 'grounder' : h > 6.5 ? 'high' : 'chest';
+          acts[cur].push({ type: 'catch', t, style });
+        }
+        prev = cur;
+      }
+      return acts;
+    }
+
+    // Stand a figure at a spot, facing toward `look`. Model +z faces forward; field y is world -z.
     place(g, p, look) {
       g.position.copy(this.w(p.x, p.y, 0));
-      if (look && (look.x !== p.x || look.y !== p.y)) g.rotation.y = Math.atan2(look.x - p.x, look.y - p.y);
+      if (look && (look.x !== p.x || look.y !== p.y)) g.rotation.y = Math.atan2(look.x - p.x, -(look.y - p.y));
+    }
+
+    /*
+     * A fielder's pose at time t: running if they're moving, set if they're waiting, and whatever the ball asks
+     * of them around a catch or a throw.
+     */
+    poseFor(pos, t, speed, stride) {
+      const F3 = root.Figures3D;
+      const plan = this.plan;
+      const contact = plan.timeline.contact || 0;
+      let base;
+      if (pos === 'C' && t < contact + 0.35 && speed < 1) base = F3.pose('squat');
+      else if (pos === 'P' && t < 0.05) base = F3.pose('stand');
+      else base = F3.lerpPose(F3.pose('stand'), F3.pose('set'), t < contact + 0.2 ? 1 : 0.55);
+      let p = F3.run(base, stride, Math.min(1, speed / 7));
+      for (const a of this.actions[pos] || []) {
+        if (a.type === 'catch') {
+          const pre = a.style === 'high' ? 0.7 : 0.4;
+          const w = t < a.t - pre || t > a.t + 0.5 ? 0 : t < a.t ? (t - (a.t - pre)) / pre : t < a.t + 0.15 ? 1 : 1 - (t - a.t - 0.15) / 0.35;
+          if (w > 0) p = F3.lerpPose(p, F3.pose(a.style), smooth(w));
+        } else {
+          if (t > a.t - 0.45 && t < a.t) p = F3.lerpPose(p, F3.pose('windup'), smooth((t - (a.t - 0.45)) / 0.35));
+          else if (t >= a.t && t < a.t + 0.5) {
+            const f = (t - a.t) / 0.5;
+            p = F3.lerpPose(p, F3.lerpPose(F3.pose('windup'), F3.pose('release'), smooth(Math.min(1, f * 3))), 1 - smooth(Math.max(0, f * 1.6 - 0.6)));
+          }
+        }
+      }
+      return p;
+    }
+
+    // Move and pose a person along a track at time t. Returns the pose used for the camera.
+    move(g, key, t, lookKey, poseFn) {
+      const F3 = root.Figures3D;
+      const tr = this.plan.timeline.tracks;
+      const p = sample(tr[key], t), q0 = sample(tr[key], Math.max(0, t - 0.08));
+      const vx = p.x - q0.x, vy = p.y - q0.y;
+      const speed = t > 0.08 ? Math.hypot(vx, vy) / 0.08 : 0;
+      const l = tr[lookKey] ? sample(tr[lookKey], t) : { x: 0, y: 0 };
+      // Running: face the way you're going and turn your head to the ball. Otherwise face what you're watching.
+      const faceRun = speed > 6;
+      this.place(g, p, faceRun ? { x: p.x + vx, y: p.y + vy } : l);
+      const stride = 2 * Math.PI * this.travelled(key, t) / (5.2 * this.fs);
+      const pose = poseFn(speed, stride);
+      if (faceRun) {
+        const body = Math.atan2(vx, vy), want = Math.atan2(l.x - p.x, l.y - p.y);
+        let d = want - body;
+        while (d > Math.PI) d -= 2 * Math.PI;
+        while (d < -Math.PI) d += 2 * Math.PI;
+        pose.headYaw = Math.max(-1.3, Math.min(1.3, -d));
+      }
+      F3.apply(g, pose, speed > 1 ? Math.abs(Math.sin(stride)) * 0.25 : 0);
+      return { p, l };
     }
 
     seek(t) {
       this.t = t;
       const plan = this.plan;
       if (!plan || !this.actors) { this.render(); return; }
+      const F3 = root.Figures3D;
       const tr = plan.timeline.tracks;
+      const contact = plan.timeline.contact || 0;
       this.pose = {};
       for (const pos of POSITIONS) {
-        const p = sample(tr[pos], t);
-        const l = tr['look:' + pos] ? sample(tr['look:' + pos], t) : { x: 0, y: 0 };
-        this.place(this.actors[pos], p, l);
-        this.pose['player:' + pos] = { p, l };
+        const g = this.actors[pos];
+        this.pose['player:' + pos] = this.move(g, pos, t, 'look:' + pos, (speed, stride) => this.poseFor(pos, t, speed, stride));
+        // On the mound, stand on it.
+        const onMound = this.moundTop && Math.hypot(g.position.x, -g.position.z - this.geo.mound.y) < 6 * (this.geo.base / 90);
+        g.position.y = onMound ? this.moundTop : 0;
       }
       for (const r of plan.runners) {
-        const keys = tr['runner:' + r.id];
         const g = this.runnerMeshes[r.id];
-        if (!keys || !g) continue;
-        const p = sample(keys, t);
-        const l = tr['look:runner:' + r.id] ? sample(tr['look:runner:' + r.id], t) : p;
-        this.place(g, p, l);
+        const key = 'runner:' + r.id;
+        if (!tr[key] || !g) continue;
+        if (r.id === 'batter' && t < contact + 0.3) {
+          // In the box until the swing is done; then the bat drops and they run.
+          this.standBatter(g, this.side);
+          const f = (t - (contact - 0.12)) / 0.3;
+          if (f > 0) F3.apply(g, F3.lerpPose(F3.pose('stance'), F3.pose('swing'), smooth(Math.min(1, f))));
+          this.pose[key] = { p: this.boxSpot(this.side).p, l: { x: 0, y: 60 } };
+          continue;
+        }
+        if (g.userData.joints.bat) g.userData.joints.bat.visible = false;
+        this.pose[key] = this.move(g, key, t, 'look:' + key, (speed, stride) => {
+          const offBag = !['first', 'second', 'third', 'home'].some((bse) => {
+            const b = this.geo.bases[bse] || { x: 0, y: 0 };
+            const q = sample(tr[key], t);
+            return Math.hypot(q.x - b.x, q.y - b.y) < 2.5;
+          });
+          return F3.run(F3.pose(offBag ? 'lead' : 'stand'), stride, Math.min(1, speed / 7));
+        });
+        const p = sample(tr[key], t);
         g.visible = p.o === undefined || p.o > 0.4;
-        this.pose['runner:' + r.id] = { p, l };
       }
+      if (this.batter) this.standBatter(this.batter, this.side);
+      // The ball: true heights. The batted ball's flight and each throw are drawn as smooth curves.
       const bp = sample(tr.ball, t);
-      const hgt = 0.45 + Math.max(0, bp.h || 0) * 0.55;
-      this.ball.position.copy(this.w(bp.x, bp.y, hgt));
-      this.ballShadow.position.copy(this.w(bp.x, bp.y, 0.12));
-      this.ballAt = { x: bp.x, y: bp.y, h: hgt };
+      let h = bp.h * this.fs;
+      const hit = plan.timeline.hit;
+      if (hit && t >= hit.t0 && t <= hit.t1) {
+        const f = (t - hit.t0) / ((hit.t1 - hit.t0) || 1);
+        if (hit.kind === 'fly' || hit.kind === 'pop' || hit.kind === 'line') {
+          h = 3 * this.fs * (1 - f) + 4 * hit.peak * f * (1 - f) + (hit.caught ? 4 * this.fs * f : 0);
+        } else {
+          // Hops that die out: higher and longer at first, skipping along by the end.
+          const n = Math.max(2, Math.round(Math.hypot(hit.to.x, hit.to.y) / 35));
+          const A = hit.kind === 'bunt' ? 0.9 : 3.4 * this.fs;
+          const g = Math.pow(f, 0.8) * n;
+          h = Math.max(A * Math.pow(1 - f, 1.4) * Math.abs(Math.sin(Math.PI * g)), 3 * this.fs * (1 - 2 * g));
+        }
+      } else {
+        const th = plan.timeline.events.find((e) => e.type === 'throw' && t >= e.t && t <= e.tEnd);
+        if (th) {
+          const f = (t - th.t) / ((th.tEnd - th.t) || 1);
+          const d = Math.hypot(th.to.x - th.from.x, th.to.y - th.from.y);
+          h = 4 * this.fs + (d / 18) * 4 * f * (1 - f);
+        }
+      }
+      if (t < 0.05 && this.moundTop) h += this.moundTop;
+      h = Math.max(this.ballR, h);
+      this.ball.position.copy(this.w(bp.x, bp.y, h));
+      this.ballShadow.position.copy(this.w(bp.x, bp.y, 0.1));
+      this.ballShadow.material.opacity = Math.max(0.08, 0.35 - h / 200);
+      this.ballAt = { x: bp.x, y: bp.y, h };
       this.render();
     }
 
@@ -318,6 +581,16 @@
     updateCamera() {
       const g = this.geo;
       if (!g) return;
+      // A camera placed by a script (screenshots, marketing stills): field feet, { from: {x,y,h}, to: {x,y,h} }.
+      if (this.fixedCam) {
+        const c = this.fixedCam;
+        this.camera.up.set(0, 1, 0);
+        this.camera.position.copy(this.w(c.from.x, c.from.y, c.from.h));
+        this.camera.lookAt(this.w(c.to.x, c.to.y, c.to.h));
+        this.camera.fov = c.fov || 40;
+        this.camera.updateProjectionMatrix();
+        return;
+      }
       const F = g.fence;
       let pos, look;
       if (this.mode === 'overhead') {
@@ -334,7 +607,7 @@
         // From their eyes (about 5 ft up), looking where the engine says they're looking.
         const d = Math.hypot(l.x - p.x, l.y - p.y) || 1;
         const ux = (l.x - p.x) / d, uy = (l.y - p.y) / d;
-        pos = this.w(p.x - ux * 0.5, p.y - uy * 0.5, 5.4);
+        pos = this.w(p.x - ux * 0.5, p.y - uy * 0.5, 5.4 * (this.fs || 1));
         look = this.w(l.x, l.y, 3.5);
       } else {
         this.camera.up.set(0, 1, 0);

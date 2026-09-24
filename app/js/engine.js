@@ -1845,6 +1845,8 @@
     let landTime = null;
     let fieldPos = plan.fielder;
     let tBallAtFielder;
+    // The batted ball's flight, described for the 3D view, which draws the arc or the hops smoothly at true height.
+    let hit = null;
 
     // Fielders' movement (computed first so the ball can wait for the fielder).
     const starts = plan.pitch ? PITCH_TIME : T0;
@@ -1900,6 +1902,7 @@
           ball.push({ t: contact + (catchT - contact) * f, x: p.x, y: p.y, h: Math.max(0, h) });
         }
         tBallAtFielder = catchT;
+        hit = { kind: plan.ball.kind, t0: contact, t1: catchT, to: { x: at.x, y: at.y }, peak: peak * Math.min(1, 0.4 + d / 250), caught: !!plan.ball.caught };
         if (plan.homeRun) {
           ball.push({ t: catchT + 0.6, x: plan.ball.fieldPoint.x, y: plan.ball.fieldPoint.y, h: 10 });
         } else if (!plan.ball.caught) {
@@ -1936,6 +1939,7 @@
           const h = Math.abs(Math.sin(f * Math.PI * 3)) * peak * (1 - f);
           ball.push({ t: contact + (tRoll - contact) * f, x: p.x, y: p.y, h });
         }
+        hit = { kind: plan.ball.kind, t0: contact, t1: tRoll, to: { x: at.x, y: at.y }, peak, caught: false };
         if (dist(at, fp) > 1) ball.push({ t: tRoll + dist(at, fp) / (plan.through ? TP.through : TP.roll), x: fp.x, y: fp.y, h: 0 });
         tBallAtFielder = Math.max(endT, ball[ball.length - 1].t);
         ball.push({ t: tBallAtFielder, x: fp.x, y: fp.y, h: 0 });
@@ -2277,7 +2281,7 @@
     let end = endBall;
     for (const id in tracks) end = Math.max(end, tracks[id][tracks[id].length - 1].t);
     Object.assign(tracks, computeLooks(plan, tracks, events, T0, end + 1.0));
-    return { tracks, events, duration: end + 1.0, contact: T0 };
+    return { tracks, events, duration: end + 1.0, contact: T0, hit };
   }
 
   function basePath(from, to) {
