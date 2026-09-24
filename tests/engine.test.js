@@ -250,3 +250,27 @@ test('no runner on any library play crosses a base after the throw got there fir
     }
   }
 });
+
+test('outfield backups never stand on the fielder or on each other', () => {
+  for (const sc of Scenarios.ALL) {
+    const p = Engine.planPlay({ runners: sc.runners, outs: sc.outs, batter: sc.batter, leadoffs: sc.leadoffs }, sc.event);
+    const ends = ['LF', 'CF', 'RF'].map((pos) => [pos, end(p, pos)]);
+    for (let i = 0; i < ends.length; i++) for (let j = i + 1; j < ends.length; j++) {
+      const d = Math.hypot(ends[i][1].x - ends[j][1].x, ends[i][1].y - ends[j][1].y);
+      assert.ok(d > 10, `${sc.name}: ${ends[i][0]} and ${ends[j][0]} end ${d.toFixed(1)} ft apart`);
+    }
+  }
+  // The play from the first tester report: double into the gap, runner on 1st.
+  const p = play(on('first'), { kind: 'line', at: { x: -52, y: 172 }, result: 'double' });
+  const cf = end(p, 'CF');
+  for (const of of ['LF', 'RF']) assert.ok(Math.hypot(end(p, of).x - cf.x, end(p, of).y - cf.y) > 10, of);
+});
+
+test('an outfielder backing up 2nd stays on the outfield grass', () => {
+  for (const at of [{ x: -80, y: 135 }, { x: 82, y: 132 }]) {
+    const p = play({}, { kind: 'ground', at });
+    const far = at.x < 0 ? 'RF' : 'LF';
+    const e = end(p, far);
+    assert.ok(Math.hypot(e.x, e.y) >= geo.infieldEdge, `${far} backs up 2nd from ${JSON.stringify(e)}`);
+  }
+});

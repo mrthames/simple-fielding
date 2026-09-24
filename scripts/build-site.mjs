@@ -66,8 +66,6 @@ function renderBody(a) {
 }
 
 // ---------------------------------------------------------------- shared page chrome
-const FONT = '-apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", "Segoe UI", Roboto, sans-serif';
-
 function head({ title, description, url, image, type, jsonld }) {
   return `<!DOCTYPE html>
 <html lang="en">
@@ -90,6 +88,9 @@ function head({ title, description, url, image, type, jsonld }) {
 <link rel="icon" type="image/png" href="/favicon.png">
 <link rel="icon" type="image/svg+xml" href="/icon.svg">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,300&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/css/site.css">
 ${jsonld.map((j) => `<script type="application/ld+json">\n${JSON.stringify(j, null, 2)}\n</script>`).join('\n')}
 </head>
@@ -227,6 +228,7 @@ async function renderOg(all) {
   mkdirSync(path.join(WEB, 'images'), { recursive: true });
   for (const it of items) {
     await page.setContent(tpl.replace('{{ICON}}', icon).replace('{{KICKER}}', esc(it.kicker)).replace('{{TITLE}}', esc(it.title)));
+    await page.evaluate(() => document.fonts.ready);
     await page.screenshot({ path: path.join(WEB, 'images', it.file) });
     console.log('  og', it.file);
   }

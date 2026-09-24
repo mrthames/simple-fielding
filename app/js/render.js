@@ -101,17 +101,29 @@
       // Where the arc meets the line y = x:  x^2 + (x - m)^2 = R^2
       const xi = (m + Math.sqrt(2 * R * R - m * m)) / 2;
       el('path', { d: `M0,6 L${-xi},${-xi} A${R},${R} 0 0 1 ${xi},${-xi} Z`, fill: 'var(--dirt)' }, svg);
-      // Infield grass.
-      const inset = 9 * k;
-      const grass = [
-        { x: 0, y: inset * 1.3 }, { x: s - inset, y: s }, { x: 0, y: 2 * s - inset }, { x: -(s - inset), y: s },
-      ];
-      el('path', { d: 'M' + grass.map(P).join(' L') + ' Z', fill: 'var(--grass-a)' }, svg);
-      // Home plate circle, base cut-outs, mound.
+      const softball = g.league.sport === 'softball';
+      // Infield grass. Baseball has a grass infield inside the base paths; softball infields are
+      // usually all dirt ("skinned"), so the grass only starts past the base paths.
+      if (!softball) {
+        const inset = 9 * k;
+        const grass = [
+          { x: 0, y: inset * 1.3 }, { x: s - inset, y: s }, { x: 0, y: 2 * s - inset }, { x: -(s - inset), y: s },
+        ];
+        el('path', { d: 'M' + grass.map(P).join(' L') + ' Z', fill: 'var(--grass-a)' }, svg);
+      }
+      // Home plate circle, base cut-outs.
       el('circle', { cx: 0, cy: 0, r: 13 * k, fill: 'var(--dirt)' }, svg);
       for (const base of ['first', 'second', 'third']) el('circle', { cx: b[base].x, cy: -b[base].y, r: 7 * k, fill: 'var(--dirt)' }, svg);
-      el('circle', { cx: 0, cy: -g.mound.y, r: 7 * k, fill: 'var(--dirt)' }, svg);
-      el('rect', { x: -1.2, y: -g.mound.y - 0.3, width: 2.4, height: 0.6, fill: 'white' }, svg);
+      if (softball) {
+        // Softball: no mound. An 8 ft pitching circle chalked on flat dirt, with a long flat rubber.
+        el('circle', { cx: 0, cy: -g.mound.y, r: 8, class: 'circle-chalk' }, svg);
+        el('rect', { x: -1.2, y: -g.mound.y - 0.3, width: 2.4, height: 0.6, fill: 'white' }, svg);
+      } else {
+        // Baseball: a raised mound.
+        el('circle', { cx: 0, cy: -g.mound.y, r: 7 * k, class: 'mound' }, svg);
+        el('rect', { x: -1.2, y: -g.mound.y - 0.3, width: 2.4, height: 0.6, fill: 'white' }, svg);
+      }
+      this.svg.dataset.sport = g.league.sport;
 
       // Foul lines and the fence.
       el('line', { x1: 0, y1: 0, x2: -fx, y2: -fx, class: 'chalk' }, svg);

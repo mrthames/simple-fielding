@@ -112,7 +112,10 @@
     <section class="card situation">
       <div class="card-head">
         <h2>Situation</h2>
-        <button class="text-btn small" id="btn-clear" type="button">Clear bases</button>
+        <div class="seg small sport-seg" role="group" aria-label="Sport" id="sport-seg">
+          <button type="button" data-sport="baseball">Baseball</button>
+          <button type="button" data-sport="softball">Softball</button>
+        </div>
       </div>
       <div class="sit-row">
         <div class="mini-diamond" id="mini-diamond" aria-label="Runners on base">
@@ -137,7 +140,7 @@
           </div>
         </div>
       </div>
-      <p class="sit-hint">Tap the bases to put runners on.</p>
+      <p class="sit-hint">Tap the bases to put runners on. <button class="text-btn small inline" id="btn-clear" type="button">Clear bases</button></p>
     </section>
 
     <section class="card">

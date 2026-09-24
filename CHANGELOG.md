@@ -2,6 +2,23 @@
 
 ---
 
+## [2026-09-24] v0.5.0 — Softball field, cleaner backups, and a truthful hero
+
+### App
+- **Baseball / Softball switch** on the Situation card. Softball now draws as a softball field: an all-dirt infield, an 8 ft chalked pitching circle with a flat rubber, and no mound. Switching back to Baseball returns to whichever baseball field you used last (60 ft or 50/70).
+- **Outfield backups no longer stack.** An outfielder backing up another now stands behind and off to their own side, so two backups never share a spot. Near the fence, they back up from the side. This was found in the first tester report's log.
+- **The far outfielder backs up 2nd from the grass** (shallow right-center or left-center), not from the infield dirt by 1st.
+- **On bunts**, the outfielders back up bases (center fielder behind 2nd, left fielder behind 3rd) instead of running in toward the plate.
+
+### Website
+- **Hero image rendered from the app** (`scripts/render-hero.mjs`): the real field and engine at the end of a simple play, a single to left with nobody on. It replaces the hand-drawn picture, whose infield was the wrong shape.
+- **Same fonts as Simple Pitch Counter's site**: DM Serif Display for headings, DM Sans for body text, the gold uppercase label, and an italic accent line in the headline. Share images re-rendered to match.
+
+### Tests
+- New engine tests: outfield backups never stand on the fielder or each other, and outfielders backing up 2nd stay on the grass. 44 data and engine tests; 38 UI runs.
+
+---
+
 ## [2026-09-24] Website — simplefielding.com, guides, search
 
 ### Website

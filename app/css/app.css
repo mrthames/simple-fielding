@@ -137,6 +137,9 @@ body { overflow: hidden; }
 .field .backstop { fill: none; stroke: #2a3b4d; stroke-width: 2; }
 .field .box { fill: none; stroke: var(--chalk); stroke-width: 0.5; opacity: 0.8; }
 .field .bag { fill: #fff; }
+.field .mound { fill: var(--dirt); stroke: rgba(0, 0, 0, .12); stroke-width: .6; }
+.field .circle-chalk { fill: none; stroke: var(--chalk); stroke-width: .7; }
+.sport-seg { margin-left: auto; }
 .field .base { cursor: pointer; }
 .field .base.occupied .bag { fill: #FFE066; }
 
@@ -555,3 +558,4 @@ body.board-on .field[data-tool="move"] { cursor: grab; }
 .tester input { flex: 1; min-width: 0; font: inherit; font-size: 15px; padding: 8px 10px; border-radius: 10px; border: 0.5px solid var(--line-2); }
 #version { cursor: default; user-select: none; -webkit-user-select: none; }
 @media (max-width: 520px) { .report-btn span { display: none; } }
+.text-btn.small.inline { min-height: 0; padding: 0 0 0 6px; font-size: 13px; }

@@ -4,7 +4,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '0.4.2';
+  const VERSION = '0.5.0';
   const { POSITIONS, NAMES, LEAGUES } = window.Field;
   const $ = (s) => document.querySelector(s);
   const $$ = (s) => Array.from(document.querySelectorAll(s));
@@ -696,15 +696,35 @@
     leagueSel.appendChild(o);
   }
   leagueSel.value = state.league;
-  leagueSel.addEventListener('change', () => {
+  function setLeague(key) {
+    if (!LEAGUES[key]) return;
     if (board.on) closeBoard();
     clearInkOnNewPlay();
-    state.league = leagueSel.value;
-    store.set('league', state.league);
-    state.leadoffs = store.get('leadoffs.' + state.league, LEAGUES[state.league].leadoffs);
+    state.league = key;
+    leagueSel.value = key;
+    store.set('league', key);
+    // Remember which baseball field was last used, so Softball → Baseball goes back to it.
+    if (LEAGUES[key].sport === 'baseball') store.set('baseballLeague', key);
+    state.leadoffs = store.get('leadoffs.' + key, LEAGUES[key].leadoffs);
     $('#leadoffs').checked = state.leadoffs;
     setGeometry();
-  });
+    renderSport();
+  }
+  function renderSport() {
+    const sport = LEAGUES[state.league].sport;
+    for (const b of $$('#sport-seg button')) {
+      b.classList.toggle('on', b.dataset.sport === sport);
+      b.setAttribute('aria-pressed', String(b.dataset.sport === sport));
+    }
+  }
+  leagueSel.addEventListener('change', () => setLeague(leagueSel.value));
+  for (const b of $$('#sport-seg button')) {
+    b.addEventListener('click', () => {
+      if (LEAGUES[state.league].sport === b.dataset.sport) return;
+      setLeague(b.dataset.sport === 'softball' ? 'softball' : store.get('baseballLeague', 'littleLeague'));
+    });
+  }
+  renderSport();
   $('#leadoffs').checked = state.leadoffs;
   $('#leadoffs').addEventListener('change', (e) => { state.leadoffs = e.target.checked; store.set('leadoffs.' + state.league, state.leadoffs); rerun(); if (!state.lastEvent) showReady(); });
   $('#show-paths').checked = state.showPaths;
@@ -924,7 +944,7 @@
     if (!r) return;
     const s = r.situation;
     if (s.league && LEAGUES[s.league] && s.league !== state.league) {
-      state.league = s.league; leagueSel.value = s.league; setGeometry();
+      setLeague(s.league);
     }
     state.runners = Object.assign({ first: false, second: false, third: false }, s.runners);
     state.outs = s.outs || 0;

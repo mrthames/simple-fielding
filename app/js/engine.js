@@ -47,6 +47,20 @@
     return inPark(geo, { x: base.x + u.x * d, y: base.y + u.y * d });
   }
 
+  // Where an outfielder backs up another outfielder: behind the ball and toward the backup's own side.
+  function backupSpot(geo, fieldPoint, from, depth = 18, spread = 20) {
+    const out = unit(geo.bases.home, fieldPoint);           // toward the fence
+    const side = { x: -out.y, y: out.x };                    // perpendicular
+    const s = ((from.x - fieldPoint.x) * side.x + (from.y - fieldPoint.y) * side.y) >= 0 ? 1 : -1;
+    let p = { x: fieldPoint.x + out.x * depth + side.x * s * spread, y: fieldPoint.y + out.y * depth + side.y * s * spread };
+    const max = geo.fence - 8;
+    if (Math.hypot(p.x, p.y) > max) {
+      // No room behind: stand off to the side instead, still a step deeper than the ball if possible.
+      p = { x: fieldPoint.x + side.x * s * 26, y: fieldPoint.y + side.y * s * 26 };
+    }
+    return inPark(geo, p);
+  }
+
   // Keep a spot inside the fence and in front of the backstop.
   function inPark(geo, p) {
     const r = Math.hypot(p.x, p.y);
@@ -207,13 +221,22 @@
     for (const of of ofs) {
       const adjacent = (F === 'CF') || of === 'CF';
       if (adjacent) {
-        // Get behind the fielder, in case the ball gets past them.
-        assign(plan, of, 'backup', behind(geo, fieldPoint, geo.bases.home, 30),
+        // Get behind the fielder, in case the ball gets past them: a little deeper, and off to your
+        // own side, so two backups (or a backup near the fence) never stand on the fielder's spot.
+        assign(plan, of, 'backup', backupSpot(geo, fieldPoint, ready[of]),
           `Back up ${the(F)} — get behind them in case the ball gets by.`, { delay: 0.2 });
       } else {
         // The far corner outfielder comes in to back up a base.
         const base = of === 'RF' ? (target === 'first' ? 'first' : 'second') : (target === 'home' || target === 'third' ? 'third' : 'second');
-        const spot = behind(geo, b[base], fieldPoint, 45);
+        // Beyond the base in line with the throw, but an outfielder stays on the grass: behind 2nd
+        // that means shallow right-center (or left-center), not the infield dirt by 1st.
+        let spot = behind(geo, b[base], fieldPoint, 30);
+        if (base === 'second') {
+          const r = Math.hypot(spot.x, spot.y), min = geo.infieldEdge + 8;
+          if (r < min) spot = { x: spot.x * min / r, y: spot.y * min / r };
+        } else {
+          spot = outfieldBaseBackup(geo, base, fieldPoint);
+        }
         assign(plan, of, 'backup', spot,
           `Run in and back up ${baseName(base)} base in case the throw gets away.`, { delay: 0.4 });
       }
@@ -662,12 +685,14 @@
         const from = base === targets[0] ? at : b[targets[0]];
         assign(plan, of, 'backup', outfieldBaseBackup(geo, base, from),
           `Run in and back up the throw to ${baseName(base)} base.`, { delay: 0.3 });
-      } else if ((of === 'LF' && leftSide) || (of === 'CF')) {
-        assign(plan, of, 'backup', behind(geo, at, geo.bases.home, 55),
+      } else if (!isBunt && dist(at, geo.bases.home) > 50 && ((of === 'LF' && leftSide) || (of === 'CF'))) {
+        assign(plan, of, 'backup', backupSpot(geo, at, ready[of], 45, 14),
           `Charge in to back up ${the(F)}.`, { delay: 0.2 });
       } else {
-        assign(plan, of, 'backup', outfieldBaseBackup(geo, 'third', geo.mound),
-          'Come in and back up 3rd base, in case of a bad throw.', { delay: 0.3 });
+        // On a bunt or a ball near the plate, the outfielders back up bases, not the fielder.
+        const base = of === 'CF' ? 'second' : 'third';
+        assign(plan, of, 'backup', outfieldBaseBackup(geo, base, geo.mound),
+          `Come in and back up ${baseName(base)} base, in case of a bad throw.`, { delay: 0.3 });
       }
     }
     fillHolds(plan);
