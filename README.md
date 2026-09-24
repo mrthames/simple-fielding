@@ -89,8 +89,8 @@ top of that file), or are copied to the clipboard if no address is set.
 
 ## Deployment
 
-**simplefielding.com** is served from the NAS: `bash scripts/deploy-nas.sh` (connection details come from the
-environment, never the repo). Every push to `main` also publishes to GitHub Pages (`.github/workflows/pages.yml`): the website at the root
+**simplefielding.com** is self-hosted: `bash scripts/deploy-nas.sh` publishes it over SSH. The server's
+address, port, user, key and folder come from the environment or a gitignored `deploy.env`, never the repo. Every push to `main` also publishes to GitHub Pages (`.github/workflows/pages.yml`): the website at the root
 and the app under `/app/`. The tests and the personal-data check run on every push and pull request
 (`.github/workflows/test.yml`).
 

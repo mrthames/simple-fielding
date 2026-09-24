@@ -1,21 +1,21 @@
 #!/usr/bin/env bash
 #
-# Deploys simplefielding.com to the web server: the website at the root, the web app under /app/.
+# Deploys simplefielding.com to its web server over SSH: the website at the root, the web app under /app/.
 # Same layout GitHub Pages gets (see .github/workflows/pages.yml).
 #
-# Connection details are not kept in the repo. Set them in the environment (for Claude Code, in its
-# gitignored local settings file under .claude/):
+# Nothing about the server lives in this repository: not its address, port, user, key or folder. Set them in
+# the environment, from a file outside the repo or a gitignored one (see .gitignore: deploy.env):
 #
-#     SF_NAS_HOST   SF_NAS_PORT   SF_NAS_USER   SF_NAS_KEY   (path to the SSH key)
-#     SF_NAS_DIR    defaults to the site folder
+#     SF_NAS_HOST   SF_NAS_PORT   SF_NAS_USER   SF_NAS_KEY (path to the SSH key)   SF_NAS_DIR (the site folder)
 #
 #     bash scripts/deploy-nas.sh
 #
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-: "${SF_NAS_HOST:?set SF_NAS_HOST}" "${SF_NAS_PORT:?set SF_NAS_PORT}" "${SF_NAS_USER:?set SF_NAS_USER}" "${SF_NAS_KEY:?set SF_NAS_KEY}"
-DIR="${SF_NAS_DIR:-the site folder}"
+[ -f deploy.env ] && . ./deploy.env
+: "${SF_NAS_HOST:?set SF_NAS_HOST}" "${SF_NAS_PORT:?set SF_NAS_PORT}" "${SF_NAS_USER:?set SF_NAS_USER}" "${SF_NAS_KEY:?set SF_NAS_KEY}" "${SF_NAS_DIR:?set SF_NAS_DIR}"
+DIR="$SF_NAS_DIR"
 
 # Assemble exactly what gets published.
 rm -rf _site
@@ -35,6 +35,6 @@ tar -C _site -cf - . | "${ssh_cmd[@]}" "set -e
   chmod -R a+rX '${DIR}.next'
   if [ -d '${DIR}' ]; then rm -rf '${DIR}.prev'; mv '${DIR}' '${DIR}.prev'; fi
   mv '${DIR}.next' '${DIR}'
-  echo 'on the NAS:'; ls '${DIR}' | tr '\n' ' '; echo"
+  echo 'published:'; ls '${DIR}' | tr '\n' ' '; echo"
 rm -rf _site
-echo "Done. Rollback: ssh in and swap ${DIR}.prev back."
+echo "Done. Rollback: swap the .prev folder back on the server."

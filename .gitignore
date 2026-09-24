@@ -25,8 +25,18 @@ android/local.properties
 *.jks
 keystore.properties
 
-# Credentials go nowhere
+# Credentials and server details go nowhere: keys, env files, the deploy settings, SSH config.
 .env
 .env.*
+deploy.env
 *.pem
 *.key
+*.ppk
+*.p12
+id_rsa*
+id_ed25519*
+id_ecdsa*
+known_hosts
+.ssh/
+# Local settings files (Claude Code's, editors'), whatever they're called
+*local.json

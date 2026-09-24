@@ -49,8 +49,16 @@ hits=$(find_in_tracked '\b192\.168\.[0-9]{1,3}\.[0-9]{1,3}\b|\b10\.[0-9]{1,3}\.[
 
 # --- Anything that looks like a credential. Not exhaustive, and not meant to be: the point is to
 # --- catch the obvious mistake before it is public, not to replace reading what you commit.
-hits=$(find_in_tracked 'ghp_[A-Za-z0-9]{20}|BEGIN (RSA|OPENSSH|PRIVATE) KEY|xox[baprs]-')
+hits=$(find_in_tracked 'ghp_[A-Za-z0-9]{20}|github_pat_[A-Za-z0-9_]{20}|BEGIN (RSA |EC |OPENSSH |DSA )?PRIVATE KEY|xox[baprs]-|AKIA[0-9A-Z]{16}|AIza[0-9A-Za-z_-]{30}|script\.google\.com/macros/s/AKfy')
 [ -n "$hits" ] && report "something shaped like a credential" "$hits"
+
+# --- How the self-hosted server is laid out: its folders, SSH port, and DNS zone IDs.
+hits=$(find_in_tracked '/volume[0-9]+/|\bport[ =:]+2222\b|-p 2222\b|hostedzone/[A-Z0-9]{10,}|\bZ0[0-9A-Z]{12,}\b')
+[ -n "$hits" ] && report "a detail of the private server" "$hits"
+
+# --- Key or deploy files that should never be tracked at all.
+hits=$(git ls-files | grep -E '(^|/)(deploy\.env|\.env(\..*)?|id_(rsa|ed25519|ecdsa)[^/]*|known_hosts|[^/]+\.(pem|key|ppk|p12))$' || true)
+[ -n "$hits" ] && report "a key or settings file" "$hits"
 
 # --- Files that hold a player's own progress. These belong in %LOCALAPPDATA%, never here.
 hits=$(git ls-files | grep -E '(^|/)(settings|tracking|progress|waypoints)\.json$|(^|/)plans/|\.log$' || true)
