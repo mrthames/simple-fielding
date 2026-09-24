@@ -78,7 +78,11 @@ svg { display: block; }
   color: #fff;
   position: relative; z-index: 5;
 }
-.brand { display: flex; align-items: center; gap: 10px; }
+.brand { display: flex; align-items: center; gap: 10px; color: #fff; text-decoration: none; border-radius: 10px; }
+.brand:active { opacity: .7; }
+/* Inside the native app shells there's no website to go back to. */
+.native .brand { pointer-events: none; }
+.native .home-link { display: none; }
 .brand-icon { width: 34px; height: 34px; border-radius: 9px; }
 .brand-name { font-weight: 800; font-size: 19px; letter-spacing: -0.02em; white-space: nowrap; }
 .topbar-actions { display: flex; gap: 8px; align-items: center; }

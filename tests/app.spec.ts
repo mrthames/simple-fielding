@@ -280,3 +280,9 @@ test('replay link reopens the exact play', async ({ page }) => {
   await expect(page.locator('#outs span.on')).toHaveCount(2);
   await expect(page.locator('#batter-seg [data-batter="L"]')).toHaveClass(/on/);
 });
+
+test('the logo goes back to the website homepage', async ({ page }) => {
+  await expect(page.locator('.topbar .brand')).toHaveAttribute('href', '../');
+  await page.locator('#btn-settings').click();
+  await expect(page.locator('.home-link a').first()).toHaveAttribute('href', '../');
+});

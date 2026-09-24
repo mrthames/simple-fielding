@@ -2,6 +2,12 @@
 
 ---
 
+## [2026-09-24] v0.5.2 — A way back to the website
+
+- The **logo in the app's header** now goes back to the Simple Fielding homepage, which is where people reach for it. Settings also has a "Back to the Simple Fielding website" link. Both are hidden when the app runs inside the native shells, where there's no website to go back to.
+
+---
+
 ## [2026-09-24] Website — the hero plays the play
 
 - **The homepage hero is now animated**: the single to left field plays out (the ball, the left fielder, the cutoff, the covers and backups), holds on the final positions, and loops.
