@@ -4,7 +4,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '0.23.0';
+  const VERSION = '0.23.1';
   const Field = window.Field;
   const BATTED = ['ground', 'line', 'fly', 'pop', 'bunt'];
   const { POSITIONS, NAMES, LEAGUES } = Field;
@@ -1249,16 +1249,59 @@
   }
 
   // Projector mode
+  // Full screen, including iPad Safari's prefixed version.
+  const fsElement = () => document.fullscreenElement || document.webkitFullscreenElement || null;
+  function enterFullscreen() {
+    const el = document.documentElement;
+    try {
+      if (el.requestFullscreen) return el.requestFullscreen().catch(() => {});
+      if (el.webkitRequestFullscreen) return el.webkitRequestFullscreen();
+    } catch (e) { /* not supported (iPhone) */ }
+  }
+  function exitFullscreen() {
+    try {
+      if (document.exitFullscreen && document.fullscreenElement) return document.exitFullscreen().catch(() => {});
+      if (document.webkitExitFullscreen && document.webkitFullscreenElement) return document.webkitExitFullscreen();
+    } catch (e) { /* ignore */ }
+  }
+  // Projector mode stays on until the coach turns it off. If the browser drops out of full screen on its own (a
+  // stray gesture, the Pencil brushing the browser's close control), the layout stays, and the next tap anywhere
+  // goes straight back to full screen.
+  let leavingOnPurpose = false;
   function toggleProjector() {
     const on = !document.body.classList.contains('projector');
     document.body.classList.toggle('projector', on);
-    try {
-      if (on && document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(() => {});
-      else if (!on && document.fullscreenElement) document.exitFullscreen().catch(() => {});
-    } catch (e) { /* not supported (iPhone) */ }
+    $('#fs-back').hidden = true;
+    if (on) enterFullscreen();
+    else { leavingOnPurpose = true; exitFullscreen(); setTimeout(() => { leavingOnPurpose = false; }, 800); }
   }
   $('#btn-projector').addEventListener('click', toggleProjector);
-  document.addEventListener('fullscreenchange', () => { if (!document.fullscreenElement) document.body.classList.remove('projector'); });
+  function onFsChange() {
+    if (fsElement()) { $('#fs-back').hidden = true; return; }
+    if (!document.body.classList.contains('projector') || leavingOnPurpose) return;
+    // With a keyboard and mouse, leaving full screen (Esc) is on purpose: leave projector mode too.
+    if (!matchMedia('(pointer: coarse)').matches) { document.body.classList.remove('projector'); return; }
+    $('#fs-back').hidden = false;
+    // The next tap is a user gesture, which the browser requires to go full screen again.
+    const back = () => { document.removeEventListener('pointerup', back, true); if (document.body.classList.contains('projector') && !fsElement()) enterFullscreen(); };
+    document.addEventListener('pointerup', back, true);
+  }
+  document.addEventListener('fullscreenchange', onFsChange);
+  document.addEventListener('webkitfullscreenchange', onFsChange);
+  $('#fs-back').addEventListener('click', () => enterFullscreen());
+  $('#fs-exit').addEventListener('click', () => { if (document.body.classList.contains('projector')) toggleProjector(); });
+
+  // While drawing, or in projector mode, ignore the browser's own gestures: pinch, double-tap zoom, the
+  // press-and-hold menu, and swipes that scroll or dismiss. (Drawing and dragging use pointer events, which still work.)
+  const guarded = () => document.body.classList.contains('board-on') || document.body.classList.contains('projector');
+  for (const type of ['gesturestart', 'gesturechange', 'gestureend']) document.addEventListener(type, (e) => { if (guarded()) e.preventDefault(); }, { passive: false });
+  document.addEventListener('touchmove', (e) => {
+    if (!guarded()) return;
+    if (e.target.closest && e.target.closest('.panel, .sheet, input[type=range], select, textarea, .quick-list')) return;
+    e.preventDefault();
+  }, { passive: false });
+  document.addEventListener('dblclick', (e) => { if (guarded()) e.preventDefault(); }, { passive: false });
+  document.addEventListener('contextmenu', (e) => { if (guarded() && e.target.closest && e.target.closest('.field-wrap')) e.preventDefault(); });
 
   document.addEventListener('keydown', (e) => {
     if (e.target.matches('input, select, textarea')) return;

@@ -688,3 +688,17 @@ test('read aloud: the Read button speaks the play (where the browser can)', asyn
   expect(said.join(' ')).toContain('Shortstop');
   expect(said.join(' ')).not.toContain('1st');
 });
+
+test('projector mode survives the browser dropping full screen on a touch device, with a way back and a way out', async ({ page }) => {
+  await page.evaluate(() => {
+    // Pretend we're a touch device and the browser just left full screen by itself.
+    const mm = window.matchMedia;
+    (window as any).matchMedia = (q: string) => (q.includes('pointer: coarse') ? { matches: true } as any : mm.call(window, q));
+    document.body.classList.add('projector');
+    document.dispatchEvent(new Event('fullscreenchange'));
+  });
+  await expect(page.locator('body')).toHaveClass(/projector/);
+  await expect(page.locator('#fs-back')).toBeVisible();
+  await page.locator('#fs-exit').click();
+  await expect(page.locator('body')).not.toHaveClass(/projector/);
+});

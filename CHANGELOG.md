@@ -2,6 +2,16 @@
 
 ---
 
+## [2026-09-25] v0.23.1 — Full screen stays put while you draw
+
+- **iPad (Chrome, Safari, any browser there) drawing on the whiteboard in projector mode could drop out of full screen.** Two fixes:
+  - While drawing or in projector mode, the app now ignores the browser's own gestures: pinch, double-tap zoom, swipe-to-scroll and the press-and-hold menu. Drawing and dragging are unaffected.
+  - If the browser still leaves full screen by itself (a web page can't block every system control), projector mode stays on. Your next tap goes straight back to full screen, and a **Back to full screen** button shows in the meantime.
+- **A small ✕** in projector mode leaves it on purpose. On a laptop, Esc still leaves projector mode as before.
+- Full screen uses the older prefixed browser calls too, where a browser still needs them.
+
+---
+
 ## [2026-09-25] v0.23.0 — Read it out loud
 
 - **Read** (on each play) speaks the play for kids who can't read the job list yet. It uses the device's built-in voice: no internet needed, nothing sent anywhere.

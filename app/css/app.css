@@ -875,3 +875,15 @@ body:not(.kind-bunt) #buntd-row { display: none; }
   .transport .seg { display: none; }
   .speed-cycle { display: inline-flex; justify-content: center; }
 }
+
+/* Projector mode that the browser dropped out of full screen: a way back in, and a clear way out. */
+.fs-back { position: absolute; left: 50%; top: 12px; transform: translateX(-50%); z-index: 4; }
+.fs-back button { border: 0; border-radius: 12px; padding: 10px 16px; background: var(--brand); color: #fff; font-weight: 800; font-size: 16px; box-shadow: 0 4px 14px rgba(0, 0, 0, .3); }
+.fs-exit { display: none; }
+body.projector .fs-exit {
+  display: block; position: fixed; left: 8px; bottom: 76px; z-index: 5; width: 36px; height: 36px; border: 0; border-radius: 50%;
+  background: rgba(11, 28, 58, .55); color: #fff; font-weight: 800;
+}
+/* Drawing: no text selection or callouts from a long press. */
+body.board-on, body.projector { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+body.board-on .field-wrap, body.projector .field-wrap { overscroll-behavior: none; }
