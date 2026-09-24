@@ -16,6 +16,8 @@
   const ROLE_COLORS = { field: 0xffc400, cutoff: 0xff8c1a, relay: 0xff8c1a, trail: 0xff8c1a, cover: 0x22c55e, backup: 0xa855f7, hold: 0xcbd5e1 };
   const sample = (keys, t) => root.Engine.sampleTrack(keys || [], t);
   const smooth = (f) => { f = Math.max(0, Math.min(1, f)); return f * f * (3 - 2 * f); };
+  // An angle difference brought into -π..π.
+  const wrap = (d) => { while (d > Math.PI) d -= 2 * Math.PI; while (d < -Math.PI) d += 2 * Math.PI; return d; };
 
   class Field3D {
     constructor(container) {
@@ -269,7 +271,7 @@
       const a = 28, t = (a + 45) * Math.PI / 180;
       const r = geo.fenceDir(a) + Math.max(14, geo.fence * 0.06);
       const P = { x: Math.cos(t) * r, y: Math.sin(t) * r };
-      const W = Math.max(26, Math.min(64, geo.fence * 0.16)), H = W / 2;
+      const W = Math.max(34, Math.min(88, geo.fence * 0.22)), H = W / 2;
       const lift = wallH(P.x, P.y) + 4 + H / 2;
       const c = document.createElement('canvas');
       c.width = 1024; c.height = 512;
@@ -298,59 +300,51 @@
       this.drawScore();
     }
 
+    // Big type and big lamps, so it reads from behind the plate: the count and outs on the left, the inning and
+    // pitch count in the middle, the bases on the right, the level across the top and the score along the bottom.
     drawScore() {
       const c = this.scoreCanvas;
       if (!c) return;
       const g = c.getContext('2d');
       const S = this.score || { outs: 0, runners: {} };
+      const dim = '#9fc0ad', lit = '#ffe36b', off = '#23382e';
       g.fillStyle = '#0f2a1d'; g.fillRect(0, 0, 1024, 512);
-      g.fillStyle = '#e8c547'; g.font = '800 38px system-ui, sans-serif'; g.textAlign = 'center';
-      g.fillText(((this.geo && this.geo.league.label) || '').toUpperCase(), 512, 52);
-      // Line score: top of the 1st, nobody has scored yet.
-      const cols = 9, x0 = 190, cw = 58;
-      g.font = '700 30px ui-monospace, monospace'; g.fillStyle = '#9fb8a8';
-      for (let i = 0; i < cols; i++) g.fillText(String(i + 1), x0 + cw * i + cw / 2, 108);
-      ['R', 'H', 'E'].forEach((h, j) => g.fillText(h, x0 + cw * cols + 30 + j * 62, 108));
-      [['RED', '#ff6b61'], ['BLUE', '#6fa0ff']].forEach(([name, col], row) => {
-        const y = 160 + row * 62;
-        g.textAlign = 'left'; g.fillStyle = col; g.font = '800 40px system-ui, sans-serif'; g.fillText(name, 40, y);
-        g.textAlign = 'center'; g.font = '700 38px ui-monospace, monospace';
-        if (row === 0) {
-          g.fillStyle = '#26453a'; g.fillRect(x0 + 4, y - 38, cw - 8, 50);
-          g.fillStyle = '#ffe36b'; g.fillText('0', x0 + cw / 2, y);
-        }
-        g.fillStyle = '#f5f5f0';
-        for (let j = 0; j < 3; j++) g.fillText('0', x0 + cw * cols + 30 + j * 62, y);
-      });
-      // Ball, strike and out lamps. The outs are the play's.
+      g.textAlign = 'center'; g.textBaseline = 'middle';
+      g.fillStyle = lit; g.font = '900 50px system-ui, sans-serif';
+      g.fillText(((this.geo && this.geo.league.label) || '').toUpperCase().slice(0, 34), 512, 46);
+      g.fillStyle = '#2d4a3c'; g.fillRect(24, 84, 976, 4);
       const lamps = (label, n, max, on, y) => {
-        g.textAlign = 'left'; g.fillStyle = '#9fb8a8'; g.font = '800 32px system-ui, sans-serif'; g.fillText(label, 40, y + 11);
+        g.textAlign = 'left'; g.fillStyle = dim; g.font = '900 56px system-ui, sans-serif'; g.fillText(label, 36, y);
         for (let i = 0; i < max; i++) {
-          g.beginPath(); g.arc(190 + i * 50, y, 17, 0, Math.PI * 2);
-          g.fillStyle = i < n ? on : '#23382e'; g.fill();
+          g.beginPath(); g.arc(270 + i * 76, y, 29, 0, Math.PI * 2);
+          g.fillStyle = i < n ? on : off; g.fill();
         }
       };
-      lamps('BALL', 0, 3, '#5fd36b', 330);
-      lamps('STRIKE', 0, 2, '#ffd23f', 385);
-      lamps('OUT', S.outs || 0, 2, '#ff5a4e', 440);
-      // The inning and the pitch count.
-      g.textAlign = 'center'; g.fillStyle = '#9fb8a8'; g.font = '800 30px system-ui, sans-serif';
-      g.fillText('INNING', 540, 316); g.fillText('PITCHES', 540, 416);
-      g.fillStyle = '#ffe36b'; g.font = '800 54px ui-monospace, monospace';
-      g.fillText('▲1', 540, 370); g.fillText('0', 540, 470);
+      lamps('BALL', 0, 3, '#5fd36b', 150);
+      lamps('STRIKE', 0, 2, '#ffd23f', 245);
+      lamps('OUT', S.outs || 0, 2, '#ff5a4e', 340);
+      g.textAlign = 'center';
+      g.fillStyle = dim; g.font = '900 44px system-ui, sans-serif';
+      g.fillText('INNING', 620, 132); g.fillText('PITCHES', 620, 290);
+      g.fillStyle = lit; g.font = '900 96px ui-monospace, monospace';
+      g.fillText('▲1', 620, 212); g.fillText('0', 620, 370);
       // Bases: a diamond with the occupied bases lit.
-      const bx = 830, by = 395, d = 46;
+      const bx = 875, by = 250, d = 72;
       const base = (x, y, on, fill) => {
         g.save(); g.translate(x, y); g.rotate(Math.PI / 4);
-        g.fillStyle = fill || (on ? '#ffe36b' : '#23382e'); g.fillRect(-18, -18, 36, 36);
+        g.fillStyle = fill || (on ? lit : off); g.fillRect(-27, -27, 54, 54);
         g.restore();
       };
       const R = S.runners || {};
       base(bx + d, by, R.first); base(bx, by - d, R.second); base(bx - d, by, R.third);
       base(bx, by + d, false, '#f5f5f0');
+      // The score.
+      g.fillStyle = '#2d4a3c'; g.fillRect(24, 410, 976, 4);
+      g.font = '900 60px system-ui, sans-serif';
+      g.textAlign = 'left'; g.fillStyle = '#ff6b61'; g.fillText('RED  0', 60, 465);
+      g.textAlign = 'right'; g.fillStyle = '#6fa0ff'; g.fillText('BLUE  0', 964, 465);
       if (this.scoreTex) this.scoreTex.needsUpdate = true;
     }
-
 
     // Players are sized to the level: about 6 ft from high school up, smaller for younger kids.
     figScale() {
@@ -378,7 +372,8 @@
       // Each fielder wears their scorebook number: 1 pitcher, 2 catcher... 9 right field.
       const nums = { P: 1, C: 2, '1B': 3, '2B': 4, '3B': 5, SS: 6, LF: 7, CF: 8, RF: 9 };
       for (const pos of POSITIONS) {
-        const g = this.newPlayer('defense', { glove: true, skin: skins[pos], number: nums[pos] });
+        const gear = pos === 'C' ? { mitt: true, catcher: true } : { glove: true };
+        const g = this.newPlayer('defense', Object.assign(gear, { skin: skins[pos], number: nums[pos] }));
         const ring = new THREE.Mesh(root.Figures3D.kit(THREE).ring, new THREE.MeshBasicMaterial({ color: 0xcbd5e1, transparent: true, opacity: 0.9 }));
         ring.rotation.x = -Math.PI / 2; ring.position.y = 0.12;
         g.add(ring);
@@ -389,16 +384,30 @@
         this.actors[pos] = g;
         this.rings[pos] = ring;
       }
-      const r = 0.42 * us;             // about three times a real ball, so it reads on a phone
+      const r = 0.24 * us;             // about twice a real ball; the trail does the rest
       this.ballR = r;
       this.ball = new THREE.Mesh(new THREE.IcosahedronGeometry(r, 1), new THREE.MeshLambertMaterial({ color: 0xffffff, emissive: 0x444444, flatShading: true }));
       this.ballShadow = new THREE.Mesh(new THREE.CircleGeometry(r * 1.2, 12), new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.3 }));
       this.ballShadow.rotation.x = -Math.PI / 2;
       this.field.add(this.ball, this.ballShadow);
+      // A trail of fading beads behind the ball, so its path through the air or along the ground is easy to follow.
+      this.trail = [];
+      for (let i = 0; i < 14; i++) {
+        const f = 1 - i / 14;
+        const m = new THREE.Mesh(new THREE.SphereGeometry(r * (0.35 + 0.6 * f), 8, 6),
+          new THREE.MeshBasicMaterial({ color: 0xfff3b0, transparent: true, opacity: 0.55 * f, depthWrite: false }));
+        m.visible = false;
+        this.trail.push(m);
+        this.field.add(m);
+      }
       this.runnerMeshes = {};
       this.batter = null;
       // The home-plate umpire, in the slot between the catcher and the batter.
-      this.ump = this.newPlayer('ump', { skin: 3 });
+      this.ump = this.newPlayer('ump', { skin: 3, umpire: true });
+      this.looseBat = root.Figures3D.makeBat(THREE);
+      this.looseBat.scale.setScalar(this.fs);
+      this.looseBat.visible = false;
+      this.field.add(this.looseBat);
     }
 
     placeUmp(standing) {
@@ -447,6 +456,9 @@
     showReady(ready, runners, batter, outs) {
       this.plan = null;
       if (!this.actors) return;
+      for (const c of this.calls || []) c.sprite.visible = false;
+      for (const m of this.trail || []) m.visible = false;
+      if (this.looseBat) this.looseBat.visible = false;
       const F3 = root.Figures3D;
       for (const pos of POSITIONS) {
         const face = pos === 'C' ? { x: 0, y: 60 } : { x: 0, y: 0 };
@@ -493,30 +505,22 @@
       this.side = side;
       this.setScore({ outs: (plan.situation && plan.situation.outs) || 0, runners: (plan.situation && plan.situation.runners) || {} });
       this.actions = this.readActions(plan);
-      // How far each person has gone along their track, for a stride that matches their feet to the ground.
-      this.cum = {};
-      const tr = plan.timeline.tracks;
+      // Each person's stride phase along their track: a cycle every stride length, which grows with speed, so the
+      // feet keep pace with the ground instead of sliding over it.
+      this.phase = {};
+      const tr = plan.timeline.tracks, F3 = root.Figures3D;
       for (const key in tr) {
-        if (key.startsWith('look')) continue;
+        if (key.startsWith('look') || key === 'ball') continue;
         const keys = tr[key], c = [0];
-        for (let i = 1; i < keys.length; i++) c.push(c[i - 1] + Math.hypot(keys[i].x - keys[i - 1].x, keys[i].y - keys[i - 1].y));
-        this.cum[key] = c;
-      }
-      this.seek(0);
-    }
-
-    // Distance travelled along a track by time t.
-    travelled(key, t) {
-      const keys = this.plan.timeline.tracks[key], c = this.cum[key];
-      if (!keys || !keys.length) return 0;
-      if (t <= keys[0].t) return 0;
-      for (let i = 1; i < keys.length; i++) {
-        if (t <= keys[i].t) {
-          const f = (t - keys[i - 1].t) / ((keys[i].t - keys[i - 1].t) || 1);
-          return c[i - 1] + (c[i] - c[i - 1]) * f;
+        for (let i = 1; i < keys.length; i++) {
+          const d = Math.hypot(keys[i].x - keys[i - 1].x, keys[i].y - keys[i - 1].y), dt = keys[i].t - keys[i - 1].t || 1;
+          c.push(c[i - 1] + 2 * Math.PI * d / (F3.cycleLength(d / dt / this.fs) * this.fs));
         }
+        this.phase[key] = c;
       }
-      return c[c.length - 1];
+      this.throwEvents = plan.timeline.events.filter((e) => e.type === 'throw');
+      this.readCalls(plan);
+      this.seek(0);
     }
 
     /*
@@ -575,8 +579,8 @@
     }
 
     /*
-     * A fielder's pose at time t: running if they're moving, set if they're waiting, and whatever the ball asks
-     * of them around a catch or a throw.
+     * A fielder's pose at time t: moving if they're moving, set if they're waiting, and whatever the ball asks of
+     * them around a catch or a throw. Fielders take a small step in as the pitch arrives, and breathe while they wait.
      */
     poseFor(pos, t, speed, stride) {
       const F3 = root.Figures3D;
@@ -586,7 +590,8 @@
       if (pos === 'C' && t < contact + 0.35 && speed < 1) base = F3.pose('squat');
       else if (pos === 'P' && t < 0.05) base = F3.pose('stand');
       else base = F3.lerpPose(F3.pose('stand'), F3.pose('set'), t < contact + 0.2 ? 1 : 0.55);
-      let p = F3.run(base, stride, Math.min(1, speed / 7));
+      base.lean += 0.025 * Math.sin(t * 1.7 + pos.length);
+      let p = F3.run(base, stride, speed / this.fs);
       for (const a of this.actions[pos] || []) {
         if (a.type === 'catch') {
           const pre = a.style === 'high' ? 0.7 : 0.4;
@@ -600,31 +605,82 @@
           }
         }
       }
+      // The creep step: a little rise and settle, timed to land as the ball reaches the plate.
+      if (!['P', 'C'].includes(pos) && contact > 0 && t > contact - 0.45 && t < contact + 0.05) {
+        p = Object.assign({}, p, { _lift: 0.22 * this.fs * Math.sin(Math.PI * (t - (contact - 0.45)) / 0.5) });
+      }
       return p;
     }
 
-    // Move and pose a person along a track at time t. Returns the pose used for the camera.
+    // Stride phase along a track: distance over stride length, where a stride lengthens with speed.
+    phaseAt(key, t) {
+      const keys = this.plan.timeline.tracks[key], c = this.phase[key];
+      if (!keys || !keys.length || !c) return 0;
+      if (t <= keys[0].t) return 0;
+      for (let i = 1; i < keys.length; i++) {
+        if (t <= keys[i].t) {
+          const f = (t - keys[i - 1].t) / ((keys[i].t - keys[i - 1].t) || 1);
+          return c[i - 1] + (c[i] - c[i - 1]) * f;
+        }
+      }
+      return c[c.length - 1];
+    }
+
+    /*
+     * Move and pose a person along a track at time t. Speed and heading are read over a short window either side,
+     * so starts, stops and turns ease in instead of snapping. A runner faces the way they're going and turns their
+     * head to the ball; someone standing faces what they're watching. Returns the pose used by the cameras.
+     */
     move(g, key, t, lookKey, poseFn) {
       const F3 = root.Figures3D;
       const tr = this.plan.timeline.tracks;
-      const p = sample(tr[key], t), q0 = sample(tr[key], Math.max(0, t - 0.08));
-      const vx = p.x - q0.x, vy = p.y - q0.y;
-      const speed = t > 0.08 ? Math.hypot(vx, vy) / 0.08 : 0;
+      const p = sample(tr[key], t);
+      const W = 0.14, a = sample(tr[key], Math.max(0, t - W)), b = sample(tr[key], t + W);
+      const span = Math.min(t, W) + W;
+      const vx = (b.x - a.x) / span, vy = (b.y - a.y) / span;
+      const speed = Math.hypot(vx, vy);
       const l = tr[lookKey] ? sample(tr[lookKey], t) : { x: 0, y: 0 };
-      // Running: face the way you're going and turn your head to the ball. Otherwise face what you're watching.
-      const faceRun = speed > 6;
-      this.place(g, p, faceRun ? { x: p.x + vx, y: p.y + vy } : l);
-      const stride = 2 * Math.PI * this.travelled(key, t) / (5.2 * this.fs);
+      const yawTo = (dx, dy) => Math.atan2(dx, -dy);
+      const lookYaw = l.x === p.x && l.y === p.y ? g.rotation.y : yawTo(l.x - p.x, l.y - p.y);
+      const runYaw = speed > 0.5 ? yawTo(vx, vy) : lookYaw;
+      const k = smooth((speed - 2) / 6);
+      const body = lookYaw + wrap(runYaw - lookYaw) * k;
+      g.position.copy(this.w(p.x, p.y, 0));
+      g.rotation.y = body;
+      const stride = this.phaseAt(key, t);
       const pose = poseFn(speed, stride);
-      if (faceRun) {
-        const body = Math.atan2(vx, vy), want = Math.atan2(l.x - p.x, l.y - p.y);
-        let d = want - body;
-        while (d > Math.PI) d -= 2 * Math.PI;
-        while (d < -Math.PI) d += 2 * Math.PI;
-        pose.headYaw = Math.max(-1.3, Math.min(1.3, -d));
-      }
-      F3.apply(g, pose, speed > 1 ? Math.abs(Math.sin(stride)) * 0.25 : 0);
+      pose.headYaw = Math.max(-1.3, Math.min(1.3, wrap(lookYaw - body) + (pose.headYaw || 0) * (1 - k)));
+      F3.apply(g, pose, F3.bob(stride, speed / this.fs) * this.fs + (pose._lift || 0));
       return { p, l };
+    }
+
+    // Where the ball is at time t: the engine's track, with the batted ball and each throw on smooth curves.
+    ballPos(t) {
+      const plan = this.plan, tr = plan.timeline.tracks;
+      const bp = sample(tr.ball, t);
+      let h = bp.h * this.fs;
+      const hit = plan.timeline.hit;
+      if (hit && t >= hit.t0 && t <= hit.t1) {
+        const f = (t - hit.t0) / ((hit.t1 - hit.t0) || 1);
+        if (hit.kind === 'fly' || hit.kind === 'pop' || hit.kind === 'line') {
+          h = 3 * this.fs * (1 - f) + 4 * hit.peak * f * (1 - f) + (hit.caught ? 4 * this.fs * f : 0);
+        } else {
+          // Hops that die out: higher and longer at first, skipping along by the end.
+          const n = Math.max(2, Math.round(Math.hypot(hit.to.x, hit.to.y) / 35));
+          const A = hit.kind === 'bunt' ? 0.9 : 3.4 * this.fs;
+          const g = Math.pow(f, 0.8) * n;
+          h = Math.max(A * Math.pow(1 - f, 1.4) * Math.abs(Math.sin(Math.PI * g)), 3 * this.fs * (1 - 2 * g));
+        }
+      } else {
+        const th = this.throwEvents.find((e) => t >= e.t && t <= e.tEnd);
+        if (th) {
+          const f = (t - th.t) / ((th.tEnd - th.t) || 1);
+          const d = Math.hypot(th.to.x - th.from.x, th.to.y - th.from.y);
+          h = 4 * this.fs + (d / 18) * 4 * f * (1 - f);
+        }
+      }
+      if (t < 0.05 && this.moundTop) h += this.moundTop;
+      return { x: bp.x, y: bp.y, h: Math.max(this.ballR, h) };
     }
 
     seek(t) {
@@ -642,62 +698,112 @@
         const onMound = this.moundTop && Math.hypot(g.position.x, -g.position.z - this.geo.mound.y) < 6 * (this.geo.base / 90);
         g.position.y = onMound ? this.moundTop : 0;
       }
+      this.looseBat.visible = false;
       for (const r of plan.runners) {
         const g = this.runnerMeshes[r.id];
         const key = 'runner:' + r.id;
         if (!tr[key] || !g) continue;
-        if (r.id === 'batter' && t < contact + 0.3) {
-          // In the box until the swing is done; then the bat drops and they run.
-          this.standBatter(g, this.side);
-          const f = (t - (contact - 0.12)) / 0.3;
-          if (f > 0) F3.apply(g, F3.lerpPose(F3.pose('stance'), F3.pose('swing'), smooth(Math.min(1, f))));
-          this.pose[key] = { p: this.boxSpot(this.side).p, l: { x: 0, y: 60 } };
-          continue;
+        if (r.id === 'batter') {
+          const drop = contact + 0.28;
+          if (t < drop) {
+            // In the box through the swing.
+            this.standBatter(g, this.side);
+            const f = (t - (contact - 0.12)) / 0.3;
+            if (f > 0) F3.apply(g, F3.lerpPose(F3.pose('stance'), F3.pose('swing'), smooth(Math.min(1, f))));
+            this.pose[key] = { p: this.boxSpot(this.side).p, l: { x: 0, y: 60 } };
+            continue;
+          }
+          // The bat's tossed aside, end over end, and lies where it lands.
+          g.userData.joints.bat.visible = false;
+          this.tossBat(t - drop);
         }
-        if (g.userData.joints.bat) g.userData.joints.bat.visible = false;
         this.pose[key] = this.move(g, key, t, 'look:' + key, (speed, stride) => {
+          const q = sample(tr[key], t);
           const offBag = !['first', 'second', 'third', 'home'].some((bse) => {
             const b = this.geo.bases[bse] || { x: 0, y: 0 };
-            const q = sample(tr[key], t);
             return Math.hypot(q.x - b.x, q.y - b.y) < 2.5;
           });
-          return F3.run(F3.pose(offBag ? 'lead' : 'stand'), stride, Math.min(1, speed / 7));
+          return F3.run(F3.pose(offBag ? 'lead' : 'stand'), stride, speed / this.fs);
         });
         const p = sample(tr[key], t);
         g.visible = p.o === undefined || p.o > 0.4;
       }
       if (this.batter) this.standBatter(this.batter, this.side);
       this.placeUmp(t > contact + 0.4);
-      // The ball: true heights. The batted ball's flight and each throw are drawn as smooth curves.
-      const bp = sample(tr.ball, t);
-      let h = bp.h * this.fs;
-      const hit = plan.timeline.hit;
-      if (hit && t >= hit.t0 && t <= hit.t1) {
-        const f = (t - hit.t0) / ((hit.t1 - hit.t0) || 1);
-        if (hit.kind === 'fly' || hit.kind === 'pop' || hit.kind === 'line') {
-          h = 3 * this.fs * (1 - f) + 4 * hit.peak * f * (1 - f) + (hit.caught ? 4 * this.fs * f : 0);
-        } else {
-          // Hops that die out: higher and longer at first, skipping along by the end.
-          const n = Math.max(2, Math.round(Math.hypot(hit.to.x, hit.to.y) / 35));
-          const A = hit.kind === 'bunt' ? 0.9 : 3.4 * this.fs;
-          const g = Math.pow(f, 0.8) * n;
-          h = Math.max(A * Math.pow(1 - f, 1.4) * Math.abs(Math.sin(Math.PI * g)), 3 * this.fs * (1 - 2 * g));
-        }
-      } else {
-        const th = plan.timeline.events.find((e) => e.type === 'throw' && t >= e.t && t <= e.tEnd);
-        if (th) {
-          const f = (t - th.t) / ((th.tEnd - th.t) || 1);
-          const d = Math.hypot(th.to.x - th.from.x, th.to.y - th.from.y);
-          h = 4 * this.fs + (d / 18) * 4 * f * (1 - f);
-        }
-      }
-      if (t < 0.05 && this.moundTop) h += this.moundTop;
-      h = Math.max(this.ballR, h);
-      this.ball.position.copy(this.w(bp.x, bp.y, h));
+      // The ball, its shadow, and a fading trail of where it's just been.
+      const bp = this.ballPos(t);
+      this.ball.position.copy(this.w(bp.x, bp.y, bp.h));
       this.ballShadow.position.copy(this.w(bp.x, bp.y, 0.1));
-      this.ballShadow.material.opacity = Math.max(0.08, 0.35 - h / 200);
-      this.ballAt = { x: bp.x, y: bp.y, h };
+      this.ballShadow.material.opacity = Math.max(0.08, 0.35 - bp.h / 200);
+      let prev = bp;
+      this.trail.forEach((m, i) => {
+        const tt = t - (i + 1) * 0.024;
+        const q = tt >= 0 ? this.ballPos(tt) : null;
+        const moved = q && Math.hypot(q.x - prev.x, q.y - prev.y, q.h - prev.h) > this.ballR * 0.3;
+        m.visible = !!moved;
+        if (moved) { m.position.copy(this.w(q.x, q.y, q.h)); prev = q; }
+      });
+      this.ballAt = bp;
+      this.showCalls(t);
       this.render();
+    }
+
+    // The batter's bat after the swing: out of the hands, a flip or two through the air, then lying in the dirt.
+    tossBat(dt) {
+      const spot = this.boxSpot(this.side).p, away = this.side === 'L' || this.side === 'S' ? 1 : -1;
+      const from = { x: spot.x, y: spot.y + 0.5, h: 3.4 * this.fs }, to = { x: spot.x + away * 4, y: spot.y - 3, h: 0.1 };
+      const T = 0.55, f = Math.min(1, dt / T);
+      const b = this.looseBat;
+      b.visible = true;
+      b.position.copy(this.w(from.x + (to.x - from.x) * f, from.y + (to.y - from.y) * f, from.h + (to.h - from.h) * f + 3 * f * (1 - f)));
+      if (f < 1) b.rotation.set(dt * 11, away * 0.6, 0.4);
+      else b.rotation.set(Math.PI / 2, away * 0.9, 0);
+    }
+
+    // OUT and SAFE over the runner, the moment the play decides it.
+    readCalls(plan) {
+      for (const c of this.calls || []) this.field.remove(c.sprite);
+      this.calls = [];
+      const tr = plan.timeline.tracks;
+      const nearest = (at, t) => {
+        let best = null, bd = 25;
+        for (const r of plan.runners) {
+          const k = tr['runner:' + r.id];
+          if (!k) continue;
+          const q = sample(k, t), d = Math.hypot(q.x - at.x, q.y - at.y);
+          if (d < bd) { bd = d; best = r.id; }
+        }
+        return best;
+      };
+      for (const e of plan.timeline.events) {
+        let text = null, runner = null;
+        if (e.type === 'out' || e.type === 'safe') {
+          runner = nearest(e.at, e.t);
+          text = e.type === 'safe' ? 'SAFE!' : /doubled/i.test(e.text) ? 'DOUBLED OFF!' : 'OUT!';
+        } else if (e.type === 'catch' && plan.runners.some((r) => r.id === 'batter')) {
+          runner = 'batter'; text = 'OUT!';
+        }
+        if (!text) continue;
+        const sp = this.textSprite(text, '#ffffff', e.type === 'safe' ? 'rgba(22,150,70,.95)' : 'rgba(210,35,50,.95)', 56);
+        sp.material.sizeAttenuation = false;
+        sp.center.set(0.5, 0);
+        sp.userData.base = [0.07 * sp.userData.aspect, 0.07];
+        sp.visible = false;
+        this.field.add(sp);
+        this.calls.push({ t: e.t, runner, at: e.at, sprite: sp });
+      }
+    }
+    showCalls(t) {
+      for (const c of this.calls || []) {
+        const on = t >= c.t && t < c.t + 1.8;
+        c.sprite.visible = on;
+        if (!on) continue;
+        const pose = c.runner && this.pose['runner:' + c.runner];
+        const at = pose ? pose.p : c.at;
+        c.sprite.position.copy(this.w(at.x, at.y, 8.6 * this.fs));
+        const pop = 1 + 0.4 * Math.max(0, 1 - (t - c.t) / 0.18);
+        c.sprite.scale.set(c.sprite.userData.base[0] * pop, c.sprite.userData.base[1] * pop, 1);
+      }
     }
 
     // Which people the camera can ride with.

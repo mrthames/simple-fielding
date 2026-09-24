@@ -2,6 +2,27 @@
 
 ---
 
+## [2026-09-25] v0.29.0 — 3D, round three: calls, gear, and players who move like people
+
+- **OUT! and SAFE! over the runner** the moment the play decides it, including a batter caught on a fly, and "Doubled off!".
+- **More human players**: a real torso, tapered arms and legs with calves and knees, a nose and ears, and bigger gloves.
+- **Movement that doesn't glide**:
+  - strides lengthen with speed, so the feet keep pace with the ground
+  - a walk turns into a run, then a sprint, with more knee drive, arm swing and lean
+  - starts, stops and turns ease in
+  - runners face where they're going and turn their head to the ball
+  - fielders take a small step in as the pitch arrives, and breathe while they wait
+  - every player has a soft shadow
+- **The batter tosses the bat** aside after the swing, end over end, and it lies where it lands.
+- **Real gear**:
+  - the catcher has a helmet with a cage mask, a chest protector, shin guards with knee caps, and a catcher's mitt
+  - the umpire has a mask and a padded chest
+- **A trail behind the ball**, so you can follow it through the air or along the ground. The ball itself is closer to real size again (about twice as big).
+- **The scoreboard is bigger, with larger type**, laid out to read from behind the plate: the count and outs, the inning, the pitch count, the bases, and the score.
+- Still light: about 350 draw calls and 50,000 triangles for the whole field, all drawn on your device.
+
+---
+
 ## [2026-09-25] v0.28.0 — 3D, round two: rounder players, an umpire and a scoreboard
 
 - **Rounder, smoother players**, more early-2000s than '90s:

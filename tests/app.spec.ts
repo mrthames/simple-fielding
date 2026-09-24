@@ -754,3 +754,21 @@ test('3D players: the fielder who gets the ball catches it and throws, and a bat
   await page.locator('#other-plays [data-play="steal2"]').click();
   expect(await page.evaluate(() => !!(window as any).SimpleFielding.view3d().batter)).toBe(true);
 });
+
+test('3D calls: OUT goes over the runner forced at 2nd and over the batter at 1st', async ({ page }) => {
+  await page.locator('#btn-3d').click();
+  await page.waitForFunction(() => document.body.classList.contains('view3d') || !!document.querySelector('#toast:not([hidden])'), null, { timeout: 15000 });
+  if (!(await page.evaluate(() => document.body.classList.contains('view3d')))) test.skip(true, 'no WebGL in this browser');
+  const calls = await page.evaluate(() => {
+    const sf = (window as any).SimpleFielding;
+    sf.state.runners = { first: true, second: false, third: false };
+    sf.runEvent({ kind: 'ground', at: { x: -35, y: 85 } });
+    const v = sf.view3d();
+    const c = v.calls[0];
+    sf.seek(c.t + 0.2);
+    return { who: v.calls.map((x: any) => x.runner), shown: c.sprite.visible };
+  });
+  expect(calls.who).toContain('first');
+  expect(calls.who).toContain('batter');
+  expect(calls.shown).toBe(true);
+});
