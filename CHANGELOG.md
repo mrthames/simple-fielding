@@ -2,6 +2,18 @@
 
 ---
 
+## [2026-09-25] v0.10.0 — Save and share plays
+
+- **Save** any play (a list play, one you dragged, one from a link) with a name. It shows under **★ My plays** at the top of the play list.
+- **Share** makes a short link that holds the whole play: the field and park, runners, outs, batter, where the ball went, and its name. A play is about 15–20 characters plus its name. The play lives after the `#` in the link, which browsers never send to the server, so nothing is stored or logged anywhere. On a phone it opens the share sheet; elsewhere it copies the link.
+- **Opening a link** sets up the field and situation and runs the play.
+- **My plays** (from the list, or Settings): open, share, rename or delete a play.
+  - **Export backup** downloads one small file with every saved play, and your team.
+  - **Import** reads a backup back in. It skips plays you already have, and asks before replacing your team.
+- Saved plays live on this device. The app says so, and suggests sharing or exporting to keep a copy, because clearing the browser's data removes them. It also asks the browser to keep its storage.
+
+---
+
 ## [2026-09-25] v0.9.1 — Fixes from the pro-level review
 
 A review by a pro field coordinator and a high school coach ran 70,560 plays across the new levels and parks. Youth plays are unchanged.

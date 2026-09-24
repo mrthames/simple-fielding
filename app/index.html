@@ -61,6 +61,7 @@
         <span class="fk role-cover">Covers a base</span>
         <span class="fk role-backup">Backs up</span>
       </div>
+      <div class="toast" id="toast" role="status" hidden></div>
       <div class="scrub-hint" id="scrub-hint" hidden aria-hidden="true">
         <span>◀ drag to scrub ▶</span>
         <span class="scrub-track"><span id="scrub-hint-fill"></span></span>
@@ -200,6 +201,14 @@
     </section>
 
     <section class="card result" id="result" hidden>
+      <div class="result-actions">
+        <button type="button" class="text-btn small" id="btn-save">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z"/></svg><span>Save</span>
+        </button>
+        <button type="button" class="text-btn small" id="btn-share">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V3M8 7l4-4 4 4M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg><span>Share</span>
+        </button>
+      </div>
       <h2 id="result-title"></h2>
       <p class="summary" id="result-summary"></p>
       <ul class="notes" id="result-notes"></ul>
@@ -326,6 +335,45 @@
   </form>
 </dialog>
 
+<!-- Save a play -->
+<dialog class="sheet" id="save-sheet">
+  <div class="sheet-head">
+    <h2>Save this play</h2>
+    <button class="icon-btn" type="button" data-close aria-label="Close">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+    </button>
+  </div>
+  <form class="sheet-body report-form" id="save-form" autocomplete="off">
+    <label class="report-label" for="save-name">Name</label>
+    <input type="text" id="save-name" maxlength="80" class="text-input" placeholder="e.g. Tuesday — cutoff to 3rd">
+    <p class="fine">Saved on this device, under My plays in the play list. Share it or export your plays to keep a copy: clearing the browser's data removes what's saved here.</p>
+    <div class="report-actions">
+      <button type="submit" class="primary">Save</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- My plays -->
+<dialog class="sheet" id="myplays">
+  <div class="sheet-head">
+    <h2>My plays</h2>
+    <button class="icon-btn" type="button" data-close aria-label="Close">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+    </button>
+  </div>
+  <div class="sheet-body">
+    <div class="mp-list" id="mp-list"></div>
+    <p class="fine" id="mp-empty">No saved plays yet. Run a play, then tap <strong>Save</strong>.</p>
+    <p class="fine">Your plays are saved on this device only. Clearing the browser's data removes them, so export a backup now and then, or share a play to keep it as a link.</p>
+    <div class="report-actions mp-actions">
+      <label class="text-btn" for="mp-import-file">Import…</label>
+      <input type="file" id="mp-import-file" accept=".json,application/json" hidden>
+      <button type="button" class="primary" id="mp-export">Export backup</button>
+    </div>
+    <p class="report-status" id="mp-status" role="status"></p>
+  </div>
+</dialog>
+
 <!-- Settings -->
 <dialog class="sheet" id="settings">
   <div class="sheet-head">
@@ -347,6 +395,10 @@
       <span>Runners can lead off</span>
       <input type="checkbox" id="leadoffs" class="switch">
     </label>
+    <div class="field-row">
+      <span>My plays</span>
+      <button type="button" class="text-btn" id="open-myplays">Manage, export or import…</button>
+    </div>
     <label class="field-row">
       <span>Show paths</span>
       <input type="checkbox" id="show-paths" class="switch" checked>
@@ -383,6 +435,7 @@
 <script src="js/render.js"></script>
 <script src="js/teamui.js"></script>
 <script src="js/playlog.js"></script>
+<script src="js/share.js"></script>
 <script src="js/app.js"></script>
 </body>
 </html>

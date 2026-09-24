@@ -4,7 +4,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '0.9.1';
+  const VERSION = '0.10.0';
   const Field = window.Field;
   const { POSITIONS, NAMES, LEAGUES } = Field;
   const $ = (s) => document.querySelector(s);
@@ -158,6 +158,7 @@
     try { state.entry = window.PlayLog.record(window.localStorage, window.PlayLog.entry(plan, situation(), ev, VERSION)); }
     catch (e) { state.entry = window.PlayLog.entry(plan, situation(), ev, VERSION); }
     state.lastEvent = event;
+    state.playName = (opts && opts.name) || null;
     markQuick(-1);
     view.load(plan);
     renderResult(plan);
@@ -852,6 +853,7 @@
     renderSituation();
     runEvent(ev);
     setTitle(sc.name);
+    state.playName = sc.name;
     markQuick(state.scenarioIndex);
     scrollToResultOnPhone();
   }
@@ -866,6 +868,25 @@
       .filter(({ g }) => !g.levels || g.levels.includes(state.league))
       .sort((a, b) => (b.g.levels ? 1 : 0) - (a.g.levels ? 1 : 0));
     let shown = 0;
+    const mine = window.Share.list(localStorage);
+    if (mine.length) {
+      const h = document.createElement('h4');
+      h.innerHTML = 'My plays <button type="button" class="text-btn small inline" data-manage>Manage</button>';
+      h.querySelector('[data-manage]').addEventListener('click', openMyPlays);
+      list.appendChild(h);
+      for (const p of mine) {
+        const d = window.Share.decode(p.code);
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'lib-item mine';
+        btn.dataset.mine = p.id;
+        btn.setAttribute('role', 'listitem');
+        btn.innerHTML = `<span>${escapeHtml(p.name)}</span>${miniSit({ runners: d.situation.runners, outs: d.situation.outs })}`;
+        btn.addEventListener('click', () => openCode(p.code, p.name));
+        list.appendChild(btn);
+        shown++;
+      }
+    }
     for (const { g, start: first } of groups) {
       let i = first;
       shown += g.items.length;
@@ -1232,8 +1253,162 @@
   });
 
   // Open a play from a replay link (#replay=r1...) or turn tester mode on from a link (#tester or #tester=URL).
+  // ------------------------------------------------------------------------------------ share links, My plays
+  function shareCode() {
+    if (!state.lastEvent) return null;
+    const ev = Object.assign({}, state.lastEvent);
+    if (ev.at && state.result !== 'auto' && !ev.result) ev.result = state.result;
+    return window.Share.encode(situation(), ev, state.playName || '');
+  }
+  function shareUrl(code) {
+    return location.href.split('#')[0] + '#p=' + code;
+  }
+  // Open a play from a code: set the field and the situation, then run it.
+  function openCode(code, nameOverride) {
+    const d = window.Share.decode(code);
+    if (!d) { toast("That link doesn't hold a play."); return false; }
+    const s = d.situation;
+    if (s.league !== state.league) setLeague(s.league);
+    if ((s.park || null) !== (state.park || null)) {
+      state.park = s.park && Field.parksFor(state.league).find((p) => p.key === s.park) ? s.park : null;
+      store.set('park.' + state.league, state.park);
+      renderParks();
+      setGeometry();
+    }
+    state.runners = Object.assign({ first: false, second: false, third: false }, s.runners);
+    state.outs = s.outs;
+    state.batter = s.batter;
+    if (typeof s.leadoffs === 'boolean') { state.leadoffs = s.leadoffs; $('#leadoffs').checked = s.leadoffs; }
+    if (d.event.at) { state.kind = d.event.kind; state.result = d.event.result || 'auto'; }
+    renderSituation();
+    const name = nameOverride || d.name || '';
+    runEvent(d.event, { name });
+    if (name) { setTitle(name); state.playName = name; }
+    scrollToResultOnPhone();
+    return true;
+  }
+  let toastTimer = null;
+  function toast(text) {
+    const t = $('#toast');
+    t.textContent = text;
+    t.hidden = false;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => { t.hidden = true; }, 2200);
+  }
+  async function sharePlay() {
+    const code = shareCode();
+    if (!code) return;
+    const url = shareUrl(code);
+    const title = state.playName || (state.plan && state.plan.title) || 'A play';
+    if (navigator.share && matchMedia('(pointer: coarse)').matches) {
+      try { await navigator.share({ title: `Simple Fielding — ${title}`, url }); return; } catch (e) { if (e && e.name === 'AbortError') return; }
+    }
+    toast((await copyText(url)) ? 'Link copied — paste it anywhere' : url);
+  }
+  $('#btn-share').addEventListener('click', sharePlay);
+
+  const saveSheet = $('#save-sheet');
+  $('#btn-save').addEventListener('click', () => {
+    if (!state.lastEvent) return;
+    $('#save-name').value = state.playName || (state.plan && state.plan.title) || '';
+    openSheet(saveSheet);
+    setTimeout(() => { $('#save-name').focus(); $('#save-name').select(); }, 50);
+  });
+  $('#save-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const name = $('#save-name').value.trim() || (state.plan && state.plan.title) || 'My play';
+    state.playName = name;
+    const code = shareCode();
+    const saved = code && window.Share.add(localStorage, name, code);
+    closeSheet(saveSheet);
+    if (!saved) { toast("Couldn't save on this device — use Share to keep it as a link."); return; }
+    setTitle(name);
+    buildQuick();
+    toast(`Saved to My plays`);
+    // Ask the browser to keep this site's storage (Chrome usually agrees; Safari keeps it for Home Screen apps).
+    try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (err) { /* not offered */ }
+  });
+  saveSheet.addEventListener('click', (e) => { if (e.target === saveSheet || e.target.closest('[data-close]')) closeSheet(saveSheet); });
+
+  const mySheet = $('#myplays');
+  const ICON = {
+    share: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V3M8 7l4-4 4 4M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg>',
+    edit: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20l4-1 11-11-3-3L5 16l-1 4z"/></svg>',
+    del: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg>',
+  };
+  function renderMyPlays() {
+    const plays = window.Share.list(localStorage);
+    const box = $('#mp-list');
+    box.innerHTML = '';
+    $('#mp-empty').hidden = plays.length > 0;
+    for (const p of plays) {
+      const row = document.createElement('div');
+      row.className = 'mp-row';
+      row.innerHTML = `<button type="button" class="mp-name"></button>
+        <button type="button" class="icon-btn" data-act="share" aria-label="Share">${ICON.share}</button>
+        <button type="button" class="icon-btn" data-act="edit" aria-label="Rename">${ICON.edit}</button>
+        <button type="button" class="icon-btn danger" data-act="del" aria-label="Delete">${ICON.del}</button>`;
+      row.querySelector('.mp-name').textContent = p.name;
+      row.querySelector('.mp-name').addEventListener('click', () => { closeSheet(mySheet); openCode(p.code, p.name); });
+      row.querySelector('[data-act="share"]').addEventListener('click', async () => {
+        const url = shareUrl(window.Share.encode(window.Share.decode(p.code).situation, window.Share.decode(p.code).event, p.name));
+        if (navigator.share && matchMedia('(pointer: coarse)').matches) { try { await navigator.share({ title: `Simple Fielding — ${p.name}`, url }); return; } catch (e) { if (e && e.name === 'AbortError') return; } }
+        $('#mp-status').textContent = (await copyText(url)) ? `Link to "${p.name}" copied.` : url;
+      });
+      row.querySelector('[data-act="edit"]').addEventListener('click', () => {
+        const name = prompt('Rename this play', p.name);
+        if (name && name.trim()) { window.Share.rename(localStorage, p.id, name.trim()); renderMyPlays(); buildQuick(); }
+      });
+      row.querySelector('[data-act="del"]').addEventListener('click', () => {
+        if (!confirm(`Delete "${p.name}"? This can't be undone unless you have a backup or a link.`)) return;
+        window.Share.remove(localStorage, p.id); renderMyPlays(); buildQuick();
+      });
+      box.appendChild(row);
+    }
+  }
+  function openMyPlays() { $('#mp-status').textContent = ''; renderMyPlays(); closeSheet(settings); openSheet(mySheet); }
+  $('#open-myplays').addEventListener('click', openMyPlays);
+  mySheet.addEventListener('click', (e) => { if (e.target === mySheet || e.target.closest('[data-close]')) closeSheet(mySheet); });
+  $('#mp-export').addEventListener('click', () => {
+    const data = window.Share.exportData(localStorage, team.players && team.players.length ? team : null);
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `simple-fielding-backup-${new Date().toISOString().slice(0, 10)}.json`;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    $('#mp-status').textContent = `Exported ${data.plays.length} play${data.plays.length === 1 ? '' : 's'}${data.team ? ' and your team' : ''}. Keep the file somewhere safe.`;
+  });
+  $('#mp-import-file').addEventListener('change', async (e) => {
+    const file = e.target.files && e.target.files[0];
+    e.target.value = '';
+    if (!file) return;
+    try {
+      const res = window.Share.importData(localStorage, JSON.parse(await file.text()));
+      let msg = `Added ${res.added} play${res.added === 1 ? '' : 's'}.`;
+      if (res.team && Array.isArray(res.team.players) && res.team.players.length && confirm('The backup has a team too. Replace your team with it?')) {
+        // Save it, then load it back through the team module's own checks, into the same team object the
+        // team sheet already holds.
+        T.save(localStorage, res.team);
+        const fresh = T.load(localStorage);
+        for (const k of Object.keys(team)) delete team[k];
+        Object.assign(team, fresh);
+        applyLabels();
+        msg += ' Team restored.';
+      }
+      $('#mp-status').textContent = msg;
+      renderMyPlays(); buildQuick();
+    } catch (err) { $('#mp-status').textContent = err.message || "Couldn't read that file."; }
+  });
+
   function fromHash() {
     const h = location.hash.slice(1);
+    if (h.startsWith('p=')) {
+      openCode(decodeURIComponent(h.slice(2)));
+      // The play is on screen; tidy the address so Next and new plays don't look like they're the shared one.
+      history.replaceState(null, '', location.href.split('#')[0]);
+      return;
+    }
     if (h.startsWith('tester')) {
       const url = decodeURIComponent(h.split('=').slice(1).join('='));
       if (url) { tester.url = url; store.set('testerUrl', url); $('#tester-url').value = url; }

@@ -4,6 +4,8 @@
  * disagree on, or an angle placed by eye from a diagram. `a` is degrees from the 1st-base line (0) through
  * straightaway center (45) to the 3rd-base line (90).
  *
+ * Append-only: share links store a park by its place in this list, so add new parks at the end.
+ *
  * Names only, to identify the park: no logos, colors or branding. Simple Fielding is not affiliated with or
  * endorsed by MLB, any MLB club, or Little League Baseball, Inc.
  */

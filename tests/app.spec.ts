@@ -417,3 +417,34 @@ test('levels and parks: pro field, then Fenway, with the wall distances and 90 f
   await page.locator('#sport-seg [data-sport="softball"]').click();
   await expect(page.locator('#quick-list h4', { hasText: '90 ft' })).toHaveCount(0);
 });
+
+test('save a play: it appears under My plays, survives a reload, and replays', async ({ page }) => {
+  await page.locator('#quick-list .lib-item', { hasText: 'Single to left, runner on 1st' }).click();
+  await page.locator('#btn-save').click();
+  await page.locator('#save-name').fill('Tuesday — cutoff to 3rd');
+  await page.locator('#save-form button[type="submit"]').click();
+  await expect(page.locator('#toast')).toContainText('Saved');
+  await expect(page.locator('#quick-list .lib-item.mine')).toHaveText(/Tuesday — cutoff to 3rd/);
+  await page.reload();
+  await page.locator('#quick-list .lib-item.mine').first().click();
+  await expect(page.locator('#play-title .pt-name')).toHaveText('Tuesday — cutoff to 3rd');
+  expect(await page.evaluate(() => (window as any).SimpleFielding.state.plan.target)).toBe('third');
+  // Manage: rename is a prompt, delete asks first.
+  page.on('dialog', (d) => d.accept());
+  await page.locator('#quick-list [data-manage]').click();
+  await expect(page.locator('#myplays')).toBeVisible();
+  await page.locator('#mp-list [data-act="del"]').first().click();
+  await expect(page.locator('#mp-empty')).toBeVisible();
+});
+
+test('a share link opens the same play on the right field, and the address is tidied', async ({ page }) => {
+  const code = await page.evaluate(() => (window as any).Share.encode(
+    { league: 'pro', park: 'redsox-fenway', runners: { second: true }, outs: 1, batter: 'R', leadoffs: true },
+    { kind: 'ground', at: { x: -10, y: 255 }, result: 'single' }, 'Play at the plate'));
+  expect(code.length).toBeLessThan(60);
+  await page.goto('/#p=' + code);
+  await expect(page.locator('#play-title .pt-name')).toHaveText('Play at the plate');
+  const s = await page.evaluate(() => { const st = (window as any).SimpleFielding.state; return { league: st.league, park: st.park, target: st.plan.target }; });
+  expect(s).toEqual({ league: 'pro', park: 'redsox-fenway', target: 'home' });
+  expect(page.url()).not.toContain('#p=');
+});
