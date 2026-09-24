@@ -23,19 +23,19 @@
       <span class="brand-name">Simple Fielding</span>
     </a>
     <div class="topbar-actions">
-      <button class="pill-btn" id="btn-library" type="button" aria-haspopup="dialog">
+      <button class="pill-btn coach-only" id="btn-library" type="button" aria-haspopup="dialog">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16M4 12h16M4 19h10"/></svg>
         <span>Plays</span>
       </button>
-      <button class="pill-btn" id="btn-team" type="button" aria-haspopup="dialog" title="Your team">
+      <button class="pill-btn coach-only" id="btn-team" type="button" aria-haspopup="dialog" title="Your team">
         <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><circle cx="17" cy="9" r="2.6"/><path d="M16 14.2c2.8.3 5 2.6 5 5.8"/></svg>
         <span>Team</span>
       </button>
-      <button class="pill-btn" id="btn-board" type="button" aria-pressed="false" title="Whiteboard (W)">
+      <button class="pill-btn coach-only" id="btn-board" type="button" aria-pressed="false" title="Whiteboard (W)">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20l4-1 11-11-3-3L5 16l-1 4zM14 6l3 3"/></svg>
         <span>Whiteboard</span>
       </button>
-      <button class="icon-btn" id="btn-projector" type="button" title="Projector mode" aria-label="Projector mode">
+      <button class="icon-btn coach-only" id="btn-projector" type="button" title="Projector mode" aria-label="Projector mode">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
       </button>
       <button class="icon-btn" id="btn-settings" type="button" title="Settings" aria-label="Settings" aria-haspopup="dialog">
@@ -141,7 +141,7 @@
               <span></span><span></span>
             </button>
           </div>
-          <div class="ctl">
+          <div class="ctl coach-only">
             <span class="ctl-label">Batter</span>
             <div class="seg small" role="group" aria-label="Batter hand" id="batter-seg">
               <button type="button" data-batter="R" class="on">Righty</button>
@@ -153,8 +153,17 @@
       <p class="sit-hint">Tap the bases to put runners on. <button class="text-btn small inline" id="btn-clear" type="button">Clear bases</button></p>
     </section>
 
+    <section class="card basic-only quick" id="quick">
+      <div class="card-head">
+        <h2>Pick a play</h2>
+        <button type="button" class="text-btn small" id="quick-next">Next play ›</button>
+      </div>
+      <div class="quick-list" id="quick-list" role="list"></div>
+    </section>
+
     <section class="card">
       <h2>How is it hit?</h2>
+      <p class="fine basic-only drag-tip">Pick one, then drag the ball from home plate to where it goes.</p>
       <div class="chips" id="kind-chips">
         <button type="button" data-kind="ground" class="on">Grounder</button>
         <button type="button" data-kind="line">Line drive</button>
@@ -162,8 +171,8 @@
         <button type="button" data-kind="pop">Pop-up</button>
         <button type="button" data-kind="bunt">Bunt</button>
       </div>
-      <h3>What happens?</h3>
-      <div class="chips small" id="result-chips">
+      <h3 class="coach-only">What happens?</h3>
+      <div class="chips small coach-only" id="result-chips">
         <button type="button" data-result="auto" class="on">Let the app decide</button>
         <button type="button" data-result="out">Caught</button>
         <button type="button" data-result="single">Single</button>
@@ -172,7 +181,7 @@
       </div>
     </section>
 
-    <section class="card">
+    <section class="card coach-only">
       <h2>No hit — other plays</h2>
       <div class="chips" id="other-plays">
         <button type="button" data-play="steal2">Steal 2nd</button>
@@ -200,6 +209,7 @@
     </section>
 
     <footer class="panel-foot">
+      <button type="button" class="text-btn small basic-only" id="to-coach">Coach? Switch to Coach mode for your team and the whiteboard</button>
       Free, no ads, no accounts. Made by a Little League dad.
       <a href="https://buymeacoffee.com/thames_" target="_blank" rel="noopener">Buy me a coffee ☕</a>
     </footer>
@@ -320,11 +330,19 @@
     </button>
   </div>
   <div class="sheet-body">
-    <label class="field-row">
+    <div class="field-row">
+      <span>Mode</span>
+      <div class="seg small" role="group" aria-label="Mode" id="mode-seg">
+        <button type="button" data-mode="basic">Basic</button>
+        <button type="button" data-mode="coach">Coach</button>
+      </div>
+    </div>
+    <p class="fine">Basic is for players: pick a play from the list, set the runners and outs, or drag the ball. Coach adds your team, the whiteboard, the batter, how the hit turns out, steals and pickoffs, and the field size.</p>
+    <label class="field-row coach-only">
       <span>Field</span>
       <select id="league"></select>
     </label>
-    <label class="field-row" id="leadoffs-row">
+    <label class="field-row coach-only" id="leadoffs-row">
       <span>Runners can lead off</span>
       <input type="checkbox" id="leadoffs" class="switch">
     </label>
@@ -332,10 +350,11 @@
       <span>Show paths</span>
       <input type="checkbox" id="show-paths" class="switch" checked>
     </label>
-    <p class="fine">Little League baseball (60 ft) doesn't allow leadoffs, so runners can't leave until the pitch reaches the batter. Softball runners leave when the pitch is released. Turn leadoffs on for 50/70, travel ball, or older divisions.</p>
+    <p class="fine coach-only">Little League baseball (60 ft) doesn't allow leadoffs, so runners can't leave until the pitch reaches the batter. Softball runners leave when the pitch is released. Turn leadoffs on for 50/70, travel ball, or older divisions.</p>
     <p class="fine">Drag left or right anywhere on the field (not from home plate) to scrub back and forth through a play.</p>
-    <p class="fine">Keyboard: <kbd>Space</kbd> play/pause · <kbd>←</kbd> <kbd>→</kbd> step through the play · <kbd>N</kbd> next play · <kbd>P</kbd> projector mode · <kbd>R</kbd> reset · <kbd>W</kbd> whiteboard.</p>
-    <p class="fine">Whiteboard: an Apple Pencil or stylus always draws, and a finger moves players, runners and the ball. You can draw and move without switching tools. A drawing stays on top when you tap Done, until you run the next play.</p>
+    <p class="fine">Grounder got through? After a ground ball, drag from the dashed ring (where the infielder tried for it) to where the ball rolled. Everyone plays it as a ball that got by.</p>
+    <p class="fine coach-only">Keyboard: <kbd>Space</kbd> play/pause · <kbd>←</kbd> <kbd>→</kbd> step through the play · <kbd>N</kbd> next play · <kbd>P</kbd> projector mode · <kbd>R</kbd> reset · <kbd>W</kbd> whiteboard.</p>
+    <p class="fine coach-only">Whiteboard: an Apple Pencil or stylus always draws, and a finger moves players, runners and the ball. You can draw and move without switching tools. A drawing stays on top when you tap Done, until you run the next play.</p>
     <p class="fine">Simple Fielding is free and has no ads or accounts. It's built by a dad with kids in Little League.
       <a href="https://buymeacoffee.com/thames_" target="_blank" rel="noopener">Buy me a coffee</a> to help keep it going.</p>
     <p class="fine home-link"><a href="../">← Back to the Simple Fielding website</a> · <a href="../articles/">Guides</a></p>

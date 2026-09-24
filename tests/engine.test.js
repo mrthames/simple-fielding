@@ -274,3 +274,20 @@ test('an outfielder backing up 2nd stays on the outfield grass', () => {
     assert.ok(Math.hypot(e.x, e.y) >= geo.infieldEdge, `${far} backs up 2nd from ${JSON.stringify(e)}`);
   }
 });
+
+test('a grounder that gets through the infield is played where it ends up', () => {
+  const geo = Field.geometry('littleLeague');
+  const sit = { geo, runners: { first: true, second: false, third: false }, outs: 0, batter: 'R', leadoffs: false };
+  const p = Engine.planPlay(sit, { kind: 'ground', at: { x: -22, y: 76 }, through: { x: -70, y: 140 } });
+  assert.equal(p.fielder, 'LF');
+  assert.equal(p.missedBy, 'SS');
+  assert.equal(p.through, true);
+  assert.match(p.title, /^Through the infield/);
+  assert.equal(p.target, 'third');
+  // The shortstop dives at the ball first, then goes to their job.
+  assert.ok(p.assignments.SS.path.length >= 2);
+  // A tiny second drag is not a ball that got through.
+  const q = Engine.planPlay(sit, { kind: 'ground', at: { x: -22, y: 76 }, through: { x: -23, y: 77 } });
+  assert.ok(!q.through);
+  assert.equal(q.fielder, 'SS');
+});

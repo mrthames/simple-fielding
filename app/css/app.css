@@ -192,6 +192,11 @@ body { overflow: hidden; }
 .caption text { fill: #fff; font: 800 6px var(--font); text-anchor: middle; dominant-baseline: middle; }
 
 .drag-line { fill: none; stroke: #fff; stroke-width: 1.2; stroke-dasharray: 3 2; }
+.roll-handle { pointer-events: none; }
+.rh-ring { fill: rgba(255, 255, 255, .12); stroke: #fff; stroke-width: .9; stroke-dasharray: 2 1.6; animation: rh-pulse 1.6s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+.rh-text { fill: #fff; font: 700 4.2px var(--font); text-anchor: middle; paint-order: stroke; stroke: rgba(11, 28, 58, .85); stroke-width: 1.4px; }
+@keyframes rh-pulse { 50% { transform: scale(1.18); } }
+body.board-on .layer-handle { display: none; }
 .drag-target { fill: rgba(255, 255, 255, 0.25); stroke: #fff; stroke-width: 0.8; }
 .field.dragging { cursor: grabbing; }
 
@@ -339,6 +344,27 @@ body { overflow: hidden; }
   min-height: 52px; padding: 8px 14px; border: 0; border-radius: var(--r); background: var(--bg); font-weight: 600; font-size: 15px;
 }
 .lib-item:active { background: var(--line); }
+
+/* ---------------------------------------------------------------- Basic / Coach mode */
+body.mode-basic .coach-only { display: none !important; }
+body:not(.mode-basic) .basic-only { display: none !important; }
+body.mode-basic .notes li:nth-child(n+2) { display: none; }
+.quick-list {
+  margin-top: 10px; max-height: 300px; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch;
+  display: flex; flex-direction: column; gap: 6px; padding-right: 2px;
+}
+.quick-list h4 {
+  position: sticky; top: 0; z-index: 1; margin: 6px 0 0; padding: 4px 0; background: var(--panel);
+  font-size: 12px; font-weight: 700; color: var(--ink-2); text-transform: uppercase; letter-spacing: .6px;
+}
+.quick-list h4:first-child { margin-top: 0; }
+.quick-list .lib-item { min-height: 48px; }
+.quick-list .lib-item.on { background: var(--chip-on); color: #fff; }
+.quick-list .lib-item.on .lib-sit { color: #fff; }
+.quick-list .lib-item.on .lib-bases i { border-color: #fff; }
+.quick-list .lib-item.on .lib-bases i.on { background: #fff; }
+.drag-tip { margin: -4px 0 10px; }
+#to-coach { display: block; margin: 0 auto 8px; }
 .lib-sit { display: flex; align-items: center; gap: 8px; flex: none; color: var(--ink-2); font-size: 12px; font-weight: 700; }
 .lib-bases { position: relative; width: 30px; height: 20px; }
 .lib-bases i { position: absolute; width: 9px; height: 9px; transform: rotate(45deg); border: 2px solid var(--ink-2); }

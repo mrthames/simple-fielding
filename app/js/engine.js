@@ -230,6 +230,38 @@
   function planBattedBall(geo, situation, event) {
     const ready = Field.readyPositions(geo, situation);
     const plan = newPlan(geo, situation, ready);
+    // A ground ball that gets past an infielder: `at` is where they tried for it, `through` is where it
+    // rolled to. The play is planned where the ball ended up; the infielder who missed it dives first.
+    let tryAt = null;
+    if (event.kind === 'ground' && event.through && dist(event.through, event.at) > 4 && Field.isFair(event.at)) {
+      tryAt = { x: event.at.x, y: event.at.y };
+      event = Object.assign({}, event, { at: event.through });
+      delete event.through;
+    }
+    const out = planBattedBallAt(plan, geo, situation, event);
+    if (tryAt) missedGrounder(out, tryAt);
+    return out;
+  }
+
+  function missedGrounder(plan, tryAt) {
+    const { geo } = plan;
+    const tryer = dist(tryAt, geo.bases.home) < geo.infieldEdge ? infieldFielder(plan, tryAt, false) : null;
+    plan.ball.landing = round(tryAt);
+    plan.through = true;
+    if (!tryer || tryer === plan.fielder) return;
+    const a = plan.assignments[tryer];
+    const dive = along(plan.ready[tryer], tryAt, Math.max(0, dist(plan.ready[tryer], tryAt) - 2));
+    a.path = [round(dive), ...(a.path || [a.to])];
+    a.delay = 0.05;
+    a.job = 'Go hard after it — it gets by you! Don\'t stay down: get up and ' + a.job.charAt(0).toLowerCase() + a.job.slice(1);
+    plan.missedBy = tryer;
+    plan.title = `Through the infield — ${plan.title.charAt(0).toLowerCase()}${plan.title.slice(1)}`;
+    plan.summary = `The ball gets past ${the(tryer)}. ` + plan.summary;
+    plan.notes.unshift(`When a ground ball gets through, ${the(tryer)} doesn't stay down or watch it: get up and go straight to your job. Everybody else plays it like a hit to the outfield.`);
+  }
+
+  function planBattedBallAt(plan, geo, situation, event) {
+    const ready = plan.ready;
     if ((event.kind === 'ground' || event.kind === 'bunt') && Field.isFair(event.at) && dist(event.at, geo.bases.home) > geo.fence - 6) {
       // A ground ball can't leave the park: it rolls to the fence.
       event = Object.assign({}, event, { kind: 'ground', at: along(geo.bases.home, event.at, geo.fence - 8), result: event.result || 'double' });
@@ -1291,7 +1323,7 @@
           const h = Math.abs(Math.sin(f * Math.PI * 3)) * peak * (1 - f);
           ball.push({ t: contact + (tRoll - contact) * f, x: p.x, y: p.y, h });
         }
-        if (dist(at, fp) > 1) ball.push({ t: tRoll + dist(at, fp) / 30, x: fp.x, y: fp.y, h: 0 });
+        if (dist(at, fp) > 1) ball.push({ t: tRoll + dist(at, fp) / (plan.through ? 45 : 30), x: fp.x, y: fp.y, h: 0 });
         tBallAtFielder = Math.max(endT, ball[ball.length - 1].t);
         ball.push({ t: tBallAtFielder, x: fp.x, y: fp.y, h: 0 });
       }

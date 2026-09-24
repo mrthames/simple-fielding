@@ -20,6 +20,8 @@ test.beforeEach(async ({ page }) => {
   const errors: string[] = [];
   page.on('pageerror', (e) => errors.push(e.message));
   (page as any)._errors = errors;
+  // Most tests exercise the full tool set; the Basic-mode tests switch back themselves.
+  await page.addInitScript(() => { if (!sessionStorage.getItem('sf.test.mode')) { localStorage.setItem('sf.mode', '"coach"'); sessionStorage.setItem('sf.test.mode', '1'); } });
   await page.goto('/');
 });
 
@@ -64,7 +66,7 @@ test('steal button puts a runner on 1st and runs the steal', async ({ page }) =>
 test('play library runs a scenario', async ({ page }) => {
   await page.locator('#btn-library').click();
   await expect(page.locator('#library')).toBeVisible();
-  await page.locator('.lib-item', { hasText: 'Foul pop behind the plate' }).click();
+  await page.locator('#library .lib-item', { hasText: 'Foul pop behind the plate' }).click();
   await expect(page.locator('#library')).toBeHidden();
   await expect(page.locator('#jobs li[data-pos="P"]')).toContainText('home plate');
 });
@@ -336,4 +338,64 @@ test('dragging the timeline slider moves the play (while paused)', async ({ page
   await page.mouse.up();
   const after = await page.evaluate(() => (window as any).SimpleFielding.state.t);
   expect(after).toBeGreaterThan(before + 1);
+});
+
+test('basic mode: a first visit shows the quick-pick list and hides the coach tools', async ({ page }) => {
+  await page.evaluate(() => { localStorage.removeItem('sf.mode'); });
+  await page.reload();
+  await expect(page.locator('body')).toHaveClass(/mode-basic/);
+  for (const id of ['#btn-team', '#btn-board', '#btn-library', '#result-chips', '#other-plays', '#batter-seg']) {
+    await expect(page.locator(id)).toBeHidden();
+  }
+  await expect(page.locator('#quick')).toBeVisible();
+  await expect(page.locator('#sport-seg')).toBeVisible();
+  await expect(page.locator('#outs')).toBeVisible();
+  await page.locator('#quick-list .lib-item').nth(3).click();
+  await expect(page.locator('#quick-list .lib-item.on')).toHaveCount(1);
+  await expect(page.locator('#result')).toBeVisible();
+  await page.locator('#quick-next').click();
+  await expect(page.locator('#quick-list .lib-item').nth(4)).toHaveClass(/on/);
+  // Dragging still works in Basic, and clears the pick.
+  await dragBall(page, { x: -80, y: 135 });
+  await expect(page.locator('#quick-list .lib-item.on')).toHaveCount(0);
+  // Keyboard shortcuts for coach tools do nothing.
+  await page.keyboard.press('w');
+  await expect(page.locator('#board-bar')).toBeHidden();
+});
+
+test('basic mode: switching to coach mode brings everything back and sticks', async ({ page }) => {
+  await page.evaluate(() => { localStorage.setItem('sf.mode', '"basic"'); });
+  await page.reload();
+  await page.locator('#to-coach').click();
+  await expect(page.locator('body')).not.toHaveClass(/mode-basic/);
+  await expect(page.locator('#btn-team')).toBeVisible();
+  await expect(page.locator('#quick')).toBeHidden();
+  await page.reload();
+  await expect(page.locator('#btn-board')).toBeVisible();
+  await page.locator('#btn-settings').click();
+  await page.locator('#mode-seg [data-mode="basic"]').click();
+  await expect(page.locator('body')).toHaveClass(/mode-basic/);
+  await expect(page.locator('#league')).toBeHidden();
+});
+
+test('a grounder that gets through: drag from the ring to the outfield', async ({ page }) => {
+  await dragBall(page, { x: -22, y: 76 });
+  await expect(page.locator('.roll-handle')).toHaveCount(1);
+  await page.evaluate(() => window.scrollTo(0, 0));
+  const pts = await page.evaluate(() => {
+    const svg = document.getElementById('field') as unknown as SVGSVGElement;
+    const m = svg.getScreenCTM()!;
+    const pt = (x: number, y: number) => { const p = svg.createSVGPoint(); p.x = x; p.y = -y; const q = p.matrixTransform(m); return { x: q.x, y: q.y }; };
+    const at = (window as any).SimpleFielding.state.lastEvent.at;
+    return { from: pt(at.x, at.y), to: pt(-70, 140) };
+  });
+  await page.mouse.move(pts.from.x, pts.from.y);
+  await page.mouse.down();
+  await page.mouse.move((pts.from.x + pts.to.x) / 2, (pts.from.y + pts.to.y) / 2, { steps: 5 });
+  await page.mouse.move(pts.to.x, pts.to.y, { steps: 5 });
+  await page.mouse.up();
+  await expect(page.locator('#result-title')).toContainText('Through the infield');
+  const s = await page.evaluate(() => (window as any).SimpleFielding.state.plan);
+  expect(s.fielder).toBe('LF');
+  expect(s.missedBy).toBe('SS');
 });

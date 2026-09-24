@@ -30,6 +30,7 @@
     t: 0,
     spotlight: null,
     scenarioIndex: -1,
+    mode: store.get('mode', 'basic') === 'coach' ? 'coach' : 'basic',
   };
   if (!LEAGUES[state.league]) state.league = 'littleLeague';
   state.leadoffs = store.get('leadoffs.' + state.league, LEAGUES[state.league].leadoffs);
@@ -107,6 +108,7 @@
     state.plan = null;
     state.lastEvent = null;
     view.showReady(window.Field.readyPositions(geo, situation()), state.runners);
+    view.showRollHandle(null);
     $('#result').hidden = true;
     $('#play-title').hidden = true;
     $('#field-hint').hidden = false;
@@ -117,6 +119,14 @@
   // -------------------------------------------------------------------------------------------
   // Running a play
   // -------------------------------------------------------------------------------------------
+  // The spot a grounder reached the infield: drag from there to show it getting through.
+  function rollHandleAt() {
+    const e = state.lastEvent;
+    if (!state.plan || !e || e.kind !== 'ground' || !e.at) return null;
+    if (Math.hypot(e.at.x, e.at.y) >= geo.infieldEdge) return null;
+    return e.at;
+  }
+
   function runEvent(event, opts) {
     if (board.on) closeBoard();
     clearInkOnNewPlay();
@@ -128,8 +138,10 @@
     try { state.entry = window.PlayLog.record(window.localStorage, window.PlayLog.entry(plan, situation(), ev, VERSION)); }
     catch (e) { state.entry = window.PlayLog.entry(plan, situation(), ev, VERSION); }
     state.lastEvent = event;
+    markQuick(-1);
     view.load(plan);
     renderResult(plan);
+    view.showRollHandle(rollHandleAt());
     $('#field-hint').hidden = true;
     const title = $('#play-title');
     title.textContent = plan.title;
@@ -502,6 +514,15 @@
     const baseEl = e.target.closest && e.target.closest('.base');
     if (baseEl) return; // bases toggle on pointerup
     const p = view.toField(e.clientX, e.clientY);
+    const handle = rollHandleAt();
+    if (handle && Math.hypot(p.x - handle.x, p.y - handle.y) < 11) {
+      stop();
+      drag = { id: e.pointerId, start: p, fromRoll: handle, moved: false, at: p, cx: e.clientX };
+      svg.setPointerCapture(e.pointerId);
+      svg.classList.add('dragging');
+      e.preventDefault();
+      return;
+    }
     const nearPlate = Math.hypot(p.x, p.y - 1) < 16;
     // Players are tapped, not dragged — except the catcher, who stands on top of the ball.
     if (!nearPlate && e.target.closest && e.target.closest('.player')) return;
@@ -549,6 +570,11 @@
     }
     const p = view.toField(e.clientX, e.clientY);
     drag.at = p;
+    if (drag.fromRoll) {
+      if (Math.hypot(p.x - drag.start.x, p.y - drag.start.y) > 6) drag.moved = true;
+      if (drag.moved) view.showDrag(drag.fromRoll, p, 'ground');
+      return;
+    }
     if (Math.hypot(p.x - drag.start.x, p.y - drag.start.y) > 6) { drag.moved = true; clearTimeout(drag.hold); }
     // A drag that doesn't start at home plate scrubs the play (a drag from the plate hits the ball).
     if (drag.moved && !drag.fromPlate && state.plan && !drag.scrub) {
@@ -572,6 +598,14 @@
     svg.classList.remove('dragging');
     view.hideDrag();
     if (d.scrub) { showScrub(false); return; } // scrubbing never hits the ball
+    if (d.fromRoll) {
+      if (d.moved) {
+        const through = { x: Math.round(d.at.x * 10) / 10, y: Math.round(d.at.y * 10) / 10 };
+        runEvent({ kind: 'ground', at: d.fromRoll, through });
+        state.lastEvent = { kind: 'ground', at: d.fromRoll, through };
+      } else if (state.plan) replay();
+      return;
+    }
     if (cancelled) return;
     if (d.fromPlate && d.moved) {
       hitTo(d.at);
@@ -634,7 +668,10 @@
 
   // Changing the hit type or result re-runs the last batted ball, so a coach can compare.
   function rerunHit() {
-    if (state.lastEvent && state.lastEvent.at) runEvent({ kind: state.kind, at: state.lastEvent.at });
+    const e = state.lastEvent;
+    if (!e || !e.at) return;
+    if (state.kind === 'ground' && e.through) runEvent({ kind: 'ground', at: e.at, through: e.through });
+    else runEvent({ kind: state.kind, at: e.at });
   }
   function rerun() {
     if (!state.lastEvent) return;
@@ -711,6 +748,7 @@
     state.runners = Object.assign({ first: false, second: false, third: false }, sc.runners);
     state.outs = sc.outs || 0;
     if (sc.batter) state.batter = sc.batter;
+    else if (state.mode === 'basic') state.batter = 'R';
     if (sc.leadoffs && !state.leadoffs && geo.league.sport === 'baseball') {
       // Leads only exist where leadoffs are allowed; switch them on for this play.
       state.leadoffs = true;
@@ -725,8 +763,64 @@
     }
     renderSituation();
     runEvent(ev);
+    markQuick(state.scenarioIndex);
     scrollToResultOnPhone();
   }
+
+  // Basic mode: the plays as a quick-pick list in the panel.
+  function buildQuick() {
+    const list = $('#quick-list');
+    list.innerHTML = '';
+    let i = 0;
+    for (const g of window.Scenarios.GROUPS) {
+      const h = document.createElement('h4');
+      h.textContent = g.name;
+      list.appendChild(h);
+      for (const it of g.items) {
+        const idx = i++;
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'lib-item';
+        btn.dataset.idx = idx;
+        btn.setAttribute('role', 'listitem');
+        btn.innerHTML = `<span>${escapeHtml(it.name)}</span>${miniSit(it)}`;
+        btn.addEventListener('click', () => runScenario(idx));
+        list.appendChild(btn);
+      }
+    }
+  }
+  function markQuick(idx) {
+    for (const b of $$('#quick-list .lib-item')) {
+      const on = Number(b.dataset.idx) === idx;
+      b.classList.toggle('on', on);
+      if (on) {
+        // Keep the picked play in view inside the list, without scrolling the page.
+        const list = $('#quick-list');
+        const top = b.offsetTop - list.offsetTop;
+        if (top < list.scrollTop || top + b.offsetHeight > list.scrollTop + list.clientHeight) list.scrollTop = top - 30;
+      }
+    }
+  }
+  $('#quick-next').addEventListener('click', () => runScenario(state.scenarioIndex + 1));
+
+  function setMode(mode) {
+    state.mode = mode === 'coach' ? 'coach' : 'basic';
+    store.set('mode', state.mode);
+    const basic = state.mode === 'basic';
+    if (basic) {
+      if (board.on) closeBoard();
+      // Basic has no batter, result or leadoff controls: put them back to their plain defaults.
+      state.batter = 'R';
+      if (state.result !== 'auto') { state.result = 'auto'; renderSituation(); }
+    }
+    document.body.classList.toggle('mode-basic', basic);
+    for (const b of $$('#mode-seg button')) {
+      b.classList.toggle('on', b.dataset.mode === state.mode);
+      b.setAttribute('aria-pressed', String(b.dataset.mode === state.mode));
+    }
+  }
+  for (const b of $$('#mode-seg button')) b.addEventListener('click', () => setMode(b.dataset.mode));
+  $('#to-coach').addEventListener('click', () => { setMode('coach'); window.scrollTo(0, 0); });
 
   $('#btn-library').addEventListener('click', () => openSheet(lib));
 
@@ -800,9 +894,9 @@
   document.addEventListener('keydown', (e) => {
     if (e.target.matches('input, select, textarea')) return;
     if (document.querySelector('dialog[open]')) return; // a sheet is open: its own keys only
-    if ((e.key === 't' || e.key === 'T') && !board.on) { window.TeamUI.openTeam(); return; }
+    if ((e.key === 't' || e.key === 'T') && !board.on && state.mode === 'coach') { window.TeamUI.openTeam(); return; }
     if ((e.key === 'f' || e.key === 'F') && tester.on && state.plan && !board.on) { openReport(); return; }
-    if (e.key === 'w' || e.key === 'W') { board.on ? closeBoard() : openBoard(); return; }
+    if ((e.key === 'w' || e.key === 'W') && (board.on || state.mode === 'coach')) { board.on ? closeBoard() : openBoard(); return; }
     if (board.on) {
       const tools = { m: 'move', d: 'pen', a: 'arrow', e: 'eraser' };
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') { e.preventDefault(); e.shiftKey ? redoBoard() : undoBoard(); }
@@ -1012,10 +1106,12 @@
   window.addEventListener('hashchange', fromHash);
 
   // Test hook: lets the Playwright suite drive plays without synthesising drags.
-  window.SimpleFielding = { state, team, board, tester, openReport, buildReport, reportText, openBoard, closeBoard, runEvent, runScenario, hitTo, seekEnd() { if (state.plan) { stop(); state.t = state.plan.timeline.duration; view.seek(state.t); updateTransport(); } } };
+  window.SimpleFielding = { setMode, state, team, board, tester, openReport, buildReport, reportText, openBoard, closeBoard, runEvent, runScenario, hitTo, seekEnd() { if (state.plan) { stop(); state.t = state.plan.timeline.duration; view.seek(state.t); updateTransport(); } } };
 
   window.TeamUI.init({ team, onChange: (t) => { T.save(window.localStorage, t); applyLabels(); } });
   buildLibrary();
+  buildQuick();
+  setMode(state.mode);
   setGeometry();
   renderSituation();
   fromHash();

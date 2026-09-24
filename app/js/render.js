@@ -63,6 +63,7 @@
         players: el('g', { class: 'layer-players' }, this.svg),
         runners: el('g', { class: 'layer-runners' }, this.svg),
         ball: el('g', { class: 'layer-ball' }, this.svg),
+        handle: el('g', { class: 'layer-handle' }, this.svg),
         drag: el('g', { class: 'layer-drag' }, this.svg),
         captions: el('g', { class: 'layer-captions' }, this.svg),
         ink: el('g', { class: 'layer-ink' }, this.svg),
@@ -352,6 +353,16 @@
     }
 
     hideDrag() { this.clearLayer('drag'); }
+
+    // After a grounder: a ring where the infielder tried for it. Drag from it to where the ball rolled.
+    showRollHandle(at) {
+      this.clearLayer('handle');
+      if (!at) return;
+      const g = el('g', { class: 'roll-handle', transform: `translate(${at.x},${-at.y})` }, this.layers.handle);
+      el('circle', { r: 8, class: 'rh-ring' }, g);
+      const t = el('text', { class: 'rh-text', y: 13 }, g);
+      t.textContent = 'drag if it got through';
+    }
 
     // ---------------------------------------------------------------------------------------------
     // Whiteboard
