@@ -50,8 +50,10 @@
 
     setGeometry(geo) {
       this.geo = geo;
-      const F = geo.fence;
-      const w = F * 1.5;
+      const F = geo.fenceMax;
+      // Wide enough for the farther foul pole, tall enough for the deepest part of the park.
+      const poles = Math.max(geo.fenceDir(0), geo.fenceDir(90)) / Math.SQRT2;
+      const w = Math.max(F * 1.5, poles * 2 + 30);
       this.viewBox = { x: -w / 2, y: -(F + 14), w, h: F + 14 + 34 };
       this.svg.setAttribute('viewBox', `${this.viewBox.x} ${this.viewBox.y} ${this.viewBox.w} ${this.viewBox.h}`);
       this.svg.innerHTML = '';
@@ -90,12 +92,20 @@
       const vb = this.viewBox;
       el('rect', { x: vb.x, y: vb.y, width: vb.w, height: vb.h, fill: 'var(--foul-grass)' }, svg);
 
-      // Fair territory out to the fence, and a warning track.
-      const fx = F / Math.SQRT2;
-      el('path', { d: `M0,0 L${-fx},${-fx} A${F},${F} 0 0 1 ${fx},${-fx} Z`, fill: 'var(--track)' }, svg);
-      const G = F - 10;
-      const gx = G / Math.SQRT2;
-      el('path', { d: `M0,0 L${-gx},${-gx} A${G},${G} 0 0 1 ${gx},${-gx} Z`, fill: 'url(#mow)' }, svg);
+      // Fair territory out to the fence (whatever its shape), and a warning track.
+      const track = Math.max(10, 10 * F / 200);
+      const wall = (inset) => {
+        const pts = [];
+        for (let a = 90; a >= 0; a -= 1) {
+          const r = g.fenceDir(a) - inset;
+          const t = (a + 45) * Math.PI / 180;
+          pts.push({ x: Math.cos(t) * r, y: Math.sin(t) * r });
+        }
+        return pts;
+      };
+      const outer = wall(0);
+      el('path', { d: 'M0,0 L' + outer.map(P).join(' L') + ' Z', fill: 'var(--track)' }, svg);
+      el('path', { d: 'M0,0 L' + wall(track).map(P).join(' L') + ' Z', fill: 'url(#mow)' }, svg);
 
       // Infield dirt: an arc centered on the mound, closed by the foul lines.
       const R = g.infieldEdge - g.mound.y;
@@ -128,9 +138,19 @@
       this.svg.dataset.sport = g.league.sport;
 
       // Foul lines and the fence.
-      el('line', { x1: 0, y1: 0, x2: -fx, y2: -fx, class: 'chalk' }, svg);
-      el('line', { x1: 0, y1: 0, x2: fx, y2: -fx, class: 'chalk' }, svg);
-      el('path', { d: `M${-fx},${-fx} A${F},${F} 0 0 1 ${fx},${-fx}`, class: 'fence' }, svg);
+      const lf = outer[0], rf = outer[outer.length - 1];
+      el('line', { x1: 0, y1: 0, x2: lf.x, y2: -lf.y, class: 'chalk' }, svg);
+      el('line', { x1: 0, y1: 0, x2: rf.x, y2: -rf.y, class: 'chalk' }, svg);
+      el('path', { d: 'M' + outer.map(P).join(' L'), class: 'fence' }, svg);
+      // Distances on the wall, the way a real park shows them: left-field line, center, right-field line.
+      const fs = Math.max(7, 7.5 * F / 200);
+      for (const a of [87, 45, 3]) {
+        const r = g.fenceDir(a) - track / 2;
+        const t = (a + 45) * Math.PI / 180;
+        const x = Math.cos(t) * r, y = Math.sin(t) * r;
+        const lbl = el('text', { x, y: -y, class: 'wall-dist', 'font-size': fs, transform: `rotate(${-(a - 45)} ${x} ${-y})` }, svg);
+        lbl.textContent = Math.round(g.fenceDir(a === 87 ? 90 : a === 3 ? 0 : 45));
+      }
       // Backstop.
       const bs = g.backstop;
       el('path', { d: `M${-38 * k},${6 * k} Q0,${-bs * 1.35} ${38 * k},${6 * k}`, class: 'backstop' }, svg);

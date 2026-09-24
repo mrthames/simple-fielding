@@ -703,3 +703,6 @@ body.projector .field-key { font-size: 15px; max-width: none; }
   .play-title .pt-sit { display: block; margin-top: 2px; font-size: .78em; font-weight: 600; opacity: .85; }
   .field-wrap.has-next .play-title { max-width: calc(100% - 132px); }
 }
+
+/* Fence distances painted on the warning track. */
+.wall-dist { fill: #fff; font-family: var(--font); font-weight: 800; text-anchor: middle; dominant-baseline: central; opacity: .9; pointer-events: none; paint-order: stroke; stroke: rgba(0, 0, 0, .25); stroke-width: .6px; }

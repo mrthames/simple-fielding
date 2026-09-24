@@ -57,14 +57,50 @@
   const BASE_NAMES = { home: 'home', first: '1st', second: '2nd', third: '3rd' };
   const BASE_ORDER = ['home', 'first', 'second', 'third', 'home'];
 
+  /*
+   * The outfield fence. A league (or a ballpark) gives either one distance, for a round fence, or a profile:
+   * points of { a, ft }, where `a` is the angle in degrees from the 1st-base line (0) through straightaway
+   * center (45) to the 3rd-base line (90). Distances between the points are interpolated smoothly.
+   */
+  function fenceProfile(L) {
+    if (L.fences && L.fences.length) return L.fences.slice().sort((p, q) => p.a - q.a);
+    return [{ a: 0, ft: L.fence }, { a: 90, ft: L.fence }];
+  }
+  function angleOf(p) {
+    return Math.atan2(p.y, p.x) * 180 / Math.PI - 45;
+  }
+  function fenceAtAngle(profile, a) {
+    const A = Math.max(0, Math.min(90, a));
+    if (A <= profile[0].a) return profile[0].ft;
+    for (let i = 1; i < profile.length; i++) {
+      const p = profile[i - 1], q = profile[i];
+      if (A <= q.a) {
+        // Cosine easing: walls curve between the published distances instead of kinking at each one.
+        const t = (A - p.a) / (q.a - p.a || 1);
+        const e = (1 - Math.cos(t * Math.PI)) / 2;
+        return p.ft + (q.ft - p.ft) * e;
+      }
+    }
+    return profile[profile.length - 1].ft;
+  }
+
   function geometry(leagueKey) {
     const L = LEAGUES[leagueKey] || LEAGUES.littleLeague;
+    const profile = fenceProfile(L);
+    const fenceAt = (p) => fenceAtAngle(profile, angleOf(p));
+    const fenceDir = (a) => fenceAtAngle(profile, a);
     const b = L.base;
     const s = b / Math.SQRT2;
     const k = b / 60;
-    const F = L.fence;
+    // The distance to straightaway center: what depths and scale are measured against.
+    const F = fenceDir(45);
+    const Fmax = Math.max(...profile.map((p) => p.ft));
     const softball = L.sport === 'softball';
     // A point `along` feet from home up a baseline, `inside` feet into fair territory.
+    const polar = (a, r) => {
+      const t = (a + 45) * Math.PI / 180;
+      return { x: Math.cos(t) * r, y: Math.sin(t) * r };
+    };
     const onLine = (sign, along, inside) => ({ x: sign * (along - inside) / Math.SQRT2, y: (along + inside) / Math.SQRT2 });
     // Outfielders play shallower in softball: about two thirds of the way to the fence, not 85%.
     const of = softball ? 0.8 : 1;
@@ -84,6 +120,10 @@
       bases,
       mound: { x: 0, y: L.mound },
       fence: F,
+      fenceMax: Fmax,
+      fenceAt,
+      fenceDir,
+      fenceProfile: profile,
       // The dirt ends a little behind the base paths; anything past this is outfield grass.
       infieldEdge: 2 * s + 25 * k,
       grassRadius: L.mound + 38 * k,
@@ -97,9 +137,9 @@
         '2B': { x: 22 * k, y: 2 * s - 5 * k },
         SS: { x: -22 * k, y: 2 * s - 5 * k },
         '3B': softball ? onLine(-1, 54 * k, 6 * k) : { x: -s + 2 * k, y: s + 14 * k },
-        LF: { x: -0.45 * F * of, y: 0.72 * F * of },
-        CF: { x: 0, y: 0.85 * F * of },
-        RF: { x: 0.45 * F * of, y: 0.72 * F * of },
+        LF: polar(77, 0.849 * fenceDir(77) * of),
+        CF: polar(45, 0.85 * F * of),
+        RF: polar(13, 0.849 * fenceDir(13) * of),
       },
       onLine,
     };
@@ -136,7 +176,7 @@
     return p.y >= 0 && Math.abs(p.x) <= p.y;
   }
 
-  const api = { LEAGUES, POSITIONS, NAMES, PLAYERS, BASE_NAMES, BASE_ORDER, geometry, readyPositions, isFair };
+  const api = { LEAGUES, POSITIONS, NAMES, PLAYERS, BASE_NAMES, BASE_ORDER, geometry, readyPositions, isFair, angleOf };
 
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.Field = api;

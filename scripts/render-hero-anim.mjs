@@ -136,6 +136,8 @@ const style = [
   `${R}{${vars}}`,
   `${R} .chalk{stroke:var(--chalk);stroke-width:.9}`,
   `${R} .fence{fill:none;stroke:#1f3b2a;stroke-width:3}`,
+  `${R} .wall-dist{fill:#fff;font-family:${FONT};font-weight:800;text-anchor:middle;dominant-baseline:central;opacity:.9}`,
+  `${R} .ball-target{fill:none;stroke:#fff;stroke-width:.8;stroke-dasharray:2 1.6}`,
   `${R} .backstop{fill:none;stroke:#2a3b4d;stroke-width:2}`,
   `${R} .box{fill:none;stroke:var(--chalk);stroke-width:.5;opacity:.8}`,
   `${R} .bag{fill:#fff}`,

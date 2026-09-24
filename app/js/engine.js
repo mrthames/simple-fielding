@@ -63,7 +63,7 @@
     const side = { x: -out.y, y: out.x };                    // perpendicular
     const s = ((from.x - fieldPoint.x) * side.x + (from.y - fieldPoint.y) * side.y) >= 0 ? 1 : -1;
     let p = { x: fieldPoint.x + out.x * depth + side.x * s * spread, y: fieldPoint.y + out.y * depth + side.y * s * spread };
-    const max = geo.fence - 8;
+    const max = geo.fenceAt(p) - 8;
     if (Math.hypot(p.x, p.y) > max) {
       // No room behind: stand off to the side instead, still a step deeper than the ball if possible.
       p = { x: fieldPoint.x + side.x * s * 26, y: fieldPoint.y + side.y * s * 26 };
@@ -74,7 +74,7 @@
   // Keep a spot inside the fence and in front of the backstop.
   function inPark(geo, p) {
     const r = Math.hypot(p.x, p.y);
-    const max = geo.fence - 6;
+    const max = geo.fenceAt(p) - 6;
     if (r > max) p = { x: p.x * max / r, y: p.y * max / r };
     return { x: p.x, y: Math.max(p.y, geo.backstop * 0.7) };
   }
@@ -188,7 +188,7 @@
     const fair = Field.isFair(at);
     let kind = event.kind;
     if (kind === 'bunt' && d > 55) kind = 'ground';
-    if (d > geo.fence && fair && kind !== 'ground') return { type: 'homeRun', at, d, fair, kind };
+    if (d > geo.fenceAt(at) && fair && kind !== 'ground') return { type: 'homeRun', at, d, fair, kind };
     if (!fair) {
       if (kind === 'ground' || kind === 'bunt') return { type: 'foulGround', at, d, fair, kind };
       return { type: 'foulFly', at, d, fair, kind };
@@ -217,10 +217,11 @@
   // How many bases an uncaught ball to the outfield is worth.
   function hitBases(geo, c) {
     const { at, d, kind } = c;
+    const fence = geo.fenceAt(at);
     const corner = Math.abs(at.x) > 0.8 * at.y;
-    if (kind === 'ground') return (corner && d > 0.8 * geo.fence) ? 2 : 1;
-    if (d < 0.8 * geo.fence) return 1;
-    if (d < 0.93 * geo.fence) return 2;
+    if (kind === 'ground') return (corner && d > 0.8 * fence) ? 2 : 1;
+    if (d < 0.8 * fence) return 1;
+    if (d < 0.93 * fence) return 2;
     return 3;
   }
 
@@ -262,9 +263,9 @@
 
   function planBattedBallAt(plan, geo, situation, event) {
     const ready = plan.ready;
-    if ((event.kind === 'ground' || event.kind === 'bunt') && Field.isFair(event.at) && dist(event.at, geo.bases.home) > geo.fence - 6) {
+    if ((event.kind === 'ground' || event.kind === 'bunt') && Field.isFair(event.at) && dist(event.at, geo.bases.home) > geo.fenceAt(event.at) - 6) {
       // A ground ball can't leave the park: it rolls to the fence.
-      event = Object.assign({}, event, { kind: 'ground', at: along(geo.bases.home, event.at, geo.fence - 8), result: event.result || 'double' });
+      event = Object.assign({}, event, { kind: 'ground', at: along(geo.bases.home, event.at, geo.fenceAt(event.at) - 8), result: event.result || 'double' });
     }
     const c = classify(geo, ready, event);
     const run = situation.runners;
@@ -455,7 +456,7 @@
     let fieldPoint = at;
     if (bases >= 2) {
       const roll = along(at, { x: at.x * 3, y: at.y * 3 }, 25);
-      if (dist(roll, geo.bases.home) > geo.fence - 6) fieldPoint = along(geo.bases.home, at, geo.fence - 6);
+      if (dist(roll, geo.bases.home) > geo.fenceAt(roll) - 6) fieldPoint = along(geo.bases.home, at, geo.fenceAt(at) - 6);
       else fieldPoint = roll;
     }
     plan.ball.fieldPoint = round(fieldPoint);
@@ -539,7 +540,7 @@
 
     // Tag-ups: after the catch, the runner on 3rd tries to score on a deep fly; runner on 2nd tries for 3rd.
     let target = 'second';
-    const deep = dist(at, geo.bases.home) > 0.72 * geo.fence;
+    const deep = dist(at, geo.bases.home) > 0.72 * geo.fenceAt(at);
     if (run.third && deep) {
       target = 'home';
       r.push({ id: 'third', from: 'third', to: 'home', tagUp: true });
@@ -573,13 +574,13 @@
     plan.title = 'Over the fence!';
     plan.summary = 'Home run. Nobody can make a play — but outfielders always go to the fence in case it stays in.';
     plan.fielder = F;
-    const fencePt = along(geo.bases.home, plan.ball.at, geo.fence - 3);
+    const fencePt = along(geo.bases.home, plan.ball.at, geo.fenceAt(plan.ball.at) - 3);
     assign(plan, F, 'field', fencePt, 'Run to the fence — play it until you know it is gone.', { delay: 0.05 });
     const r = [{ id: 'batter', from: 'home', to: 'home' }];
     for (const base of ['first', 'second', 'third']) if (situation.runners[base]) r.push({ id: base, from: base, to: 'home' });
     plan.runners = r;
     plan.homeRun = true;
-    plan.ball.fieldPoint = round(along(geo.bases.home, plan.ball.at, geo.fence + 15));
+    plan.ball.fieldPoint = round(along(geo.bases.home, plan.ball.at, geo.fenceAt(plan.ball.at) + 15));
     coverAllBases(plan);
     fillHolds(plan);
     return plan;
@@ -958,7 +959,7 @@
     const at = plan.ball.at;
     const dHome = dist(at, b.home);
     // Out of play: over the fence or back past the backstop. Nobody catches that — it's just a foul ball.
-    if (dHome > geo.fence - 3 || at.y < geo.backstop) {
+    if (dHome > geo.fenceAt(at) - 3 || at.y < geo.backstop) {
       plan.ball.fieldPoint = round(inPark(geo, at));
       return planFoulGround(plan, 'Out of play — a foul ball. Nobody can catch it, so runners go back and everybody resets.');
     }
