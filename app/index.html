@@ -86,6 +86,23 @@
       </button>
       <button class="text-btn" id="btn-reset" type="button">Reset</button>
     </div>
+    <div class="draw-bar" id="draw-bar" hidden role="toolbar" aria-label="Draw the play, step by step">
+      <div class="db-steps">
+        <button type="button" class="icon-btn" id="db-prev" aria-label="Previous step">‹</button>
+        <span class="db-label" id="db-label">Start</span>
+        <button type="button" class="icon-btn" id="db-next" aria-label="Next step">›</button>
+        <button type="button" class="text-btn" id="db-add">+ Step</button>
+        <button type="button" class="text-btn danger" id="db-del">Delete step</button>
+      </div>
+      <div class="db-step-opts" id="db-opts">
+        <label>Takes <select id="db-dur">
+          <option value="0.5">½ s</option><option value="1">1 s</option><option value="1.5">1½ s</option><option value="2">2 s</option><option value="3">3 s</option>
+        </select></label>
+        <input type="text" id="db-cap" maxlength="40" placeholder="Caption, e.g. Error! or Should cover 2nd" class="text-input">
+      </div>
+      <p class="fine db-tip" id="db-tip">Move everyone to where they are at this moment: fielders, runners and the ball. Then add the next step.</p>
+      <button type="button" class="bb-done db-finish" id="db-finish">Finish ▶</button>
+    </div>
     <div class="board-bar" id="board-bar" hidden role="toolbar" aria-label="Whiteboard tools">
         <div class="bb-group" role="group" aria-label="Tool">
           <button type="button" data-tool="move" class="on" title="Move players, runners and the ball (M)">
@@ -173,6 +190,7 @@
         <button type="button" data-what="pickoff">Pickoff</button>
         <button type="button" data-what="hit">Ball in play</button>
       </div>
+      <button type="button" class="text-btn draw-own" id="build-draw">✎ Draw what happened, step by step</button>
       <div class="build-sub" id="build-pitch">
         <div class="chips small" id="build-result">
           <button type="button" data-res="caught">Catcher catches it</button>
@@ -241,6 +259,9 @@
       <div class="result-actions">
         <button type="button" class="text-btn small" id="btn-save">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z"/></svg><span>Save</span>
+        </button>
+        <button type="button" class="text-btn small" id="btn-edit" title="Change this play step by step">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20l4-1 11-11-3-3L5 16l-1 4z"/></svg><span>Edit</span>
         </button>
         <button type="button" class="text-btn small" id="btn-share">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V3M8 7l4-4 4 4M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg><span>Share</span>
@@ -385,7 +406,8 @@
     <input type="text" id="save-name" maxlength="80" class="text-input" placeholder="e.g. Tuesday — cutoff to 3rd">
     <p class="fine">Saved on this device, under My plays in the play list. Share it or export your plays to keep a copy: clearing the browser's data removes what's saved here.</p>
     <div class="report-actions">
-      <button type="submit" class="primary">Save</button>
+      <button type="button" class="text-btn" id="save-new" hidden>Save as a new play</button>
+      <button type="submit" class="primary" id="save-go">Save</button>
     </div>
   </form>
 </dialog>

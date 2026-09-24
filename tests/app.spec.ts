@@ -504,3 +504,58 @@ test('build a play: drag a fielder to a new spot; it is saved into a shared link
   const d = await page.evaluate((c) => (window as any).Share.decode(c), code);
   expect(d.situation.start.SS.y).toBeCloseTo(start.y, 0);
 });
+
+test('draw what happened: steps with a moved fielder and a caption play back, save, and copy', async ({ page }) => {
+  await page.locator('#panel-mode [data-pm="build"]').click();
+  await page.locator('#mini-diamond [data-base="first"]').click();
+  await page.locator('#build-draw').click();
+  await expect(page.locator('#draw-bar')).toBeVisible();
+  await expect(page.locator('#db-label')).toHaveText('Start');
+  await page.locator('#db-add').click();
+  await expect(page.locator('#db-label')).toHaveText('Step 1 of 1');
+  // Move the shortstop in this step.
+  const toScreen = (x: number, y: number) => page.evaluate(([x, y]) => {
+    const svg = document.getElementById('field') as unknown as SVGSVGElement;
+    const p = svg.createSVGPoint(); p.x = x; p.y = -y; const q = p.matrixTransform(svg.getScreenCTM()!); return { x: q.x, y: q.y };
+  }, [x, y]);
+  const ss = await page.evaluate(() => (window as any).SimpleFielding.state && document.querySelector('.player[data-pos="SS"]')!.getBoundingClientRect());
+  await page.mouse.move(ss.x + ss.width / 2, ss.y + ss.height / 2);
+  await page.mouse.down();
+  const to = await toScreen(-40, 110);
+  await page.mouse.move(to.x, to.y, { steps: 8 });
+  await page.mouse.up();
+  await page.locator('#db-cap').fill('Error! It gets by');
+  await page.locator('#db-finish').click();
+  await expect(page.locator('#draw-bar')).toBeHidden();
+  const plan = await page.evaluate(() => { const p = (window as any).SimpleFielding.state.plan; return { drawn: p.drawn, steps: (window as any).SimpleFielding.state.lastEvent.steps.length, note: p.timeline.events[0] && p.timeline.events[0].text }; });
+  expect(plan).toEqual({ drawn: true, steps: 2, note: 'Error! It gets by' });
+  await expect(page.locator('#result-notes')).toContainText('Error! It gets by');
+  // Save it, then make a copy from My plays.
+  await page.locator('#btn-save').click();
+  await page.locator('#save-name').fill('What happened');
+  await page.locator('#save-go').click();
+  await page.locator('#panel-mode [data-pm="plays"]').click();
+  await page.locator('#quick-list [data-manage]').click();
+  await page.locator('#mp-list [data-act="copy"]').first().click();
+  await expect(page.locator('#mp-list .mp-row')).toHaveCount(2);
+  await expect(page.locator('#mp-list .mp-name').first()).toHaveText('What happened (copy)');
+  // Open the copy, change it, and save the changes: still two plays.
+  await page.locator('#mp-list .mp-name').first().click();
+  await page.locator('#btn-save').click();
+  await expect(page.locator('#save-new')).toBeVisible();
+  await page.locator('#save-name').fill('What we want');
+  await page.locator('#save-go').click();
+  const names = await page.evaluate(() => (window as any).Share.list(localStorage).map((p: any) => p.name));
+  expect(names.sort()).toEqual(['What happened', 'What we want']);
+});
+
+test('edit a play the app worked out: it becomes steps you can change', async ({ page }) => {
+  await page.locator('#quick-list .lib-item', { hasText: 'Single to left, runner on 1st' }).click();
+  await page.evaluate(() => (window as any).SimpleFielding.seekEnd());
+  await page.locator('#btn-edit').click();
+  await expect(page.locator('#draw-bar')).toBeVisible();
+  const n = await page.locator('#db-label').textContent();
+  expect(n).toMatch(/Step 1 of [2-9]/);
+  await page.locator('#db-finish').click();
+  expect(await page.evaluate(() => (window as any).SimpleFielding.state.plan.drawn)).toBe(true);
+});

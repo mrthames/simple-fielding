@@ -312,7 +312,7 @@
         const base = th.to === 'home' ? { x: 0, y: 0 } : plan.geo.bases[th.to];
         el('path', { d: `M${P(fp)} L${P(via)} L${P(base)}`, class: 'lineup' }, this.layers.paths);
       }
-      for (const r of plan.runners) this.makeRunner(r.id, r.id === 'batter' ? 'B' : 'R');
+      for (const r of plan.runners) this.makeRunner(r.id, r.label || (r.id === 'batter' ? 'B' : 'R'));
       for (const base of ['first', 'second', 'third']) this.baseEls[base].classList.remove('occupied');
       // Where the ball is going: shown before Play (and with paths hidden), so the question is clear.
       // A ball that got through also shows the roll, finer dotted, to where it ends up.
@@ -354,7 +354,7 @@
         if (ev.type === 'throw' && t >= ev.t && t <= ev.tEnd + 0.6) {
           el('line', { x1: ev.from.x, y1: -ev.from.y, x2: ev.to.x, y2: -ev.to.y, class: 'throw', 'marker-end': 'url(#arrow)' }, this.layers.throws);
         }
-        if ((ev.type === 'out' || ev.type === 'catch' || ev.type === 'hold' || ev.type === 'safe') && t >= ev.t && t <= ev.t + 1.8) {
+        if ((ev.type === 'out' || ev.type === 'catch' || ev.type === 'hold' || ev.type === 'safe' || ev.type === 'note') && t >= ev.t && t <= ev.t + 1.8) {
           const g = el('g', { class: 'caption ' + ev.type, transform: `translate(${ev.at.x},${-ev.at.y - 12 * this.us}) scale(${this.us})` }, this.layers.captions);
           const w = ev.text.length * 3.6 + 8;
           el('rect', { x: -w / 2, y: -6, width: w, height: 11, rx: 5.5 }, g);
@@ -465,6 +465,20 @@
       for (const base of ['first', 'second', 'third']) this.baseEls[base].classList.remove('occupied');
       this.placeBall(Object.assign({ h: 0 }, board.ball), false);
       this.drawInk(board.strokes);
+    }
+
+    // Drawing a play: faint trails from where everyone was in the previous step.
+    drawGhost(prev, cur) {
+      this.clearLayer('paths');
+      if (!prev) return;
+      const line = (a, b) => {
+        if (!a || !b || Math.hypot(a.x - b.x, a.y - b.y) < 1.5) return;
+        el('path', { d: `M${a.x},${-a.y} L${b.x},${-b.y}`, class: 'ghost' }, this.layers.paths);
+        el('circle', { cx: a.x, cy: -a.y, r: 2.2 * this.us, class: 'ghost-dot' }, this.layers.paths);
+      };
+      for (const pos of POSITIONS) line(prev.players[pos], cur.players[pos]);
+      for (const r of cur.runners) line((prev.runners.find((x) => x.id === r.id)), r);
+      line(prev.ball, cur.ball);
     }
 
     drawInk(strokes, live) {

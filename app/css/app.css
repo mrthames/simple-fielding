@@ -761,3 +761,33 @@ body.pm-build:not(.build-hit) #hit-card { display: none; }
 .ball-spot { fill: rgba(255, 255, 255, .2); stroke: #fff; stroke-width: calc(.8 * var(--u, 1)); stroke-dasharray: calc(2 * var(--u, 1)) calc(1.6 * var(--u, 1)); }
 /* While building a pitch play the hint sits at the top, out of the way of the plate. */
 .field-hint.top { top: 12px; bottom: auto; }
+.caption.note rect { fill: #2b4a7e; }
+
+/* ---------------------------------------------------------------- drawing a play, step by step */
+.draw-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 10px 16px; background: var(--panel); border-top: 1px solid var(--line); }
+.draw-bar[hidden] { display: none; }
+.db-steps { display: flex; align-items: center; gap: 6px; }
+.db-steps .icon-btn { font-size: 22px; font-weight: 800; }
+.db-label { min-width: 88px; text-align: center; font-weight: 800; }
+.db-step-opts { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 260px; }
+.db-step-opts label { display: flex; align-items: center; gap: 6px; font-weight: 700; font-size: 14px; white-space: nowrap; }
+.db-step-opts select { font: inherit; padding: 6px; border-radius: 8px; }
+.db-step-opts .text-input { flex: 1; min-width: 0; padding: 8px 10px; font-size: 15px; }
+.db-tip { flex-basis: 100%; margin: 0; }
+.db-finish { margin-left: auto; }
+.text-btn.danger { color: var(--red); }
+body.drawing .board-bar .bb-done { display: none; }
+.draw-own { display: block; margin: 10px 0 0; }
+.ghost { fill: none; stroke: #fff; stroke-width: calc(.8 * var(--u, 1)); stroke-dasharray: calc(1 * var(--u, 1)) calc(2 * var(--u, 1)); opacity: .7; }
+.ghost-dot { fill: rgba(255, 255, 255, .35); }
+#result.drawn .legend, #result.drawn h3, #result.drawn .jobs { display: none; }
+.db-steps .icon-btn { width: 40px; height: 40px; border: 0; border-radius: 10px; background: var(--chip); color: var(--ink); }
+.db-steps .icon-btn:disabled { opacity: .35; }
+.db-steps .text-btn { white-space: nowrap; }
+.db-finish { min-height: 44px; padding: 0 18px; border: 0; border-radius: 10px; background: var(--brand); color: #fff; font-weight: 800; font-size: 16px; }
+.db-finish:disabled { opacity: .45; }
+@media (max-width: 520px) {
+  .db-label { min-width: 0; font-size: 15px; }
+  .db-steps { flex-wrap: wrap; width: 100%; }
+  .db-step-opts { min-width: 0; flex-basis: 100%; }
+}

@@ -4,7 +4,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '0.11.0';
+  const VERSION = '0.12.0';
   const Field = window.Field;
   const { POSITIONS, NAMES, LEAGUES } = Field;
   const $ = (s) => document.querySelector(s);
@@ -173,6 +173,7 @@
     catch (e) { state.entry = window.PlayLog.entry(plan, situation(), ev, VERSION); }
     state.lastEvent = event;
     state.playName = (opts && opts.name) || null;
+    state.savedId = (opts && opts.savedId) || null;
     markQuick(-1);
     view.load(plan);
     renderResult(plan);
@@ -232,6 +233,7 @@
       li.textContent = n;
       notes.appendChild(li);
     }
+    $('#result').classList.toggle('drawn', !!plan.drawn);
     const jobs = $('#jobs');
     jobs.innerHTML = '';
     for (const j of plan.jobs) {
@@ -376,6 +378,9 @@
 
   function closeBoard() {
     if (!board.on) return;
+    if (drawing) { const d = drawing; drawing = null; document.body.classList.remove('drawing'); $('#draw-bar').hidden = true; board.on = false;
+      view.setBoardMode(false); document.body.classList.remove('board-on'); $('#board-bar').hidden = true; $('#btn-board').setAttribute('aria-pressed', 'false');
+      finishDrawing(d); return; }
     board.on = false;
     view.setBoardMode(false);
     board.ink = clone(board.state.strokes);
@@ -402,6 +407,7 @@
   }
 
   function commit() {
+    if (drawing) syncStep();
     board.undo.push(board.before);
     if (board.undo.length > 100) board.undo.shift();
     board.redo = [];
@@ -413,6 +419,7 @@
     board.redo.push(clone(board.state));
     board.state = board.undo.pop();
     view.showBoard(board.state);
+    if (drawing) syncStep();
     renderBoardBar();
   }
   function redoBoard() {
@@ -420,6 +427,7 @@
     board.undo.push(clone(board.state));
     board.state = board.redo.pop();
     view.showBoard(board.state);
+    if (drawing) syncStep();
     renderBoardBar();
   }
 
@@ -904,7 +912,7 @@
         btn.dataset.mine = p.id;
         btn.setAttribute('role', 'listitem');
         btn.innerHTML = `<span>${escapeHtml(p.name)}</span>${miniSit({ runners: d.situation.runners, outs: d.situation.outs })}`;
-        btn.addEventListener('click', () => openCode(p.code, p.name));
+        btn.addEventListener('click', () => openCode(p.code, p.name, p.id));
         list.appendChild(btn);
         shown++;
       }
@@ -1275,6 +1283,115 @@
   });
 
   // Open a play from a replay link (#replay=r1...) or turn tester mode on from a link (#tester or #tester=URL).
+  // ------------------------------------------------------------------------------------ drawing a play
+  // The whiteboard, with steps: each step is where everyone is at that moment. Playback moves between them.
+  let drawing = null;   // { steps: [{ dur, cap, players, runners, ball }], cur, name, savedId }
+  const strip = (st) => ({ dur: st.dur || 1, cap: st.cap || '', players: clone(st.players), runners: clone(st.runners), ball: clone(st.ball) });
+  function syncStep() {
+    if (!drawing) return;
+    const keep = drawing.steps[drawing.cur];
+    drawing.steps[drawing.cur] = Object.assign(strip(board.state), { dur: keep.dur, cap: keep.cap });
+    view.drawGhost(drawing.cur > 0 ? drawing.steps[drawing.cur - 1] : null, drawing.steps[drawing.cur]);
+  }
+  // Steps from a play the app worked out: the start, each catch and throw, and the end.
+  function stepsFromPlan(plan) {
+    const tl = plan.timeline;
+    const times = [0];
+    for (const e of tl.events) {
+      if (e.type === 'throw') times.push(e.t, e.tEnd); else if (e.type !== 'note') times.push(e.t);
+    }
+    times.push(Math.max(0, tl.duration - 1));
+    const uniq = [...new Set(times.map((t) => Math.round(t * 4) / 4))].sort((a, b) => a - b).filter((t, i, a) => i === 0 || t - a[i - 1] >= 0.5).slice(0, 10);
+    return uniq.map((t, i) => {
+      const players = {};
+      for (const pos of POSITIONS) { const p = window.Engine.sampleTrack(tl.tracks[pos], t, true); players[pos] = { x: p.x, y: p.y }; }
+      const runners = [];
+      for (const r of plan.runners) {
+        const keys = tl.tracks['runner:' + r.id];
+        if (!keys) continue;
+        const p = window.Engine.sampleTrack(keys, t, false);
+        if (p.o !== undefined && p.o < 0.5) continue;
+        runners.push({ id: r.id, label: r.label || (r.id === 'batter' ? 'B' : 'R'), x: p.x, y: p.y });
+      }
+      const b = window.Engine.sampleTrack(tl.tracks.ball, t, false);
+      const cap = (tl.events.find((e) => e.type !== 'throw' && Math.abs(e.t - t) < 0.3) || {}).text || '';
+      return { dur: i === 0 ? 1 : Math.max(0.5, Math.round((t - uniq[i - 1]) * 2) / 2), cap, players, runners, ball: { x: b.x, y: b.y } };
+    });
+  }
+  function startDrawing(from) {
+    stop();
+    let steps;
+    if (from === 'plan' && state.plan && state.plan.drawn && state.lastEvent && state.lastEvent.steps) steps = clone(state.lastEvent.steps);
+    else if (from === 'plan' && state.plan) steps = stepsFromPlan(state.plan);
+    else {
+      showReady();
+      const s0 = view.snapshot();
+      if (!s0.runners.find((r) => r.id === 'batter')) s0.runners.push({ id: 'batter', label: 'B', x: -3, y: -1 });
+      s0.runners.forEach((r, i) => { if (r.id !== 'batter') r.id = 'r' + (i + 1); });
+      steps = [Object.assign(strip(s0), { dur: 1, cap: '' })];
+    }
+    const name = from === 'plan' ? (state.playName || (state.plan && state.plan.title) || '') : '';
+    const savedId = from === 'plan' ? state.savedId : null;
+    const cur = from === 'plan' ? Math.min(1, steps.length - 1) : 0;
+    openBoard();
+    drawing = { steps, cur, name, savedId };
+    document.body.classList.add('drawing');
+    $('#draw-bar').hidden = false;
+    showStep(cur);
+  }
+  function showStep(i) {
+    drawing.cur = Math.max(0, Math.min(drawing.steps.length - 1, i));
+    const strokes = board.state ? board.state.strokes : [];
+    board.state = Object.assign(clone(drawing.steps[drawing.cur]), { strokes });
+    board.undo = []; board.redo = [];
+    view.showBoard(board.state);
+    view.drawGhost(drawing.cur > 0 ? drawing.steps[drawing.cur - 1] : null, drawing.steps[drawing.cur]);
+    renderDrawBar();
+    renderBoardBar();
+  }
+  function renderDrawBar() {
+    const n = drawing.steps.length, i = drawing.cur;
+    $('#db-label').textContent = i === 0 ? 'Start' : `Step ${i} of ${n - 1}`;
+    $('#db-prev').disabled = i === 0;
+    $('#db-next').disabled = i >= n - 1;
+    $('#db-del').disabled = i === 0;
+    $('#db-opts').style.visibility = i === 0 ? 'hidden' : '';
+    $('#db-dur').value = String(drawing.steps[i].dur || 1);
+    $('#db-cap').value = drawing.steps[i].cap || '';
+    $('#db-tip').textContent = i === 0
+      ? 'Where everyone starts. Move anyone who should start somewhere else, then tap + Step.'
+      : 'Move everyone to where they are at this moment: fielders, runners and the ball. The faint trails show where they were a step ago.';
+    $('#db-finish').disabled = n < 2;
+  }
+  function finishDrawing(d) {
+    const steps = d.steps.map((st) => strip(st));
+    const ink = board.state ? clone(board.state.strokes) : [];
+    const name = d.name && !/^A play you drew$/.test(d.name) ? d.name : '';
+    runEvent({ kind: 'drawn', steps, title: name || undefined }, { name, savedId: d.savedId });
+    if (name) setTitle(name);
+    board.ink = ink;
+    view.drawInk(ink);
+    scrollToResultOnPhone();
+  }
+  $('#db-prev').addEventListener('click', () => { syncStep(); showStep(drawing.cur - 1); });
+  $('#db-next').addEventListener('click', () => { syncStep(); showStep(drawing.cur + 1); });
+  $('#db-add').addEventListener('click', () => {
+    syncStep();
+    const next = Object.assign(strip(drawing.steps[drawing.cur]), { dur: 1, cap: '' });
+    drawing.steps.splice(drawing.cur + 1, 0, next);
+    showStep(drawing.cur + 1);
+  });
+  $('#db-del').addEventListener('click', () => {
+    if (drawing.cur === 0) return;
+    drawing.steps.splice(drawing.cur, 1);
+    showStep(drawing.cur - 1);
+  });
+  $('#db-dur').addEventListener('change', (e) => { drawing.steps[drawing.cur].dur = Number(e.target.value); });
+  $('#db-cap').addEventListener('input', (e) => { drawing.steps[drawing.cur].cap = e.target.value; });
+  $('#db-finish').addEventListener('click', () => { syncStep(); closeBoard(); });
+  $('#build-draw').addEventListener('click', () => startDrawing('scratch'));
+  $('#btn-edit').addEventListener('click', () => startDrawing('plan'));
+
   // ------------------------------------------------------------------------------------ the scenario builder
   const baseName = (x) => ({ first: '1st', second: '2nd', third: '3rd', home: 'home' })[x];
   const DEFAULT_BALL_TO = () => ({ x: 12, y: Math.max(geo.backstop + 4, -40) });
@@ -1427,7 +1544,7 @@
     return location.href.split('#')[0] + '#p=' + code;
   }
   // Open a play from a code: set the field and the situation, then run it.
-  function openCode(code, nameOverride) {
+  function openCode(code, nameOverride, savedId) {
     const d = window.Share.decode(code);
     if (!d) { toast("That link doesn't hold a play."); return false; }
     const s = d.situation;
@@ -1458,7 +1575,8 @@
     }
     renderSituation();
     const name = nameOverride || d.name || '';
-    runEvent(d.event, { name });
+    if (d.event.kind === 'drawn' && name) d.event.title = name;
+    runEvent(d.event, { name, savedId });
     if (name) { setTitle(name); state.playName = name; }
     scrollToResultOnPhone();
     return true;
@@ -1486,6 +1604,9 @@
   const saveSheet = $('#save-sheet');
   $('#btn-save').addEventListener('click', () => {
     if (!state.lastEvent) return;
+    const editing = state.savedId && window.Share.list(localStorage).find((p) => p.id === state.savedId);
+    $('#save-new').hidden = !editing;
+    $('#save-go').textContent = editing ? 'Save changes' : 'Save';
     $('#save-name').value = state.playName || (state.plan && state.plan.title) || '';
     openSheet(saveSheet);
     setTimeout(() => { $('#save-name').focus(); $('#save-name').select(); }, 50);
@@ -1495,7 +1616,10 @@
     const name = $('#save-name').value.trim() || (state.plan && state.plan.title) || 'My play';
     state.playName = name;
     const code = shareCode();
-    const saved = code && window.Share.add(localStorage, name, code);
+    const editing = state.savedId && !saveAsNew;
+    saveAsNew = false;
+    const saved = code && (editing ? window.Share.update(localStorage, state.savedId, name, code) : window.Share.add(localStorage, name, code));
+    if (saved) state.savedId = saved.id;
     closeSheet(saveSheet);
     if (!saved) { toast("Couldn't save on this device — use Share to keep it as a link."); return; }
     setTitle(name);
@@ -1504,12 +1628,15 @@
     // Ask the browser to keep this site's storage (Chrome usually agrees; Safari keeps it for Home Screen apps).
     try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (err) { /* not offered */ }
   });
+  let saveAsNew = false;
+  $('#save-new').addEventListener('click', () => { saveAsNew = true; $('#save-form').requestSubmit(); });
   saveSheet.addEventListener('click', (e) => { if (e.target === saveSheet || e.target.closest('[data-close]')) closeSheet(saveSheet); });
 
   const mySheet = $('#myplays');
   const ICON = {
     share: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V3M8 7l4-4 4 4M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg>',
     edit: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20l4-1 11-11-3-3L5 16l-1 4z"/></svg>',
+    copy: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></svg>',
     del: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg>',
   };
   function renderMyPlays() {
@@ -1522,10 +1649,16 @@
       row.className = 'mp-row';
       row.innerHTML = `<button type="button" class="mp-name"></button>
         <button type="button" class="icon-btn" data-act="share" aria-label="Share">${ICON.share}</button>
+        <button type="button" class="icon-btn" data-act="copy" aria-label="Make a copy">${ICON.copy}</button>
         <button type="button" class="icon-btn" data-act="edit" aria-label="Rename">${ICON.edit}</button>
         <button type="button" class="icon-btn danger" data-act="del" aria-label="Delete">${ICON.del}</button>`;
       row.querySelector('.mp-name').textContent = p.name;
-      row.querySelector('.mp-name').addEventListener('click', () => { closeSheet(mySheet); openCode(p.code, p.name); });
+      row.querySelector('.mp-name').addEventListener('click', () => { closeSheet(mySheet); openCode(p.code, p.name, p.id); });
+      row.querySelector('[data-act="copy"]').addEventListener('click', () => {
+        const c = window.Share.copy(localStorage, p.id);
+        renderMyPlays(); buildQuick();
+        $('#mp-status').textContent = c ? `Made a copy: "${c.name}". Open it to change it.` : "Couldn't make a copy.";
+      });
       row.querySelector('[data-act="share"]').addEventListener('click', async () => {
         const url = shareUrl(window.Share.encode(window.Share.decode(p.code).situation, window.Share.decode(p.code).event, p.name));
         if (navigator.share && matchMedia('(pointer: coarse)').matches) { try { await navigator.share({ title: `Simple Fielding — ${p.name}`, url }); return; } catch (e) { if (e && e.name === 'AbortError') return; } }

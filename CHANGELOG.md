@@ -2,6 +2,20 @@
 
 ---
 
+## [2026-09-25] v0.12.0 — Draw what happened, and make a copy
+
+- **Draw what happened, step by step** (Build a play → ✎). This works like the whiteboard, but records steps.
+  - Move fielders, runners and the ball to where they were at each moment, and tap **+ Step** for the next one.
+  - Each step has a length (½ to 3 s) and an optional caption. "Out" and "Safe" captions show in their colors; anything else shows as a note, like "Error!" or "Should cover 2nd".
+  - Faint trails show where everyone was a step ago. **Finish ▶** plays it back smoothly.
+  - The app doesn't judge a drawn play: it shows exactly what you drew, mistakes and all. You can still draw on top with the pen and arrows.
+- **Edit** any play the app worked out: it becomes steps you can change, to show what you'd rather see.
+- **Make a copy** of a saved play in My plays, to start a new one from it.
+- **Saving a play you opened from My plays** offers **Save changes** or **Save as a new play**. Keep "What happened" and "What we want" side by side.
+- Drawn plays fit in share links too (a few steps come to about 230 characters). The pen drawing stays on the device.
+
+---
+
 ## [2026-09-25] v0.11.0 — Build a play: leads, steals, pickoffs and passed balls
 
 - **Plays / Build a play** switch at the top of the controls. Build hides the play list and gives you the pieces:

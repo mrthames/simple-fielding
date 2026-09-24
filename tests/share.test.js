@@ -57,3 +57,21 @@ test('My plays: save, rename, delete, and a backup that round-trips without dupl
   assert.equal(Share.list(st).length, 1);
   assert.throws(() => Share.importData(st2, { hello: 1 }));
 });
+
+test('drawn plays: steps, captions and runners leaving the field survive a link', () => {
+  const Field = require('../app/js/field.js');
+  const g = Field.geometry('littleLeague');
+  const pl = Field.readyPositions(g, { runners: {} });
+  const s0 = { dur: 1, players: pl, runners: [{ id: 'batter', label: 'B', x: -3, y: -1 }, { id: 'r1', label: 'R', x: 42, y: 42 }], ball: { x: 0, y: 1.5 } };
+  const s1 = { dur: 1.5, cap: 'Error!', players: Object.assign({}, pl, { SS: { x: -20, y: 80 } }), runners: [{ id: 'batter', label: 'B', x: 30, y: 30 }, { id: 'r1', label: 'R', x: 0, y: 84 }], ball: { x: -60, y: 140 } };
+  const s2 = { dur: 2, cap: 'Out at 3rd', players: s1.players, runners: [{ id: 'batter', label: 'B', x: 42, y: 42 }], ball: { x: -42, y: 43 } };
+  const code = Share.encode({ league: 'littleLeague', runners: { first: true }, outs: 0 }, { kind: 'drawn', steps: [s0, s1, s2] }, 'Tuesday');
+  assert.ok(code.length < 300, String(code.length));
+  const d = Share.decode(code);
+  assert.equal(d.event.steps.length, 3);
+  assert.equal(d.event.steps[1].cap, 'Error!');
+  assert.deepEqual(d.event.steps[1].players.SS, { x: -20, y: 80 });
+  assert.equal(d.event.steps[2].runners.length, 1, 'the runner who was out is gone');
+  const p = Engine.planPlay(d.situation, d.event);
+  assert.ok(p.drawn && p.timeline.events.some((e) => e.type === 'out'));
+});

@@ -1954,11 +1954,72 @@
   // ---------------------------------------------------------------------------------------------
   // Public entry point
   // ---------------------------------------------------------------------------------------------
+
+  /*
+   * A play the coach drew, step by step: what happened (mistakes and all), or what they want. The engine judges
+   * nothing here; it only turns the steps into a smooth timeline.
+   *
+   * event = { kind: 'drawn', steps: [{ dur, cap, players: {P: {x, y}, ...}, runners: [{ id, label, x, y }], ball: {x, y} }] }
+   * A runner missing from a step has left the field (out, or scored).
+   */
+  function planDrawn(geo, situation, event) {
+    const steps = (event.steps || []).filter((st) => st && st.players);
+    const plan = newPlan(geo, situation, steps.length ? steps[0].players : Field.readyPositions(geo, situation));
+    plan.drawn = true;
+    plan.title = event.title || 'A play you drew';
+    plan.summary = steps.length > 1 ? `Drawn by the coach, in ${steps.length - 1} step${steps.length === 2 ? '' : 's'}.` : 'Drawn by the coach.';
+    plan.ball = { kind: 'drawn' };
+    for (const pos of POSITIONS) plan.assignments[pos] = { pos, role: 'hold', to: steps.length ? steps[steps.length - 1].players[pos] : plan.ready[pos], job: '', delay: 0 };
+    const tracks = {};
+    const events = [];
+    const ids = [];
+    for (const st of steps) for (const r of st.runners || []) if (!ids.includes(r.id)) ids.push(r.id);
+    plan.runners = ids.map((id) => ({ id, from: 'home', to: 'home', label: (steps.find((st) => (st.runners || []).find((r) => r.id === id)).runners.find((r) => r.id === id).label) || 'R' }));
+    let t = 0;
+    const times = steps.map((st, i) => { if (i > 0) t += clamp(Number(st.dur) || 1, 0.2, 6); return t; });
+    for (const pos of POSITIONS) tracks[pos] = steps.map((st, i) => ({ t: times[i], x: st.players[pos].x, y: st.players[pos].y }));
+    for (const id of ids) {
+      const keys = [];
+      let last = null;
+      steps.forEach((st, i) => {
+        const r = (st.runners || []).find((x) => x.id === id);
+        if (r) { keys.push({ t: times[i], x: r.x, y: r.y, o: 1 }); last = r; }
+        else if (last) { keys.push({ t: times[i], x: last.x, y: last.y, o: 0 }); }
+        else keys.push({ t: times[i], x: 0, y: 0, o: 0 });
+      });
+      tracks['runner:' + id] = keys;
+    }
+    // The ball: straight between steps, with an arc when it travels far (a throw or a hit in the air).
+    const ball = [];
+    steps.forEach((st, i) => {
+      const b = st.ball || { x: 0, y: 1.5 };
+      if (i > 0) {
+        const a = steps[i - 1].ball || { x: 0, y: 1.5 };
+        const d = dist(a, b);
+        if (d > 25) ball.push({ t: (times[i - 1] + times[i]) / 2, x: (a.x + b.x) / 2, y: (a.y + b.y) / 2, h: Math.min(40, 3 + d / 10) });
+      }
+      ball.push({ t: times[i], x: b.x, y: b.y, h: i === 0 ? 1 : 3 });
+    });
+    tracks.ball = ball;
+    // Captions: "Out!" and "Safe!" in their colors; anything else as a note.
+    steps.forEach((st, i) => {
+      const cap = (st.cap || '').trim();
+      if (!cap) return;
+      const type = /\bout\b/i.test(cap) ? 'out' : /\bsafe\b/i.test(cap) ? 'safe' : /\b(caught|catch)\b/i.test(cap) ? 'catch' : 'note';
+      events.push({ t: times[i], type, text: cap.slice(0, 40), at: st.ball || { x: 0, y: 1.5 } });
+      plan.notes.push(`Step ${i}: ${cap}`);
+    });
+    plan.timeline = { tracks, events, duration: t + 1.2, contact: 0 };
+    plan.jobs = [];
+    return plan;
+  }
+
   function planPlay(situation, event) {
     const s = Object.assign({ runners: {}, outs: 0, batter: 'R', league: 'littleLeague' }, situation);
     s.runners = Object.assign({ first: false, second: false, third: false }, s.runners);
     const geo = Field.geometry(s.league, s.park);
     if (s.leadoffs === undefined) s.leadoffs = geo.league.leadoffs;
+    if (event.kind === 'drawn') return planDrawn(geo, s, event);
     const plan = event.at ? planBattedBall(geo, s, event) : planSituationPlay(geo, s, event);
     finish(plan);
     plan.timeline = buildTimeline(plan);

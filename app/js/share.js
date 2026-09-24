@@ -14,7 +14,7 @@
   'use strict';
 
   const LEAGUES = ['littleLeague', 'intermediate', 'softball', 'softball10', 'junior90', 'highSchool', 'college', 'pro'];
-  const KINDS = ['ground', 'line', 'fly', 'pop', 'bunt', 'steal2', 'steal3', 'firstThirdSteal', 'passedBall', 'primaryLead', 'secondaryLead', 'pitch'];
+  const KINDS = ['ground', 'line', 'fly', 'pop', 'bunt', 'steal2', 'steal3', 'firstThirdSteal', 'passedBall', 'primaryLead', 'secondaryLead', 'pitch', 'drawn'];
   const BASES = ['first', 'second', 'third'];
   const POS = ['P', 'C', '1B', '2B', 'SS', '3B', 'LF', 'CF', 'RF'];
   const RESULTS = [undefined, 'out', 'single', 'double', 'triple'];
@@ -41,6 +41,64 @@
   // Coordinates in half-feet, as signed 16-bit numbers.
   const put16 = (out, v) => { const n = Math.max(-32768, Math.min(32767, Math.round(v * 2))) & 0xffff; out.push(n >> 8, n & 0xff); };
   const get16 = (b, i) => { let n = (b[i] << 8) | b[i + 1]; if (n & 0x8000) n -= 0x10000; return n / 2; };
+
+  // A drawn play: a table of runners, then each step. The first step lists everyone; later steps list only who
+  // moved (or left the field). Actors: 0-8 fielders, 9 the ball, 10+ runners; +128 means "not on the field".
+  function packDrawn(out, event) {
+    const steps = (event.steps || []).slice(0, 30);
+    const ids = [];
+    for (const st of steps) for (const r of st.runners || []) if (!ids.find((x) => x.id === r.id)) ids.push({ id: r.id, label: r.label });
+    const runners = ids.slice(0, 20);
+    out.push(runners.length);
+    for (const r of runners) out.push(r.id === 'batter' ? 2 : r.label === 'B' ? 1 : 0);
+    out.push(steps.length);
+    let prev = null;
+    steps.forEach((st, si) => {
+      out.push(Math.max(0, Math.min(255, Math.round((Number(st.dur) || 1) * 10))));
+      const cap = st.cap ? utf8(String(st.cap).slice(0, 40)).slice(0, 60) : [];
+      out.push(cap.length); out.push(...cap);
+      const cur = {};
+      POS.forEach((p, j) => { cur[j] = st.players[p]; });
+      cur[9] = st.ball || { x: 0, y: 1.5 };
+      runners.forEach((r, j) => { cur[10 + j] = (st.runners || []).find((x) => x.id === r.id) || null; });
+      const entries = [];
+      for (const k of Object.keys(cur).map(Number)) {
+        const a = cur[k], pa = prev ? prev[k] : undefined;
+        if (!a) { if (si === 0 || pa) entries.push([k | 128]); continue; }
+        if (si === 0 || !pa || Math.hypot(a.x - pa.x, a.y - pa.y) > 0.4) entries.push([k, a.x, a.y]);
+      }
+      out.push(entries.length);
+      for (const e of entries) { out.push(e[0]); if (e.length > 1) { put16(out, e[1]); put16(out, e[2]); } }
+      prev = cur;
+    });
+  }
+  function unpackDrawn(b, i) {
+    const nr = b[i++];
+    const runners = [];
+    for (let j = 0; j < nr; j++) { const v = b[i++]; runners.push(v === 2 ? { id: 'batter', label: 'B' } : { id: 'r' + j, label: v === 1 ? 'B' : 'R' }); }
+    const ns = b[i++];
+    const steps = [];
+    let cur = {};
+    for (let si = 0; si < ns; si++) {
+      const dur = b[i++] / 10;
+      const cl = b[i++];
+      const cap = cl ? unutf8(b.slice(i, i + cl)) : '';
+      i += cl;
+      const n = b[i++];
+      cur = Object.assign({}, cur);
+      for (let e = 0; e < n; e++) {
+        const k = b[i++];
+        if (k & 128) { cur[k & 127] = null; continue; }
+        cur[k] = { x: get16(b, i), y: get16(b, i + 2) }; i += 4;
+      }
+      const players = {};
+      POS.forEach((p, j) => { players[p] = cur[j] ? { ...cur[j] } : { x: 0, y: 0 }; });
+      const st = { dur, cap, players, ball: cur[9] ? { ...cur[9] } : { x: 0, y: 1.5 }, runners: [] };
+      runners.forEach((r, j) => { if (cur[10 + j]) st.runners.push({ id: r.id, label: r.label, x: cur[10 + j].x, y: cur[10 + j].y }); });
+      steps.push(st);
+    }
+    return { steps, i };
+  }
 
   /* Pack a play. Returns the code for `#p=`, or null for something a link can't hold. */
   function encode(situation, event, name) {
@@ -71,6 +129,7 @@
       }
       if (event.result === 'passed') { const bt = event.ballTo || { x: 10, y: -20 }; put16(out, bt.x); put16(out, bt.y); }
     }
+    if (event.kind === 'drawn') packDrawn(out, event);
     if (moved.length) {
       out.push(moved.length);
       for (const p of moved) { out.push(POS.indexOf(p)); put16(out, s.start[p].x); put16(out, s.start[p].y); }
@@ -122,6 +181,7 @@
         }
         if (m & 8) { event.ballTo = { x: get16(b, i), y: get16(b, i + 2) }; i += 4; }
       }
+      if (kind === 'drawn') { const u = unpackDrawn(b, i); event.steps = u.steps; i = u.i; }
       if (f & 128) {
         const n = b[i++];
         situation.start = {};
@@ -159,6 +219,17 @@
     if (p) { p.name = String(name).slice(0, 80) || p.name; write(storage, plays); }
     return p;
   }
+  function update(storage, id, name, code) {
+    const plays = list(storage);
+    const p = plays.find((x) => x.id === id);
+    if (!p) return null;
+    p.name = String(name || p.name).slice(0, 80); p.code = code; p.saved = new Date().toISOString();
+    return write(storage, plays) ? p : null;
+  }
+  function copy(storage, id) {
+    const p = list(storage).find((x) => x.id === id);
+    return p ? add(storage, `${p.name} (copy)`, p.code) : null;
+  }
   function remove(storage, id) {
     write(storage, list(storage).filter((x) => x.id !== id));
   }
@@ -182,7 +253,7 @@
     return { added, team: data.team || null };
   }
 
-  const api = { encode, decode, list, add, rename, remove, exportData, importData, LEAGUES, KINDS };
+  const api = { encode, decode, list, add, update, copy, rename, remove, exportData, importData, LEAGUES, KINDS };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.Share = api;
 })(typeof window !== 'undefined' ? window : globalThis);
