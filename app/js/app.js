@@ -4,7 +4,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '0.25.1';
+  const VERSION = '0.26.0';
   const Field = window.Field;
   const BATTED = ['ground', 'line', 'fly', 'pop', 'bunt'];
   const { POSITIONS, NAMES, LEAGUES } = Field;
@@ -1367,8 +1367,23 @@
     else if (e.key === 'Escape') setSpotlight(null);
   });
 
+  // The level and field, named on the field's color key, so a play on screen says what it's played at.
+  const LEVEL_NAMES = {
+    littleLeague: 'Little League', intermediate: '50/70 baseball', junior90: '13U–14U baseball',
+    highSchool: 'High school baseball', college: 'College baseball', pro: 'MLB',
+    softball8: '8U softball', softball10: '10U softball', softball: '12U softball', softball14: '14U softball',
+    softballHS: 'High school softball', softballCollege: 'College softball', softballPro: 'Pro softball',
+  };
+  function renderLevel() {
+    const L = LEAGUES[state.league];
+    const park = state.park && Field.parksFor(state.league).find((p) => p.key === state.park);
+    const team = park && park.team === 'Little League World Series' ? 'LLWS' : park && park.team;
+    const where = park ? `${team} — ${park.park}` : `${L.base} ft bases`;
+    $('#fk-level').textContent = `${LEVEL_NAMES[state.league] || L.label} · ${where}`;
+  }
   function setGeometry() {
     geo = window.Field.geometry(state.league, state.park);
+    renderLevel();
     view.setGeometry(geo);
     view.setShowPaths(state.showPaths);
     view.setShowLooks(state.showLooks);

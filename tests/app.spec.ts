@@ -729,3 +729,11 @@ test('Reset clears the look cones along with the rest of the play', async ({ pag
   await page.locator('#btn-reset').click();
   await expect(page.locator('.layer-looks path')).toHaveCount(0);
 });
+
+test('the color key names the level and field', async ({ page }) => {
+  await expect(page.locator('#fk-level')).toHaveText('Little League · 60 ft bases');
+  await page.evaluate(() => { const s = document.getElementById('league') as HTMLSelectElement; s.value = 'pro'; s.dispatchEvent(new Event('change')); });
+  await expect(page.locator('#fk-level')).toHaveText('MLB · 90 ft bases');
+  await page.evaluate(() => { const s = document.getElementById('park') as HTMLSelectElement; s.value = [...s.options].find((o) => o.textContent!.includes('Fenway'))!.value; s.dispatchEvent(new Event('change')); });
+  await expect(page.locator('#fk-level')).toHaveText('MLB · Red Sox — Fenway Park');
+});

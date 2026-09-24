@@ -649,6 +649,12 @@ body.board-on .field[data-tool="move"] { cursor: grab; }
   font-size: 12px; font-weight: 600; pointer-events: none;
 }
 .fk { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; }
+/* The level and field the play is shown at, heading the key. */
+.fk-level {
+  flex-basis: 100%; text-align: center; font-weight: 800; padding-bottom: 4px; margin-bottom: 1px;
+  border-bottom: 1px solid rgba(255, 255, 255, .22); text-wrap: balance;
+}
+.fk-level:empty { display: none; }
 .fk::before { content: ''; width: 10px; height: 10px; border-radius: 50%; border: 3px solid var(--r-hold); }
 .fk.role-field::before { border-color: var(--r-field); }
 .fk.role-cutoff::before { border-color: var(--r-cutoff); }
@@ -659,7 +665,7 @@ body.projector .field-key { font-size: 15px; max-width: none; }
 /* Stacked (phone portrait): below the field, above the timeline, fitted to the width. */
 @media (max-width: 899px) and (orientation: portrait) {
   .field-key {
-    position: static; max-width: none; justify-content: space-between; flex-wrap: nowrap;
+    position: static; max-width: none; justify-content: space-between; flex-wrap: wrap;
     border-radius: 0; padding: 6px 12px; background: var(--brand-deep); font-size: clamp(10px, 3vw, 13px); gap: 6px;
   }
   .fk::before { width: 8px; height: 8px; border-width: 2.5px; }

@@ -2,6 +2,12 @@
 
 ---
 
+## [2026-09-25] v0.26.0 — The level and field, on the field
+
+- **The color key on the field now names the level and field** the play is shown at: "Little League · 60 ft bases", "College softball · 60 ft bases", "MLB · Red Sox — Fenway Park". A play on the screen, or on a projector, says what level it's played at, without opening Settings.
+
+---
+
 ## [2026-09-25] v0.25.1 — Reset clears the look cones
 
 - **Reset now clears where players were looking.** The cones stayed on the field, frozen where the last play left them, until the next play started.
