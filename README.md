@@ -27,6 +27,10 @@ A companion to [Simple Pitch Counter](https://github.com/mrthames/simple-pitch-c
   or wild pitch, primary lead and pickoff, secondary lead and back-pick, and the softball look-back rule.
 - **Forty-five ready-made plays** in the play library, in eight groups, for running a practice. Press `N` for the next one.
 - **Fields:** Little League baseball (60 ft, no leadoffs), 50/70 (leadoffs), fastpitch softball.
+- **Whiteboard mode** (`W`): freeze any play, or the starting positions, and change it by hand. Drag fielders,
+  runners and the ball, and draw chalk lines and arrows on top. An Apple Pencil or stylus always draws and a
+  finger always moves, and pressure sets the line width. It has undo/redo, clear and reset, and the drawing
+  stays over the play when you replay it.
 - **Projector mode** (`P`): full screen, with the field only.
 
 [`docs/SCENARIOS.md`](docs/SCENARIOS.md) is the coaching reference: every play, every job, and the youth
@@ -47,7 +51,8 @@ simple-fielding/
 ├── website/              the companion site (landing, privacy)
 ├── docs/SCENARIOS.md     the coaching reference
 ├── tests/                engine unit tests (node:test) and UI tests (Playwright)
-├── scripts/              icon generation, screenshot helper
+├── marketing/icon-layers/ icon layers for Icon Composer (Liquid Glass) and a monochrome version
+├── scripts/              icon and baseball generation, screenshot helper
 └── tools/check-for-personal-data.sh
 ```
 
@@ -61,7 +66,7 @@ as Simple Pitch Counter.
 npm install
 npm start               # serves app/ on http://localhost:3344
 npm test                # engine tests + Playwright UI tests
-npm run icons           # regenerate PNG icons from app/icon.svg
+npm run icons           # regenerate PNG icons from app/icon.svg and app/icon-dark.svg
 ```
 
 ## Deployment

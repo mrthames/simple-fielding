@@ -90,3 +90,73 @@ test('settings: switching to softball redraws the field', async ({ page }) => {
   await dragBall(page, { x: -80, y: 135 });
   await expect(page.locator('#play-title')).toHaveText('Single to left field');
 });
+
+// ---- Whiteboard
+
+async function fieldPoint(page: Page, x: number, y: number) {
+  return page.evaluate(([x, y]) => {
+    const svg = document.getElementById('field') as unknown as SVGSVGElement;
+    const p = svg.createSVGPoint(); p.x = x; p.y = -y;
+    const q = p.matrixTransform(svg.getScreenCTM()!);
+    return { x: q.x, y: q.y };
+  }, [x, y]);
+}
+
+async function stroke(page: Page, pts: [number, number][]) {
+  const first = await fieldPoint(page, ...pts[0]);
+  await page.mouse.move(first.x, first.y);
+  await page.mouse.down();
+  for (const p of pts.slice(1)) { const q = await fieldPoint(page, ...p); await page.mouse.move(q.x, q.y, { steps: 6 }); }
+  await page.mouse.up();
+}
+
+test('whiteboard: drag a fielder, draw, undo and redo', async ({ page }) => {
+  await page.locator('#btn-board').click();
+  await expect(page.locator('#board-bar')).toBeVisible();
+  await expect(page.locator('#transport')).toBeHidden();
+  const ss = await page.evaluate(() => (window as any).SimpleFielding.board.state.players.SS);
+  await stroke(page, [[ss.x, ss.y], [-60, 120]]);
+  const moved = await page.evaluate(() => (window as any).SimpleFielding.board.state.players.SS);
+  expect(Math.round(moved.x)).toBe(-60);
+  expect(Math.round(moved.y)).toBe(120);
+
+  await page.locator('#board-bar [data-tool="pen"]').click();
+  await stroke(page, [[-100, 150], [-60, 110], [0, 84]]);
+  await expect(page.locator('.layer-ink .ink')).toHaveCount(1);
+
+  await page.locator('#bb-undo').click();
+  await expect(page.locator('.layer-ink .ink')).toHaveCount(0);
+  await page.locator('#bb-redo').click();
+  await expect(page.locator('.layer-ink .ink')).toHaveCount(1);
+});
+
+test('whiteboard: arrow tool draws an arrowhead, eraser removes it', async ({ page }) => {
+  await page.locator('#btn-board').click();
+  await page.locator('#board-bar [data-tool="arrow"]').click();
+  await stroke(page, [[40, 120], [20, 100], [0, 84]]);
+  await expect(page.locator('.layer-ink .ink-arrow polygon')).toHaveCount(1);
+  await page.locator('#board-bar [data-tool="eraser"]').click();
+  await stroke(page, [[20, 100], [22, 102]]);
+  await expect(page.locator('.layer-ink .ink')).toHaveCount(0);
+});
+
+test('whiteboard: the drawing stays after Done, and clears when the next play runs', async ({ page }) => {
+  await dragBall(page, { x: -80, y: 135 });
+  await page.locator('#btn-board').click();
+  await page.locator('#board-bar [data-tool="pen"]').click();
+  await stroke(page, [[-100, 150], [-60, 110]]);
+  await page.locator('#bb-done').click();
+  await expect(page.locator('#board-bar')).toBeHidden();
+  await expect(page.locator('.layer-ink .ink')).toHaveCount(1);
+  await expect(page.locator('#play-title')).toHaveText('Single to left field');
+  await dragBall(page, { x: 80, y: 135 });
+  await expect(page.locator('.layer-ink .ink')).toHaveCount(0);
+});
+
+test('whiteboard: tapping a base adds a runner', async ({ page }) => {
+  await page.locator('#btn-board').click();
+  const b = await page.evaluate(() => ({ x: 42.43, y: 42.43 }));
+  const p = await fieldPoint(page, b.x, b.y);
+  await page.mouse.click(p.x, p.y);
+  await expect(page.locator('.runner')).toHaveCount(1);
+});

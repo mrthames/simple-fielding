@@ -66,8 +66,9 @@
     const b = geo.bases[base];
     if (base === 'first') return { x: b.x + 30 * k, y: b.y - 4 * k };
     if (base === 'third') return { x: b.x - 30 * k, y: b.y - 4 * k };
-    const p = behind(geo, b, from, 35 * k);
-    return p.y < b.y + 12 * k ? { x: b.x, y: b.y + 30 * k } : p;
+    // 2nd: on the grass straight behind the bag, a step toward the far side of the throw.
+    const side = from.x > b.x + 3 ? -1 : from.x < b.x - 3 ? 1 : 0;
+    return { x: b.x + side * 8 * k, y: b.y + 30 * k };
   }
 
   // A point in line between the ball and a base, `d` feet out from the base: where a cutoff stands.

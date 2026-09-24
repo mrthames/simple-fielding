@@ -206,3 +206,11 @@ test('on infield plays, outfielders never come in closer to home than the bases'
     }
   }
 });
+
+test('throw to 2nd on an infield play: center fielder backs up from behind the bag', () => {
+  for (const at of [{ x: 22, y: 76 }, { x: -22, y: 76 }, { x: -38, y: 52 }]) {
+    const p = play(on('first'), { kind: 'ground', at });
+    const cf = end(p, 'CF');
+    assert.ok(cf.y > B.second.y + 15 && Math.abs(cf.x) < 15, `CF behind 2nd: ${JSON.stringify(cf)} for ${JSON.stringify(at)}`);
+  }
+});

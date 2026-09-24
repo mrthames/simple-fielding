@@ -8,26 +8,23 @@
 <meta property="og:title" content="Simple Fielding — where every fielder goes, on every play">
 <meta property="og:description" content="Drag the ball anywhere on the field and watch all nine fielders go where they belong. Free for coaches, players and parents.">
 <meta property="og:type" content="website">
-<meta name="theme-color" content="#123a8c">
+<meta name="theme-color" content="#0b1c3a">
 <link rel="icon" type="image/png" href="favicon.png">
-<link rel="icon" type="image/svg+xml" href="icon.svg">
+<link rel="icon" type="image/svg+xml" href="icon.svg" media="(prefers-color-scheme: light)">
+<link rel="icon" type="image/svg+xml" href="icon-dark.svg" media="(prefers-color-scheme: dark)">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <style>
   :root {
-    --bg: #f5f7fb; --ink: #0f1b2d; --ink-2: #4a5a70; --card: #fff; --line: #dde4ee;
-    --brand: #1d4ed8; --deep: #123a8c; --grass: #22a05a; --gold: #facc15;
-    --font: ui-rounded, "SF Pro Rounded", "Nunito", "Segoe UI", system-ui, -apple-system, sans-serif;
+    --bg: #F2F2F7; --ink: #0b1c3a; --ink-2: #4a5568; --card: #fff; --line: rgba(60,60,67,.12);
+    --brand: #1A6BFF; --deep: #0b1c3a; --grass: #4EA457; --gold: #FFCC00;
+    --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", "Segoe UI", Roboto, sans-serif;
   }
-  @media (prefers-color-scheme: dark) {
-    :root:not([data-theme="light"]) { --bg: #0b1220; --ink: #e8eef8; --ink-2: #9fb0c8; --card: #121b2e; --line: #22304a; }
-  }
-  :root[data-theme="dark"] { --bg: #0b1220; --ink: #e8eef8; --ink-2: #9fb0c8; --card: #121b2e; --line: #22304a; }
   * { box-sizing: border-box; }
   body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font); line-height: 1.55; }
   a { color: var(--brand); }
   .wrap { max-width: 1080px; margin: 0 auto; padding: 0 16px; }
 
-  header.hero { background: linear-gradient(160deg, #2563eb, var(--deep)); color: #fff; overflow: hidden; }
+  header.hero { background: linear-gradient(160deg, #142a4f, var(--deep)); color: #fff; overflow: hidden; }
   .nav { display: flex; justify-content: space-between; align-items: center; padding: 18px 0; }
   .logo { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 20px; color: #fff; text-decoration: none; }
   .logo img { width: 38px; height: 38px; border-radius: 10px; }
@@ -36,7 +33,7 @@
   .eyebrow { display: inline-block; background: rgba(255,255,255,.14); padding: 6px 12px; border-radius: 999px; font-weight: 700; font-size: 14px; }
   h1 { font-size: clamp(34px, 5vw, 54px); line-height: 1.08; margin: 16px 0; letter-spacing: -0.02em; }
   .lede { font-size: 19px; color: #dbe6ff; max-width: 34em; }
-  .cta { display: inline-flex; align-items: center; gap: 10px; margin-top: 22px; background: var(--gold); color: #1a1300; font-weight: 800; font-size: 18px; padding: 16px 26px; border-radius: 16px; text-decoration: none; box-shadow: 0 8px 24px rgba(0,0,0,.25); }
+  .cta { display: inline-flex; align-items: center; gap: 10px; margin-top: 22px; background: var(--brand); color: #fff; font-weight: 800; font-size: 18px; padding: 16px 26px; border-radius: 12px; text-decoration: none; box-shadow: 0 8px 24px rgba(0,0,0,.25); }
   .cta:hover { transform: translateY(-1px); }
   .sub { margin-top: 12px; font-size: 14px; color: #c3d3ff; }
 
@@ -47,12 +44,12 @@
   h2 { font-size: clamp(26px, 3.4vw, 36px); margin: 0 0 10px; letter-spacing: -0.01em; }
   .section-lede { color: var(--ink-2); font-size: 18px; max-width: 40em; margin: 0 0 28px; }
   .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
-  .card { background: var(--card); border: 1px solid var(--line); border-radius: 20px; padding: 22px; }
+  .card { background: var(--card); border: 0.5px solid var(--line); border-radius: 18px; padding: 22px; }
   .num { width: 36px; height: 36px; border-radius: 50%; background: var(--brand); color: #fff; display: grid; place-items: center; font-weight: 800; margin-bottom: 10px; }
   .card h3 { margin: 0 0 6px; font-size: 19px; }
   .card p { margin: 0; color: var(--ink-2); }
   .plays { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 12px; }
-  .play { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 16px 18px; }
+  .play { background: var(--card); border: 0.5px solid var(--line); border-radius: 18px; padding: 16px 18px; }
   .play strong { display: block; font-size: 17px; }
   .play span { color: var(--ink-2); font-size: 15px; }
   .roles { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
@@ -61,7 +58,7 @@
 
   .support { background: var(--card); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
   .support-inner { max-width: 720px; margin: 0 auto; text-align: center; }
-  .bmc { display: inline-flex; gap: 8px; align-items: center; background: #ffdd00; color: #1a1300; font-weight: 800; padding: 14px 22px; border-radius: 14px; text-decoration: none; margin-top: 10px; }
+  .bmc { display: inline-flex; gap: 8px; align-items: center; background: #ffdd00; color: #1a1300; font-weight: 800; padding: 14px 22px; border-radius: 12px; text-decoration: none; margin-top: 10px; }
   footer { padding: 30px 0 50px; color: var(--ink-2); font-size: 14px; text-align: center; }
   footer a { margin: 0 8px; }
 
@@ -101,27 +98,27 @@
           <path d="M-141,-141 A200,200 0 0 1 141,-141" fill="none" stroke="#1f3b2a" stroke-width="3"/>
           <g fill="#fff"><rect x="40.8" y="-44" width="3.2" height="3.2" transform="rotate(45 42.4 -42.4)"/><rect x="-1.6" y="-86.5" width="3.2" height="3.2" transform="rotate(45 0 -84.9)"/><rect x="-44" y="-44" width="3.2" height="3.2" transform="rotate(45 -42.4 -42.4)"/></g>
           <g fill="none" stroke-width="1.3" stroke-dasharray="3 2.4" stroke-linecap="round">
-            <path d="M-90,-144 L-80,-135" stroke="#facc15"/>
-            <path d="M-22,-80 L-34,-104" stroke="#f97316"/>
-            <path d="M22,-80 L3,-86" stroke="#22c55e"/>
-            <path d="M0,-46 L14,-100" stroke="#a855f7"/>
-            <path d="M0,-170 L-60,-150" stroke="#a855f7"/>
+            <path d="M-90,-144 L-80,-135" stroke="#FFCC00"/>
+            <path d="M-22,-80 L-34,-104" stroke="#FF9500"/>
+            <path d="M22,-80 L3,-86" stroke="#34C759"/>
+            <path d="M0,-46 L14,-100" stroke="#AF52DE"/>
+            <path d="M0,-170 L-60,-150" stroke="#AF52DE"/>
           </g>
           <path d="M-80,-135 L-34,-104 L0,-85" fill="none" stroke="#fff" stroke-width=".9" stroke-dasharray="1 2.5"/>
           <g font-family="system-ui,sans-serif" font-weight="800" font-size="5.4" text-anchor="middle" fill="#fff">
-            <g transform="translate(-80,-135)"><circle r="8" fill="none" stroke="#facc15" stroke-width="2.2"/><circle r="6.3" fill="#1d4ed8" stroke="#fff"/><text y="2">LF</text></g>
-            <g transform="translate(-34,-104)"><circle r="8" fill="none" stroke="#f97316" stroke-width="2.2"/><circle r="6.3" fill="#1d4ed8" stroke="#fff"/><text y="2">SS</text></g>
-            <g transform="translate(3,-86)"><circle r="8" fill="none" stroke="#22c55e" stroke-width="2.2"/><circle r="6.3" fill="#1d4ed8" stroke="#fff"/><text y="2">2B</text></g>
-            <g transform="translate(14,-100)"><circle r="8" fill="none" stroke="#a855f7" stroke-width="2.2"/><circle r="6.3" fill="#1d4ed8" stroke="#fff"/><text y="2">P</text></g>
-            <g transform="translate(-60,-150)"><circle r="8" fill="none" stroke="#a855f7" stroke-width="2.2"/><circle r="6.3" fill="#1d4ed8" stroke="#fff"/><text y="2">CF</text></g>
-            <g transform="translate(-40,-56)"><circle r="8" fill="none" stroke="#22c55e" stroke-width="2.2"/><circle r="6.3" fill="#1d4ed8" stroke="#fff"/><text y="2">3B</text></g>
-            <g transform="translate(40,-56)"><circle r="8" fill="none" stroke="#22c55e" stroke-width="2.2"/><circle r="6.3" fill="#1d4ed8" stroke="#fff"/><text y="2">1B</text></g>
-            <g transform="translate(34,-24)"><circle r="8" fill="none" stroke="#a855f7" stroke-width="2.2"/><circle r="6.3" fill="#1d4ed8" stroke="#fff"/><text y="2">C</text></g>
-            <g transform="translate(92,-148)"><circle r="6.3" fill="#1d4ed8" stroke="#fff"/><text y="2">RF</text></g>
-            <g transform="translate(40,-40)"><circle r="5" fill="#dc2626" stroke="#fff"/><text y="1.8" font-size="4.6">B</text></g>
+            <g transform="translate(-80,-135)"><circle r="8" fill="none" stroke="#FFCC00" stroke-width="2.2"/><circle r="6.3" fill="#1A6BFF" stroke="#fff"/><text y="2">LF</text></g>
+            <g transform="translate(-34,-104)"><circle r="8" fill="none" stroke="#FF9500" stroke-width="2.2"/><circle r="6.3" fill="#1A6BFF" stroke="#fff"/><text y="2">SS</text></g>
+            <g transform="translate(3,-86)"><circle r="8" fill="none" stroke="#34C759" stroke-width="2.2"/><circle r="6.3" fill="#1A6BFF" stroke="#fff"/><text y="2">2B</text></g>
+            <g transform="translate(14,-100)"><circle r="8" fill="none" stroke="#AF52DE" stroke-width="2.2"/><circle r="6.3" fill="#1A6BFF" stroke="#fff"/><text y="2">P</text></g>
+            <g transform="translate(-60,-150)"><circle r="8" fill="none" stroke="#AF52DE" stroke-width="2.2"/><circle r="6.3" fill="#1A6BFF" stroke="#fff"/><text y="2">CF</text></g>
+            <g transform="translate(-40,-56)"><circle r="8" fill="none" stroke="#34C759" stroke-width="2.2"/><circle r="6.3" fill="#1A6BFF" stroke="#fff"/><text y="2">3B</text></g>
+            <g transform="translate(40,-56)"><circle r="8" fill="none" stroke="#34C759" stroke-width="2.2"/><circle r="6.3" fill="#1A6BFF" stroke="#fff"/><text y="2">1B</text></g>
+            <g transform="translate(34,-24)"><circle r="8" fill="none" stroke="#AF52DE" stroke-width="2.2"/><circle r="6.3" fill="#1A6BFF" stroke="#fff"/><text y="2">C</text></g>
+            <g transform="translate(92,-148)"><circle r="6.3" fill="#1A6BFF" stroke="#fff"/><text y="2">RF</text></g>
+            <g transform="translate(40,-40)"><circle r="5" fill="#FF3B30" stroke="#fff"/><text y="1.8" font-size="4.6">B</text></g>
           </g>
           <circle cx="-80" cy="-139" r="2.2" fill="#fff" stroke="#b91c1c" stroke-width=".5"/>
-          <rect x="-146" y="-210" width="112" height="16" rx="6" fill="rgba(15,27,45,.85)"/>
+          <rect x="-146" y="-210" width="112" height="16" rx="6" fill="rgba(11,28,58,.88)"/>
           <text x="-90" y="-199" font-family="system-ui,sans-serif" font-weight="800" font-size="8" fill="#fff" text-anchor="middle">Single to left field</text>
         </svg>
       </div>
@@ -140,10 +137,10 @@
         <div class="card"><div class="num">3</div><h3>Watch everyone move</h3><p>All nine fielders run to their jobs, and the throw goes where it should. Tap any player to see their job in plain words.</p></div>
       </div>
       <div class="roles" aria-label="Colour key">
-        <span class="role"><i style="border-color:#facc15"></i>Gets the ball</span>
-        <span class="role"><i style="border-color:#f97316"></i>Cutoff or relay</span>
-        <span class="role"><i style="border-color:#22c55e"></i>Covers a base</span>
-        <span class="role"><i style="border-color:#a855f7"></i>Backs up</span>
+        <span class="role"><i style="border-color:#FFCC00"></i>Gets the ball</span>
+        <span class="role"><i style="border-color:#FF9500"></i>Cutoff or relay</span>
+        <span class="role"><i style="border-color:#34C759"></i>Covers a base</span>
+        <span class="role"><i style="border-color:#AF52DE"></i>Backs up</span>
       </div>
     </div>
   </section>

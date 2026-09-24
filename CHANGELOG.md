@@ -2,6 +2,32 @@
 
 ---
 
+## [2026-09-23] v0.2.0 — Whiteboard mode, and the Simple Pitch Counter look
+
+### Whiteboard
+- A **Whiteboard** button freezes whatever is on the field, whether a play mid-animation or the starting positions. You can then change it by hand.
+- **Move:** drag any fielder, runner or the ball anywhere. Tap a base to add or remove a runner.
+- **Pen** and **Arrow:** freehand chalk, and arrows that follow the curve you draw. Five colours and an eraser.
+- **Apple Pencil and styluses:** the Pencil always draws and a finger always moves, so there's no tool switching. Pressure sets the line width. Touches are ignored while the Pencil is down, for palm rejection. Coalesced pointer events keep strokes smooth.
+- **Undo / redo** (also Ctrl/⌘+Z), **Clear** the drawing, **Reset** everyone to where they started.
+- The drawing stays on top of the play after **Done**, so you can replay the animation under it, until the next play runs.
+- Keyboard: `W` whiteboard, `M` move, `D` pen, `A` arrow, `E` eraser.
+
+### Look
+- Matches Simple Pitch Counter: its navy header, iOS system colours (blue, green, amber, purple, red), 12 and 18 px corner radii, and the system font. The app is light-only, like Simple Pitch Counter.
+- **The baseball** from the Simple Pitch Counter logo, redrawn as a vector (`app/img/baseball.svg`), is now the ball you drag and the ball in flight.
+- **New icon:** a flat-art infield on the navy, with the ball's path chalked toward left field. Light and dark versions, 1024 px store masters, and layers for Apple's Icon Composer (Liquid Glass) plus a monochrome version for tinted and themed icons (`marketing/icon-layers/`).
+- The website uses the same palette.
+
+### Fixes
+- The center fielder backs up 2nd from behind the bag on an infield double play, instead of from beside the shortstop.
+- The drag hint no longer covers the ball at home plate on phones.
+
+### Tests
+- 25 engine tests (a new one for the center fielder's backup of 2nd). 13 UI tests (4 new for the whiteboard), 26 runs across iPad and phone sizes.
+
+---
+
 ## [2026-09-23] v0.1.1 — Right fielder no longer runs to home plate
 
 ### Fixes

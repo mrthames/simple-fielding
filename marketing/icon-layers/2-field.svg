@@ -1,8 +1,7 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <!-- Simple Fielding mark: a flat-art infield on Simple Pitch Counter's navy, with the ball's path
-       chalked on it — hit toward left field, the start of every play in the app. -->
-  <rect width="512" height="512" fill="#172A50"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+<g transform="scale(2)">
   <g transform="translate(256 258) scale(1.3) translate(-256 -300)">
+
   <!-- infield dirt: base paths plus the arc behind them -->
   <path d="M256 452 L112 308 A144 144 0 0 1 400 308 Z" fill="#C9925C"/>
   <!-- infield grass -->
@@ -20,8 +19,6 @@
     <rect x="146" y="288" width="32" height="32" rx="4" transform="rotate(45 162 304)"/>
     <path d="M238 410 h36 v18 l-18 16 l-18 -16 z"/>
   </g>
-  <!-- the ball: dotted chalk from home plate toward left field -->
-  <path d="M246 404 L166 212" fill="none" stroke="#ffffff" stroke-width="11" stroke-linecap="round" stroke-dasharray="1 22"/>
-  <circle cx="160" cy="198" r="12" fill="none" stroke="#ffffff" stroke-width="7"/>
   </g>
+</g>
 </svg>

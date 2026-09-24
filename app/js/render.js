@@ -65,6 +65,7 @@
         ball: el('g', { class: 'layer-ball' }, this.svg),
         drag: el('g', { class: 'layer-drag' }, this.svg),
         captions: el('g', { class: 'layer-captions' }, this.svg),
+        ink: el('g', { class: 'layer-ink' }, this.svg),
       };
       this.makeActors();
     }
@@ -150,7 +151,8 @@
         this.actors[pos] = outer;
       }
       this.ballShadow = el('ellipse', { rx: 2.2, ry: 1.2, class: 'ball-shadow' }, this.layers.ball);
-      this.ballEl = el('circle', { r: 2, class: 'ball' }, this.layers.ball);
+      // The same baseball as Simple Pitch Counter's logo. It's the thing you grab and drag.
+      this.ballEl = el('image', { href: 'img/baseball.svg', class: 'ball', width: 4, height: 4 }, this.layers.ball);
       this.runnerEls = {};
     }
 
@@ -191,15 +193,24 @@
       return outer;
     }
 
-    place(node, p) { node.setAttribute('transform', `translate(${p.x.toFixed(2)},${(-p.y).toFixed(2)})`); }
+    place(node, p) {
+      node._p = { x: p.x, y: p.y };
+      node.setAttribute('transform', `translate(${p.x.toFixed(2)},${(-p.y).toFixed(2)})`);
+    }
 
     placeBall(p, idle) {
       const h = p.h || 0;
+      this.ballAt = { x: p.x, y: p.y };
       const lift = h * 0.45;
       this.ballShadow.setAttribute('cx', p.x); this.ballShadow.setAttribute('cy', -p.y);
       this.ballShadow.setAttribute('opacity', Math.max(0.15, 0.5 - h / 200));
-      this.ballEl.setAttribute('cx', p.x); this.ballEl.setAttribute('cy', -p.y - lift);
-      this.ballEl.setAttribute('r', 2 + Math.min(h, 90) * 0.035);
+      // Bigger while it waits at the plate to be grabbed, or on the whiteboard; true-ish size in flight.
+      const r = (idle || this.boardMode ? 4.5 : 2.4) + Math.min(h, 90) * 0.04;
+      this.ballEl.setAttribute('x', (p.x - r).toFixed(2));
+      this.ballEl.setAttribute('y', (-p.y - lift - r).toFixed(2));
+      this.ballEl.setAttribute('width', (2 * r).toFixed(2));
+      this.ballEl.setAttribute('height', (2 * r).toFixed(2));
+      this.ballShadow.setAttribute('rx', r * 0.9); this.ballShadow.setAttribute('ry', r * 0.45);
       this.ballEl.classList.toggle('idle', !!idle);
     }
 
@@ -301,11 +312,85 @@
       const lift = { ground: 0, bunt: 0, line: 10, fly: 45, pop: 60 }[kind] || 20;
       const d = `M${P(from)} Q${mid.x},${-mid.y - lift} ${to.x},${-to.y}`;
       el('path', { d, class: 'drag-line' }, this.layers.drag);
-      el('circle', { cx: to.x, cy: -to.y, r: 4, class: 'drag-target' }, this.layers.drag);
-      el('circle', { cx: to.x, cy: -to.y, r: 2, class: 'ball' }, this.layers.drag);
+      el('circle', { cx: to.x, cy: -to.y, r: 7, class: 'drag-target' }, this.layers.drag);
+      el('image', { href: 'img/baseball.svg', x: to.x - 4.5, y: -to.y - 4.5, width: 9, height: 9 }, this.layers.drag);
     }
 
     hideDrag() { this.clearLayer('drag'); }
+
+    // ---------------------------------------------------------------------------------------------
+    // Whiteboard
+    // ---------------------------------------------------------------------------------------------
+
+    // Everything where it is drawn right now: the starting point for the whiteboard.
+    snapshot() {
+      const players = {};
+      for (const pos of POSITIONS) players[pos] = Object.assign({}, this.actors[pos]._p);
+      const runners = [];
+      for (const id in this.runnerEls) {
+        const n = this.runnerEls[id];
+        if (!n._p || (n.style.opacity !== '' && Number(n.style.opacity) < 0.5)) continue;
+        runners.push({ id, label: id === 'batter' ? 'B' : 'R', x: n._p.x, y: n._p.y });
+      }
+      return { players, runners, ball: Object.assign({}, this.ballAt || { x: 0, y: 1.5 }) };
+    }
+
+    // Draw a board state: free positions, no paths, no timeline.
+    setBoardMode(on) { this.boardMode = on; }
+
+    showBoard(board) {
+      this.clearLayer('paths'); this.clearLayer('marks'); this.clearLayer('throws'); this.clearLayer('captions');
+      for (const pos of POSITIONS) this.place(this.actors[pos], board.players[pos]);
+      this.clearLayer('runners');
+      this.runnerEls = {};
+      for (const r of board.runners) {
+        const n = this.makeRunner(r.id, r.label);
+        this.place(n, r);
+      }
+      for (const base of ['first', 'second', 'third']) this.baseEls[base].classList.remove('occupied');
+      this.placeBall(Object.assign({ h: 0 }, board.ball), false);
+      this.drawInk(board.strokes);
+    }
+
+    drawInk(strokes, live) {
+      this.clearLayer('ink');
+      for (const st of strokes || []) this.renderStroke(st);
+      if (live) this.renderStroke(live);
+    }
+
+    renderStroke(st) {
+      const pts = st.pts;
+      if (!pts.length) return;
+      const g = el('g', { class: 'ink ink-' + st.type }, this.layers.ink);
+      const w = st.width;
+      if (pts.length === 1) {
+        el('circle', { cx: pts[0].x, cy: -pts[0].y, r: w / 2, fill: st.color }, g);
+        return;
+      }
+      // Smooth through the midpoints so a Pencil stroke looks like ink, not a polyline.
+      let d = `M${pts[0].x.toFixed(2)},${(-pts[0].y).toFixed(2)}`;
+      for (let i = 1; i < pts.length - 1; i++) {
+        const a = pts[i], b = pts[i + 1];
+        d += ` Q${a.x.toFixed(2)},${(-a.y).toFixed(2)} ${((a.x + b.x) / 2).toFixed(2)},${(-(a.y + b.y) / 2).toFixed(2)}`;
+      }
+      const last = pts[pts.length - 1];
+      d += ` L${last.x.toFixed(2)},${(-last.y).toFixed(2)}`;
+      el('path', { d, fill: 'none', stroke: st.color, 'stroke-width': w, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, g);
+      if (st.type === 'arrow') {
+        // Head points along the last few feet of the stroke, so curved arrows work too.
+        let i = pts.length - 2;
+        while (i > 0 && Math.hypot(last.x - pts[i].x, last.y - pts[i].y) < 5) i--;
+        const a = pts[i];
+        const len = Math.hypot(last.x - a.x, last.y - a.y) || 1;
+        const ux = (last.x - a.x) / len, uy = (last.y - a.y) / len;
+        const size = 4 + w * 1.5;
+        const bx = last.x - ux * size, by = last.y - uy * size;
+        const px = -uy * size * 0.6, py = ux * size * 0.6;
+        const tri = [[last.x, last.y], [bx + px, by + py], [bx - px, by - py]]
+          .map(([x, y]) => `${x.toFixed(2)},${(-y).toFixed(2)}`).join(' ');
+        el('polygon', { points: tri, fill: st.color }, g);
+      }
+    }
   }
 
   root.FieldView = FieldView;

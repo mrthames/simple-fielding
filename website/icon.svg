@@ -1,24 +1,27 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <!-- Simple Fielding mark: a diamond drawn like a coach's play diagram.
-       The O is a fielder, the dashed chalk arrow is where they go, the X is the spot. -->
-  <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#2563eb"/>
-      <stop offset="1" stop-color="#123a8c"/>
-    </linearGradient>
-  </defs>
-  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
-  <!-- infield grass diamond -->
-  <path d="M256 426 L406 276 L256 126 L106 276 Z" fill="#22a05a"/>
-  <path d="M256 426 L406 276 L256 126 L106 276 Z" fill="none" stroke="#fff" stroke-width="14" stroke-linejoin="round"/>
+  <!-- Simple Fielding mark: a flat-art infield on Simple Pitch Counter's navy, with the ball's path
+       chalked on it — hit toward left field, the start of every play in the app. -->
+  <rect width="512" height="512" fill="#172A50"/>
+  <g transform="translate(256 258) scale(1.3) translate(-256 -300)">
+  <!-- infield dirt: base paths plus the arc behind them -->
+  <path d="M256 452 L112 308 A144 144 0 0 1 400 308 Z" fill="#C9925C"/>
+  <!-- infield grass -->
+  <path d="M256 396 L340 312 L256 228 L172 312 Z" fill="#4EA457"/>
+  <!-- home plate circle and the mound -->
+  <circle cx="256" cy="420" r="30" fill="#C9925C"/>
+  <circle cx="256" cy="312" r="17" fill="#C9925C"/>
+  <rect x="246" y="309" width="20" height="5" rx="1.5" fill="#ffffff"/>
+  <!-- foul lines -->
+  <path d="M256 420 L128 292 M256 420 L384 292" stroke="#ffffff" stroke-width="5" stroke-linecap="round"/>
   <!-- bases -->
-  <rect x="388" y="258" width="36" height="36" rx="6" transform="rotate(45 406 276)" fill="#fff"/>
-  <rect x="238" y="108" width="36" height="36" rx="6" transform="rotate(45 256 126)" fill="#fff"/>
-  <rect x="88" y="258" width="36" height="36" rx="6" transform="rotate(45 106 276)" fill="#fff"/>
-  <path d="M232 404 h48 v22 l-24 22 l-24 -22 z" fill="#fff"/>
-  <!-- the play: O runs to X -->
-  <circle cx="176" cy="196" r="30" fill="none" stroke="#facc15" stroke-width="16"/>
-  <path d="M200 222 Q 250 300 322 254" fill="none" stroke="#facc15" stroke-width="14" stroke-linecap="round" stroke-dasharray="4 30"/>
-  <path d="M300 236 L330 250 L306 276" fill="none" stroke="#facc15" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
-  <path d="M344 158 l44 44 M388 158 l-44 44" stroke="#fff" stroke-width="16" stroke-linecap="round"/>
+  <g fill="#ffffff">
+    <rect x="240" y="192" width="32" height="32" rx="4" transform="rotate(45 256 208)"/>
+    <rect x="334" y="288" width="32" height="32" rx="4" transform="rotate(45 350 304)"/>
+    <rect x="146" y="288" width="32" height="32" rx="4" transform="rotate(45 162 304)"/>
+    <path d="M238 410 h36 v18 l-18 16 l-18 -16 z"/>
+  </g>
+  <!-- the ball: dotted chalk from home plate toward left field -->
+  <path d="M246 404 L166 212" fill="none" stroke="#ffffff" stroke-width="11" stroke-linecap="round" stroke-dasharray="1 22"/>
+  <circle cx="160" cy="198" r="12" fill="none" stroke="#ffffff" stroke-width="7"/>
+  </g>
 </svg>

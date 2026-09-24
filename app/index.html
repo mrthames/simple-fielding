@@ -3,13 +3,14 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
-<meta name="theme-color" content="#123a8c">
+<meta name="theme-color" content="#0b1c3a">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Simple Fielding">
 <meta name="description" content="Drag the ball anywhere on the field and watch all nine fielders go where they belong. Free, no ads, no accounts.">
 <title>Simple Fielding</title>
-<link rel="icon" type="image/svg+xml" href="icon.svg">
+<link rel="icon" type="image/svg+xml" href="icon.svg" media="(prefers-color-scheme: light)">
+<link rel="icon" type="image/svg+xml" href="icon-dark.svg" media="(prefers-color-scheme: dark)">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="stylesheet" href="css/app.css">
@@ -26,6 +27,10 @@
       <button class="pill-btn" id="btn-library" type="button" aria-haspopup="dialog">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16M4 12h16M4 19h10"/></svg>
         <span>Plays</span>
+      </button>
+      <button class="pill-btn" id="btn-board" type="button" aria-pressed="false" title="Whiteboard (W)">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20l4-1 11-11-3-3L5 16l-1 4zM14 6l3 3"/></svg>
+        <span>Whiteboard</span>
       </button>
       <button class="icon-btn" id="btn-projector" type="button" title="Projector mode" aria-label="Projector mode">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
@@ -60,6 +65,40 @@
       </div>
       <button class="text-btn" id="btn-reset" type="button">Reset</button>
     </div>
+    <div class="board-bar" id="board-bar" hidden role="toolbar" aria-label="Whiteboard tools">
+        <div class="bb-group" role="group" aria-label="Tool">
+          <button type="button" data-tool="move" class="on" title="Move players, runners and the ball (M)">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v18M3 12h18M12 3l-3 3M12 3l3 3M12 21l-3-3M12 21l3-3M3 12l3-3M3 12l3 3M21 12l-3-3M21 12l-3 3"/></svg><span>Move</span>
+          </button>
+          <button type="button" data-tool="pen" title="Draw (D)">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20l4-1 11-11-3-3L5 16l-1 4z"/></svg><span>Pen</span>
+          </button>
+          <button type="button" data-tool="arrow" title="Draw an arrow (A)">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19C9 9 13 7 19 5M19 5l-6 0M19 5l-1 6"/></svg><span>Arrow</span>
+          </button>
+          <button type="button" data-tool="eraser" title="Erase (E)">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 20h12M4 15l9-9 6 6-8 8H8z"/></svg><span>Erase</span>
+          </button>
+        </div>
+        <div class="bb-group swatches" role="group" aria-label="Colour">
+          <button type="button" data-color="#ffffff" class="on" aria-label="White"></button>
+          <button type="button" data-color="#fde047" aria-label="Yellow"></button>
+          <button type="button" data-color="#ef4444" aria-label="Red"></button>
+          <button type="button" data-color="#38bdf8" aria-label="Blue"></button>
+          <button type="button" data-color="#111827" aria-label="Black"></button>
+        </div>
+        <div class="bb-group" role="group" aria-label="History">
+          <button type="button" id="bb-undo" title="Undo (Ctrl+Z)" aria-label="Undo">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 14L4 9l5-5M4 9h10a6 6 0 0 1 0 12h-3"/></svg>
+          </button>
+          <button type="button" id="bb-redo" title="Redo (Ctrl+Shift+Z)" aria-label="Redo">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 14l5-5-5-5M20 9H10a6 6 0 0 0 0 12h3"/></svg>
+          </button>
+          <button type="button" id="bb-clear" class="keep" title="Clear the drawing"><span>Clear</span></button>
+          <button type="button" id="bb-reset" class="keep" title="Put everyone back where they started"><span>Reset</span></button>
+        </div>
+        <button type="button" class="bb-done" id="bb-done">Done</button>
+      </div>
   </main>
 
   <aside class="panel" id="panel">
@@ -180,7 +219,8 @@
       <input type="checkbox" id="show-paths" class="switch" checked>
     </label>
     <p class="fine">Little League baseball (60 ft) doesn't allow leadoffs, so runners can't leave until the pitch reaches the batter. Softball runners leave when the pitch is released. Turn leadoffs on for 50/70, travel ball, or older divisions.</p>
-    <p class="fine">Keyboard: <kbd>Space</kbd> play/pause · <kbd>N</kbd> next play · <kbd>P</kbd> projector mode · <kbd>R</kbd> reset.</p>
+    <p class="fine">Keyboard: <kbd>Space</kbd> play/pause · <kbd>N</kbd> next play · <kbd>P</kbd> projector mode · <kbd>R</kbd> reset · <kbd>W</kbd> whiteboard.</p>
+    <p class="fine">Whiteboard: an Apple Pencil or stylus always draws, and a finger moves players, runners and the ball. You can draw and move without switching tools. A drawing stays on top when you tap Done, until you run the next play.</p>
     <p class="fine">Simple Fielding is free and has no ads or accounts. It's built by a dad with kids in Little League.
       <a href="https://buymeacoffee.com/thames_" target="_blank" rel="noopener">Buy me a coffee</a> to help keep it going.</p>
     <p class="fine version">Version <span id="version"></span></p>

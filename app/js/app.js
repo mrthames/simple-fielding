@@ -4,7 +4,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '0.1.1';
+  const VERSION = '0.2.0';
   const { POSITIONS, NAMES, LEAGUES } = window.Field;
   const $ = (s) => document.querySelector(s);
   const $$ = (s) => Array.from(document.querySelectorAll(s));
@@ -78,6 +78,7 @@
   }
 
   function situationChanged() {
+    if (board.on) closeBoard();
     renderSituation();
     showReady();
   }
@@ -98,6 +99,8 @@
   // Running a play
   // -------------------------------------------------------------------------------------------
   function runEvent(event, opts) {
+    if (board.on) closeBoard();
+    clearInkOnNewPlay();
     const ev = Object.assign({}, event);
     if (ev.at && state.result !== 'auto' && !ev.result) ev.result = state.result;
     const plan = window.Engine.planPlay(situation(), ev);
@@ -222,6 +225,254 @@
   // -------------------------------------------------------------------------------------------
   const svg = $('#field');
   let drag = null;
+
+  // -------------------------------------------------------------------------------------------
+  // Whiteboard: move anything, draw on top. A Pencil always draws; a finger or mouse uses the tool.
+  // Registered before the drag-to-hit handlers, in the capture phase, so it can take over the
+  // field while the whiteboard is open.
+  // -------------------------------------------------------------------------------------------
+  const board = {
+    on: false,
+    tool: 'move',
+    color: '#ffffff',
+    state: null,     // { players, runners, ball, strokes }
+    start: null,     // what Reset goes back to
+    undo: [],
+    redo: [],
+    act: null,       // the gesture in progress
+    penActive: false,
+    lastPen: 0,
+    ink: [],         // strokes that stay on the field after Done, until the next play
+  };
+  const clone = (o) => JSON.parse(JSON.stringify(o));
+
+  function openBoard() {
+    if (board.on) return;
+    stop();
+    setSpotlight(null);
+    const snap = view.snapshot();
+    board.state = Object.assign(snap, { strokes: clone(board.ink) });
+    board.start = clone(board.state);
+    board.undo = []; board.redo = [];
+    board.on = true;
+    document.body.classList.add('board-on');
+    $('#btn-board').setAttribute('aria-pressed', 'true');
+    $('#board-bar').hidden = false;
+    $('#field-hint').hidden = true;
+    view.setBoardMode(true);
+    view.showBoard(board.state);
+    renderBoardBar();
+  }
+
+  function closeBoard() {
+    if (!board.on) return;
+    board.on = false;
+    view.setBoardMode(false);
+    board.ink = clone(board.state.strokes);
+    document.body.classList.remove('board-on');
+    $('#btn-board').setAttribute('aria-pressed', 'false');
+    $('#board-bar').hidden = true;
+    // Back to the play (or the ready positions); the drawing stays on top.
+    if (state.plan) { view.load(state.plan); view.seek(state.t); updateTransport(); }
+    else showReady();
+    view.drawInk(board.ink);
+  }
+
+  function clearInkOnNewPlay() {
+    board.ink = [];
+    view.drawInk([]);
+  }
+
+  function renderBoardBar() {
+    for (const b of $$('#board-bar [data-tool]')) b.classList.toggle('on', b.dataset.tool === board.tool);
+    for (const b of $$('#board-bar [data-color]')) b.classList.toggle('on', b.dataset.color === board.color);
+    $('#bb-undo').disabled = !board.undo.length;
+    $('#bb-redo').disabled = !board.redo.length;
+    svg.dataset.tool = board.tool;
+  }
+
+  function commit() {
+    board.undo.push(board.before);
+    if (board.undo.length > 100) board.undo.shift();
+    board.redo = [];
+    board.before = null;
+    renderBoardBar();
+  }
+  function undoBoard() {
+    if (!board.undo.length) return;
+    board.redo.push(clone(board.state));
+    board.state = board.undo.pop();
+    view.showBoard(board.state);
+    renderBoardBar();
+  }
+  function redoBoard() {
+    if (!board.redo.length) return;
+    board.undo.push(clone(board.state));
+    board.state = board.redo.pop();
+    view.showBoard(board.state);
+    renderBoardBar();
+  }
+
+  // What is under the finger: the ball first (it is small), then runners, then fielders.
+  function pickActor(p) {
+    const s = board.state;
+    const scale = window.matchMedia('(max-width: 520px)').matches ? 1.35 : 1;
+    const d = (q) => Math.hypot(q.x - p.x, q.y - p.y);
+    if (d(s.ball) < 7 * scale) return { kind: 'ball' };
+    let best = null, bd = Infinity;
+    s.runners.forEach((r, i) => { const x = d(r); if (x < 7 * scale && x < bd) { bd = x; best = { kind: 'runner', i }; } });
+    if (best) return best;
+    for (const pos of POSITIONS) { const x = d(s.players[pos]); if (x < 9 * scale && x < bd) { bd = x; best = { kind: 'player', pos }; } }
+    return best;
+  }
+  function actorPoint(a) {
+    const s = board.state;
+    return a.kind === 'ball' ? s.ball : a.kind === 'runner' ? s.runners[a.i] : s.players[a.pos];
+  }
+
+  function eraseAt(p) {
+    const before = board.state.strokes.length;
+    board.state.strokes = board.state.strokes.filter((st) => !st.pts.some((q) => Math.hypot(q.x - p.x, q.y - p.y) < 5 + st.width));
+    return board.state.strokes.length !== before;
+  }
+
+  function points(e) {
+    const list = (e.getCoalescedEvents && e.getCoalescedEvents().length) ? e.getCoalescedEvents() : [e];
+    return list.map((ev) => {
+      const p = view.toField(ev.clientX, ev.clientY);
+      return { x: Math.round(p.x * 10) / 10, y: Math.round(p.y * 10) / 10, pr: ev.pointerType === 'pen' ? (ev.pressure || 0.5) : 0.5 };
+    });
+  }
+
+  svg.addEventListener('pointerdown', (e) => {
+    if (!board.on) return;
+    e.stopImmediatePropagation();
+    e.preventDefault();
+    const pen = e.pointerType === 'pen';
+    // Palm rejection: while a Pencil is on the glass (or just was), ignore touches.
+    if (e.pointerType === 'touch' && (board.penActive || performance.now() - board.lastPen < 500)) return;
+    if (board.act) return;
+    if (pen) board.penActive = true;
+    const p = view.toField(e.clientX, e.clientY);
+    const tool = pen ? (board.tool === 'arrow' || board.tool === 'eraser' ? board.tool : (board.tool === 'move' ? 'pen' : board.tool)) : board.tool;
+    board.before = clone(board.state);
+    svg.setPointerCapture(e.pointerId);
+
+    if (tool === 'move') {
+      const hit = pickActor(p);
+      // Which bag was tapped, by distance: on a phone a fielder's enlarged touch area can cover the bag.
+      const base = ['first', 'second', 'third'].find((k) => Math.hypot(view.geo.bases[k].x - p.x, view.geo.bases[k].y - p.y) < 6) || null;
+      board.act = { id: e.pointerId, tool, hit, base, start: p, moved: false };
+      if (hit) {
+        const q = actorPoint(hit);
+        board.act.offset = { x: q.x - p.x, y: q.y - p.y };
+      }
+    } else if (tool === 'eraser') {
+      board.act = { id: e.pointerId, tool, erased: eraseAt(p) };
+      view.drawInk(board.state.strokes);
+    } else {
+      const pr = pen ? (e.pressure || 0.5) : 0.5;
+      const stroke = { type: tool === 'arrow' ? 'arrow' : 'ink', color: board.color, width: 0, pts: points(e), pr: [pr] };
+      board.act = { id: e.pointerId, tool, stroke, pen };
+      updateWidth(stroke);
+      view.drawInk(board.state.strokes, stroke);
+    }
+  }, true);
+
+  function updateWidth(st) {
+    // Pressure sets the width: a light Pencil touch is thin, a hard press is bold.
+    const prs = st.pts.map((q) => q.pr);
+    const avg = prs.reduce((a, b) => a + b, 0) / prs.length;
+    st.width = st.type === 'arrow' ? 1.4 + avg * 1.6 : 0.8 + avg * 2.4;
+  }
+
+  svg.addEventListener('pointermove', (e) => {
+    if (!board.on) return;
+    e.stopImmediatePropagation();
+    const a = board.act;
+    if (!a || e.pointerId !== a.id) return;
+    const p = view.toField(e.clientX, e.clientY);
+    if (a.tool === 'move') {
+      if (Math.hypot(p.x - a.start.x, p.y - a.start.y) > 2) a.moved = true;
+      if (a.hit && a.moved) {
+        const q = actorPoint(a.hit);
+        q.x = Math.round((p.x + a.offset.x) * 10) / 10;
+        q.y = Math.round((p.y + a.offset.y) * 10) / 10;
+        if (a.hit.kind === 'ball') view.placeBall(Object.assign({ h: 0 }, q), false);
+        else if (a.hit.kind === 'runner') view.place(view.runnerEls[board.state.runners[a.hit.i].id], q);
+        else view.place(view.actors[a.hit.pos], q);
+      }
+    } else if (a.tool === 'eraser') {
+      if (eraseAt(p)) { a.erased = true; view.drawInk(board.state.strokes); }
+    } else {
+      for (const q of points(e)) {
+        const last = a.stroke.pts[a.stroke.pts.length - 1];
+        if (Math.hypot(q.x - last.x, q.y - last.y) >= 0.6) a.stroke.pts.push(q);
+      }
+      updateWidth(a.stroke);
+      view.drawInk(board.state.strokes, a.stroke);
+    }
+  }, true);
+
+  function endBoard(e, cancelled) {
+    if (!board.on) return;
+    e.stopImmediatePropagation();
+    if (e.pointerType === 'pen') { board.penActive = false; board.lastPen = performance.now(); }
+    const a = board.act;
+    if (!a || e.pointerId !== a.id) return;
+    board.act = null;
+    if (cancelled) { board.state = board.before; view.showBoard(board.state); return; }
+    if (a.tool === 'move') {
+      if (a.hit && a.moved) commit();
+      else if (!a.moved && a.base) {
+        // Tap a base: put a runner on it (or take one off).
+        const bp = view.geo.bases[a.base];
+        const i = board.state.runners.findIndex((r) => Math.hypot(r.x - bp.x, r.y - bp.y) < 5);
+        if (i >= 0) board.state.runners.splice(i, 1);
+        else board.state.runners.push({ id: 'wb' + Date.now(), label: 'R', x: bp.x, y: bp.y });
+        view.showBoard(board.state);
+        commit();
+      }
+    } else if (a.tool === 'eraser') {
+      if (a.erased) commit();
+    } else {
+      const st = a.stroke;
+      delete st.pr;
+      for (const q of st.pts) delete q.pr;
+      const len = st.pts.reduce((sum, q, i) => i ? sum + Math.hypot(q.x - st.pts[i - 1].x, q.y - st.pts[i - 1].y) : 0, 0);
+      if (st.type === 'arrow' && len < 6) { view.drawInk(board.state.strokes); return; }
+      board.state.strokes.push(st);
+      view.drawInk(board.state.strokes);
+      commit();
+    }
+  }
+  svg.addEventListener('pointerup', (e) => endBoard(e, false), true);
+  svg.addEventListener('pointercancel', (e) => endBoard(e, true), true);
+  svg.addEventListener('click', (e) => { if (board.on) e.stopImmediatePropagation(); }, true);
+
+  $('#btn-board').addEventListener('click', () => (board.on ? closeBoard() : openBoard()));
+  $('#bb-done').addEventListener('click', closeBoard);
+  for (const b of $$('#board-bar [data-tool]')) b.addEventListener('click', () => { board.tool = b.dataset.tool; renderBoardBar(); });
+  for (const b of $$('#board-bar [data-color]')) {
+    b.style.setProperty('--swatch', b.dataset.color);
+    b.addEventListener('click', () => { board.color = b.dataset.color; if (board.tool === 'move' || board.tool === 'eraser') board.tool = 'pen'; renderBoardBar(); });
+  }
+  $('#bb-undo').addEventListener('click', undoBoard);
+  $('#bb-redo').addEventListener('click', redoBoard);
+  $('#bb-clear').addEventListener('click', () => {
+    if (!board.state.strokes.length) return;
+    board.before = clone(board.state);
+    board.state.strokes = [];
+    view.drawInk([]);
+    commit();
+  });
+  $('#bb-reset').addEventListener('click', () => {
+    board.before = clone(board.state);
+    const strokes = board.state.strokes;
+    board.state = Object.assign(clone(board.start), { strokes });
+    view.showBoard(board.state);
+    commit();
+  });
 
   svg.addEventListener('pointerdown', (e) => {
     const baseEl = e.target.closest && e.target.closest('.base');
@@ -350,7 +601,7 @@
       for (const x of $$('.transport .seg button')) x.classList.toggle('on', x === b);
     });
   }
-  $('#btn-reset').addEventListener('click', showReady);
+  $('#btn-reset').addEventListener('click', () => { if (board.on) closeBoard(); clearInkOnNewPlay(); showReady(); });
 
   // Library
   const lib = $('#library');
@@ -418,6 +669,8 @@
   }
   leagueSel.value = state.league;
   leagueSel.addEventListener('change', () => {
+    if (board.on) closeBoard();
+    clearInkOnNewPlay();
     state.league = leagueSel.value;
     store.set('league', state.league);
     state.leadoffs = store.get('leadoffs.' + state.league, LEAGUES[state.league].leadoffs);
@@ -451,6 +704,14 @@
 
   document.addEventListener('keydown', (e) => {
     if (e.target.matches('input, select, textarea')) return;
+    if (e.key === 'w' || e.key === 'W') { board.on ? closeBoard() : openBoard(); return; }
+    if (board.on) {
+      const tools = { m: 'move', d: 'pen', a: 'arrow', e: 'eraser' };
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') { e.preventDefault(); e.shiftKey ? redoBoard() : undoBoard(); }
+      else if (tools[e.key.toLowerCase()]) { board.tool = tools[e.key.toLowerCase()]; renderBoardBar(); }
+      else if (e.key === 'Escape' || e.key === 'Enter') closeBoard();
+      return;
+    }
     if (e.key === ' ') { e.preventDefault(); $('#btn-play').click(); }
     else if (e.key === 'n' || e.key === 'N' || e.key === 'ArrowRight') runScenario(state.scenarioIndex + 1);
     else if (e.key === 'ArrowLeft') runScenario(state.scenarioIndex - 1);
@@ -467,7 +728,7 @@
   }
 
   // Test hook: lets the Playwright suite drive plays without synthesising drags.
-  window.SimpleFielding = { state, runEvent, runScenario, hitTo, seekEnd() { if (state.plan) { stop(); state.t = state.plan.timeline.duration; view.seek(state.t); updateTransport(); } } };
+  window.SimpleFielding = { state, board, openBoard, closeBoard, runEvent, runScenario, hitTo, seekEnd() { if (state.plan) { stop(); state.t = state.plan.timeline.duration; view.seek(state.t); updateTransport(); } } };
 
   buildLibrary();
   setGeometry();
