@@ -2,6 +2,16 @@
 
 ---
 
+## [2026-09-25] v0.32.1 — A new field starts a clean slate
+
+- **Changing the level or the park resets the play:**
+  - no runners and no outs, with a righty up and every call on Auto
+  - a fresh play builder
+  Before, a runner's lead set up on a pro field carried over to Little League, where the builder showed a lead slider that no longer did anything.
+- **No pickoff where nobody can lead off.** On a Little League 60 ft field (no leadoffs) and at 8U, the builder doesn't offer a pickoff. Runners can still steal once the pitch reaches the batter.
+
+---
+
 ## [2026-09-25] v0.32.0 — Base paths and mowing
 
 - **Base paths run parallel all the way**, in 2D and 3D. The dirt is an even 3 ft either side of each line. Outside the line, it runs from the plate past the bag to where the infield dirt ends. Before, the infield grass started further out at home plate, so the dirt narrowed toward the bases, and there was no dirt outside the line past the bag.

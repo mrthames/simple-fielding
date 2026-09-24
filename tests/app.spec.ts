@@ -787,3 +787,21 @@ test('3D follows a level and park changed while it was off', async ({ page }) =>
   const g = await page.evaluate(() => { const v = (window as any).SimpleFielding.view3d(); return { key: v.geo.key, park: v.geo.park, base: v.geo.base }; });
   expect(g).toEqual({ key: 'pro', park: expect.stringContaining('wrigley'), base: 90 });
 });
+
+test('changing the level starts a clean slate: no runners, a fresh builder, and no pickoff without leadoffs', async ({ page }) => {
+  const pick = async (lg: string) => page.evaluate((lg) => { const s = document.getElementById('league') as HTMLSelectElement; s.value = lg; s.dispatchEvent(new Event('change')); }, lg);
+  await pick('pro');
+  await page.locator('#panel-mode [data-pm="build"]').click();
+  await page.locator('.mini-base.b1').click();
+  const lead = page.locator('#build-runners input[type=range]').first();
+  await lead.fill('25');
+  await expect(page.locator('#build-runners .br-lead span').first()).toHaveText('25 ft lead');
+  await expect(page.locator('#build-what [data-what="pickoff"]')).toBeVisible();
+  await pick('littleLeague');
+  expect(await page.evaluate(() => (window as any).SimpleFielding.state.runners)).toEqual({ first: false, second: false, third: false });
+  await expect(page.locator('#build-runners .br-row')).toHaveCount(0);
+  await expect(page.locator('#build-what [data-what="pickoff"]')).toBeHidden();
+  // A runner put on at Little League has no lead to set.
+  await page.locator('.mini-base.b1').click();
+  await expect(page.locator('#build-runners .br-lead span').first()).toHaveText('No lead');
+});

@@ -4,7 +4,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '0.32.0';
+  const VERSION = '0.32.1';
   const Field = window.Field;
   const BATTED = ['ground', 'line', 'fly', 'pop', 'bunt'];
   const { POSITIONS, NAMES, LEAGUES } = Field;
@@ -1221,15 +1221,29 @@
     store.set('park.' + state.league, state.park);
     if (board.on) closeBoard();
     clearInkOnNewPlay();
-    const last = state.lastEvent;
+    freshSituation();
     setGeometry();
-    if (last) { state.lastEvent = last; rerun(); }
+    renderSituation();
+    renderBuild();
   });
   leagueSel.value = state.league;
+  // A new level or park starts a clean slate: no runners, no outs, a righty up, every call on Auto, and a fresh
+  // play builder. A lead or a pickoff set up on one field means nothing on another. (A shared link sets its own
+  // situation after this.)
+  function freshSituation() {
+    state.runners = { first: false, second: false, third: false };
+    state.outs = 0;
+    state.batter = 'R';
+    state.depth = 'auto'; state.d13 = 'auto'; state.buntD = 'auto';
+    state.lastEvent = null;
+    state.build = { what: 'pitch', result: 'caught', pickoff: 'first', ballTo: null, runners: {}, start: {} };
+    saveBuild();
+  }
   function setLeague(key) {
     if (!LEAGUES[key]) return;
     if (board.on) closeBoard();
     clearInkOnNewPlay();
+    freshSituation();
     state.league = key;
     leagueSel.value = key;
     store.set('league', key);
@@ -1243,6 +1257,8 @@
     setGeometry();
     buildQuick();
     renderSport();
+    renderSituation();
+    renderBuild();
   }
   function renderSport() {
     const sport = LEAGUES[state.league].sport;
@@ -1694,6 +1710,10 @@
   function renderBuild() {
     const b = state.build;
     const bases = ['first', 'second', 'third'].filter((x) => state.runners[x]);
+    // No leadoffs (Little League 60 ft, 8U): nobody is off the base, so there's no pickoff to build.
+    const canLead = leadMax() > 0;
+    if (!canLead && b.what === 'pickoff') b.what = 'pitch';
+    $('#build-what [data-what="pickoff"]').hidden = !canLead;
     for (const x of $$('#build-what button')) x.classList.toggle('on', x.dataset.what === b.what);
     for (const x of $$('#build-result button')) x.classList.toggle('on', x.dataset.res === b.result);
     $('#build-pitch').hidden = b.what !== 'pitch';
