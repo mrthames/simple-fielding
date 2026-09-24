@@ -2,6 +2,18 @@
 
 ---
 
+## [2026-09-25] v0.8.1 — One mode, the question in the title, Next on the field
+
+- **Basic mode is off.** There's one app again, with everything in it. The play list stays in the panel (it replaces the Plays button).
+- **Ask first is on by default**, and smaller. "Where does everybody go?" is a line under the play's name in the title card, and Play is only on the control bar, so the whole field stays in view.
+- **The ball's target is always marked**: a dashed circle where it's fielded or lands, visible before Play even with the paths hidden. A ball that got through also shows its roll as a finer dotted line to a finer dotted circle where it ends up.
+- **Next play** appears at the top right of the field when a play ends.
+- The pulsing "got through" ring has no label now; how to use it is in Settings.
+- The play list shows a cut-off last row, a fade and **Show all 45 plays**, so it's clear there's more.
+- The color key is centered. On a phone, the situation line sits in the title card.
+
+---
+
 ## [2026-09-25] v0.8.0 — Basic and Coach modes, grounders that get through, a coach's flow
 
 ### Basic and Coach modes

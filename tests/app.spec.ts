@@ -20,8 +20,8 @@ test.beforeEach(async ({ page }) => {
   const errors: string[] = [];
   page.on('pageerror', (e) => errors.push(e.message));
   (page as any)._errors = errors;
-  // Most tests exercise the full tool set; the Basic-mode tests switch back themselves.
-  await page.addInitScript(() => { if (!sessionStorage.getItem('sf.test.mode')) { localStorage.setItem('sf.mode', '"coach"'); sessionStorage.setItem('sf.test.mode', '1'); } });
+  // Most tests watch plays run; the Ask-first test turns it back on itself.
+  await page.addInitScript(() => { if (!sessionStorage.getItem('sf.test.mode')) { localStorage.setItem('sf.askFirst', 'false'); sessionStorage.setItem('sf.test.mode', '1'); } });
   await page.goto('/');
 });
 
@@ -37,7 +37,7 @@ test('loads with nine fielders and the drag hint', async ({ page }) => {
 
 test('dragging the ball to left field plays a single with a cutoff', async ({ page }) => {
   await dragBall(page, { x: -80, y: 135 });
-  await expect(page.locator('#play-title')).toHaveText('Single to left field');
+  await expect(page.locator('#play-title .pt-name')).toHaveText('Single to left field');
   await expect(page.locator('#jobs li')).toHaveCount(9);
   await expect(page.locator('#jobs li[data-pos="SS"]')).toContainText('cutoff');
   await expect(page.locator('#field-hint')).toBeHidden();
@@ -54,21 +54,19 @@ test('tapping a base puts a runner on, and the play changes', async ({ page }) =
 test('fly ball chip changes the hit, and the play re-runs', async ({ page }) => {
   await dragBall(page, { x: -90, y: 146 });
   await page.locator('#kind-chips [data-kind="fly"]').click();
-  await expect(page.locator('#play-title')).toHaveText('Fly ball to left field');
+  await expect(page.locator('#play-title .pt-name')).toHaveText('Fly ball to left field');
 });
 
 test('steal button puts a runner on 1st and runs the steal', async ({ page }) => {
   await page.locator('#other-plays [data-play="steal2"]').click();
-  await expect(page.locator('#play-title')).toHaveText('Stealing 2nd');
+  await expect(page.locator('#play-title .pt-name')).toHaveText('Stealing 2nd');
   await expect(page.locator('.mini-base.b1')).toHaveClass(/on/);
 });
 
-test('play library runs a scenario', async ({ page }) => {
-  await page.locator('#btn-library').click();
-  await expect(page.locator('#library')).toBeVisible();
-  await page.locator('#library .lib-item', { hasText: 'Foul pop behind the plate' }).click();
-  await expect(page.locator('#library')).toBeHidden();
+test('the play list runs a scenario', async ({ page }) => {
+  await page.locator('#quick-list .lib-item', { hasText: 'Foul pop behind the plate' }).click();
   await expect(page.locator('#jobs li[data-pos="P"]')).toContainText('home plate');
+  await expect(page.locator('#play-title')).toContainText('Foul pop behind the plate');
 });
 
 test('tapping a job spotlights that fielder', async ({ page }) => {
@@ -91,7 +89,7 @@ test('settings: switching to softball redraws the field', async ({ page }) => {
   await page.locator('#league').selectOption('softball');
   await page.keyboard.press('Escape');
   await dragBall(page, { x: -80, y: 135 });
-  await expect(page.locator('#play-title')).toHaveText('Single to left field');
+  await expect(page.locator('#play-title .pt-name')).toHaveText('Single to left field');
 });
 
 // ---- Whiteboard
@@ -151,7 +149,7 @@ test('whiteboard: the drawing stays after Done, and clears when the next play ru
   await page.locator('#bb-done').click();
   await expect(page.locator('#board-bar')).toBeHidden();
   await expect(page.locator('.layer-ink .ink')).toHaveCount(1);
-  await expect(page.locator('#play-title')).toHaveText('Single to left field');
+  await expect(page.locator('#play-title .pt-name')).toHaveText('Single to left field');
   await dragBall(page, { x: 80, y: 135 });
   await expect(page.locator('.layer-ink .ink')).toHaveCount(0);
 });
@@ -277,7 +275,7 @@ test('replay link reopens the exact play', async ({ page }) => {
     { runners: { first: true, second: true, third: false }, outs: 2, batter: 'L', league: 'littleLeague', leadoffs: false },
     { kind: 'line', at: { x: 52, y: 172 }, result: 'double' }));
   await page.goto('/#replay=' + code);
-  await expect(page.locator('#play-title')).toHaveText('Double to center field');
+  await expect(page.locator('#play-title .pt-name')).toHaveText('Double to center field');
   await expect(page.locator('.mini-base.b1')).toHaveClass(/on/);
   await expect(page.locator('#outs span.on')).toHaveCount(2);
   await expect(page.locator('#batter-seg [data-batter="L"]')).toHaveClass(/on/);
@@ -306,7 +304,7 @@ test('press and hold on the field, then drag, scrubs the play', async ({ page })
   await page.mouse.up();
   await expect(page.locator('#scrub-hint')).toBeHidden();
   // Scrubbing didn't hit a new ball.
-  await expect(page.locator('#play-title')).toHaveText('Single to left field');
+  await expect(page.locator('#play-title .pt-name')).toHaveText('Single to left field');
 });
 
 test('a plain drag on the field scrubs right away', async ({ page }) => {
@@ -321,7 +319,7 @@ test('a plain drag on the field scrubs right away', async ({ page }) => {
   const dur = await page.evaluate(() => (window as any).SimpleFielding.state.plan.timeline.duration);
   expect(t).toBeLessThan(dur * 0.5);
   await page.mouse.up();
-  await expect(page.locator('#play-title')).toHaveText('Single to left field');
+  await expect(page.locator('#play-title .pt-name')).toHaveText('Single to left field');
 });
 
 test('dragging the timeline slider moves the play (while paused)', async ({ page }) => {
@@ -338,44 +336,6 @@ test('dragging the timeline slider moves the play (while paused)', async ({ page
   await page.mouse.up();
   const after = await page.evaluate(() => (window as any).SimpleFielding.state.t);
   expect(after).toBeGreaterThan(before + 1);
-});
-
-test('basic mode: a first visit shows the quick-pick list and hides the coach tools', async ({ page }) => {
-  await page.evaluate(() => { localStorage.removeItem('sf.mode'); });
-  await page.reload();
-  await expect(page.locator('body')).toHaveClass(/mode-basic/);
-  for (const id of ['#btn-team', '#btn-board', '#btn-library', '#result-chips', '#other-plays', '#batter-seg']) {
-    await expect(page.locator(id)).toBeHidden();
-  }
-  await expect(page.locator('#quick')).toBeVisible();
-  await expect(page.locator('#sport-seg')).toBeVisible();
-  await expect(page.locator('#outs')).toBeVisible();
-  await page.locator('#quick-list .lib-item').nth(3).click();
-  await expect(page.locator('#quick-list .lib-item.on')).toHaveCount(1);
-  await expect(page.locator('#result')).toBeVisible();
-  await page.locator('#quick-next').click();
-  await expect(page.locator('#quick-list .lib-item').nth(4)).toHaveClass(/on/);
-  // Dragging still works in Basic, and clears the pick.
-  await dragBall(page, { x: -80, y: 135 });
-  await expect(page.locator('#quick-list .lib-item.on')).toHaveCount(0);
-  // Keyboard shortcuts for coach tools do nothing.
-  await page.keyboard.press('w');
-  await expect(page.locator('#board-bar')).toBeHidden();
-});
-
-test('basic mode: switching to coach mode brings everything back and sticks', async ({ page }) => {
-  await page.evaluate(() => { localStorage.setItem('sf.mode', '"basic"'); });
-  await page.reload();
-  await page.locator('#to-coach').click();
-  await expect(page.locator('body')).not.toHaveClass(/mode-basic/);
-  await expect(page.locator('#btn-team')).toBeVisible();
-  await expect(page.locator('#quick')).toBeHidden();
-  await page.reload();
-  await expect(page.locator('#btn-board')).toBeVisible();
-  await page.locator('#btn-settings').click();
-  await page.locator('#mode-seg [data-mode="basic"]').click();
-  await expect(page.locator('body')).toHaveClass(/mode-basic/);
-  await expect(page.locator('#league')).toBeHidden();
 });
 
 test('a grounder that gets through: drag from the ring to the outfield', async ({ page }) => {
@@ -395,6 +355,8 @@ test('a grounder that gets through: drag from the ring to the outfield', async (
   await page.mouse.move(pts.to.x, pts.to.y, { steps: 5 });
   await page.mouse.up();
   await expect(page.locator('#result-title')).toContainText('Through the infield');
+  await expect(page.locator('.ball-target.through')).toHaveCount(1);
+  await expect(page.locator('.ball-roll')).toHaveCount(1);
   const s = await page.evaluate(() => (window as any).SimpleFielding.state.plan);
   expect(s.fielder).toBe('LF');
   expect(s.missedBy).toBe('SS');
@@ -415,13 +377,22 @@ test('coach flow: a tap on a loaded play keeps it; changing runners re-runs the 
   await expect(page.locator('#sit-strip')).toContainText('Runner on 1st');
 });
 
-test('ask first: the play waits at the hit with paths hidden until Play', async ({ page }) => {
-  await page.locator('#btn-ask').click();
-  await dragBall(page, { x: -80, y: 135 });
-  await expect(page.locator('#ask-card')).toBeVisible();
+test('ask first (the default): the play waits at the hit, the question is in the title, Next comes at the end', async ({ page }) => {
+  await page.evaluate(() => localStorage.removeItem('sf.askFirst'));
+  await page.reload();
+  await expect(page.locator('#btn-ask')).toHaveAttribute('aria-pressed', 'true');
+  await page.locator('#quick-list .lib-item').first().click();
+  await expect(page.locator('#play-title .pt-ask')).toBeVisible();
+  await expect(page.locator('.ball-target')).toHaveCount(1);
   expect(await page.evaluate(() => (window as any).SimpleFielding.state.playing)).toBe(false);
+  await expect(page.locator('#field-next')).toBeHidden();
   await page.locator('#btn-play').click();
-  await expect(page.locator('#ask-card')).toBeHidden();
+  await expect(page.locator('#play-title .pt-ask')).toBeHidden();
+  await page.evaluate(() => (window as any).SimpleFielding.seekEnd());
+  await expect(page.locator('#field-next')).toBeVisible();
+  await page.locator('#field-next').click();
+  await expect(page.locator('#quick-list .lib-item').nth(1)).toHaveClass(/on/);
+  await expect(page.locator('#play-title .pt-ask')).toBeVisible();
 });
 
 test('a single on a grounder at an infielder gets through', async ({ page }) => {

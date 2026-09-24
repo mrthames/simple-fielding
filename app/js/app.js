@@ -4,7 +4,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '0.8.0';
+  const VERSION = '0.8.1';
   const { POSITIONS, NAMES, LEAGUES } = window.Field;
   const $ = (s) => document.querySelector(s);
   const $$ = (s) => Array.from(document.querySelectorAll(s));
@@ -30,9 +30,9 @@
     t: 0,
     spotlight: null,
     scenarioIndex: -1,
-    askFirst: store.get('askFirst', false),
+    askFirst: store.get('askFirst', true),
     asking: false,
-    mode: store.get('mode', 'basic') === 'coach' ? 'coach' : 'basic',
+    mode: 'coach', // Basic mode is off for now (2026-09-25); the code stays for when it's revisited.
   };
   if (!LEAGUES[state.league]) state.league = 'littleLeague';
   state.leadoffs = store.get('leadoffs.' + state.league, LEAGUES[state.league].leadoffs);
@@ -75,6 +75,8 @@
     const ord = { first: '1st', second: '2nd', third: '3rd' };
     const bases = on.length === 3 ? 'Bases loaded' : on.length ? `Runner${on.length > 1 ? 's' : ''} on ${on.map((k) => ord[k]).join(' & ')}` : 'Nobody on';
     $('#sit-strip').textContent = `${state.outs} out${state.outs === 1 ? '' : 's'} · ${bases}${state.batter === 'L' ? ' · Lefty batting' : ''}`;
+    const ptSit = $('#play-title .pt-sit');
+    if (ptSit) ptSit.textContent = $('#sit-strip').textContent;
     for (const b of $$('#batter-seg button')) b.classList.toggle('on', b.dataset.batter === state.batter);
     for (const b of $$('#kind-chips button')) b.classList.toggle('on', b.dataset.kind === state.kind);
     for (const b of $$('#result-chips button')) b.classList.toggle('on', b.dataset.result === state.result);
@@ -159,9 +161,7 @@
     renderResult(plan);
     view.showRollHandle(rollHandleAt());
     $('#field-hint').hidden = true;
-    const title = $('#play-title');
-    title.textContent = plan.title;
-    title.hidden = false;
+    setTitle(plan.title);
     setSpotlight(state.spotlight);
     state.t = 0;
     const auto = !opts || opts.autoplay !== false;
@@ -170,7 +170,7 @@
       state.asking = true;
       view.setShowPaths(false);
       view.seek(0);
-      $('#ask-card').hidden = false;
+      setTitle($('#play-title .pt-name') ? $('#play-title .pt-name').textContent : state.plan.title);
       updateTransport();
     } else {
       endAsk();
@@ -183,7 +183,17 @@
     if (!state.asking) return;
     state.asking = false;
     view.setShowPaths(state.showPaths);
-    $('#ask-card').hidden = true;
+    const ask = $('#play-title .pt-ask');
+    if (ask) ask.hidden = true;
+  }
+  // The title card: the play's name, and while asking, the question under it.
+  function setTitle(name) {
+    const t = $('#play-title');
+    t.innerHTML = '<span class="pt-name"></span><span class="pt-ask" hidden>Where does everybody go?</span><span class="pt-sit"></span>';
+    t.querySelector('.pt-name').textContent = name;
+    t.querySelector('.pt-sit').textContent = $('#sit-strip').textContent;
+    t.querySelector('.pt-ask').hidden = !state.asking;
+    t.hidden = false;
   }
   function setAskFirst(on) {
     state.askFirst = on;
@@ -192,7 +202,7 @@
     if (!on) endAsk();
   }
   $('#btn-ask').addEventListener('click', () => setAskFirst(!state.askFirst));
-  $('#btn-next').addEventListener('click', () => runScenario(state.scenarioIndex + 1));
+  $('#field-next').addEventListener('click', () => runScenario(state.scenarioIndex + 1));
 
   function renderResult(plan) {
     $('#result').hidden = false;
@@ -296,6 +306,10 @@
     $('#scrub').disabled = !state.plan;
     $('#transport').classList.toggle('idle', !state.plan);
     $('#btn-report').hidden = !(tester.on && state.plan);
+    // Next appears on the field once a play has finished.
+    const next = !!(state.plan && done && !state.playing && !board.on);
+    $('#field-next').hidden = !next;
+    $('#field-wrap').classList.toggle('has-next', next);
     updateScrub();
   }
 
@@ -809,7 +823,7 @@
     }
     renderSituation();
     runEvent(ev);
-    $('#play-title').textContent = sc.name;
+    setTitle(sc.name);
     markQuick(state.scenarioIndex);
     scrollToResultOnPhone();
   }
@@ -849,6 +863,16 @@
     }
   }
   $('#quick-next').addEventListener('click', () => runScenario(state.scenarioIndex + 1));
+  function quickEdge() {
+    const l = $('#quick-list');
+    $('#quick-wrap').classList.toggle('at-end', l.scrollTop + l.clientHeight >= l.scrollHeight - 4);
+  }
+  $('#quick-list').addEventListener('scroll', quickEdge, { passive: true });
+  $('#quick-more').addEventListener('click', () => {
+    const open = $('#quick-wrap').classList.toggle('open');
+    $('#quick-more').setAttribute('aria-expanded', String(open));
+    $('#quick-more').textContent = open ? 'Show fewer ▴' : `Show all ${window.Scenarios.ALL.length} plays ▾`;
+  });
 
   function setMode(mode) {
     state.mode = mode === 'coach' ? 'coach' : 'basic';
@@ -867,7 +891,6 @@
     }
   }
   for (const b of $$('#mode-seg button')) b.addEventListener('click', () => setMode(b.dataset.mode));
-  $('#to-coach').addEventListener('click', () => { setMode('coach'); window.scrollTo(0, 0); });
 
   $('#btn-library').addEventListener('click', () => openSheet(lib));
 
@@ -1156,12 +1179,13 @@
   window.addEventListener('hashchange', fromHash);
 
   // Test hook: lets the Playwright suite drive plays without synthesising drags.
-  window.SimpleFielding = { setMode, state, team, board, tester, openReport, buildReport, reportText, openBoard, closeBoard, runEvent, runScenario, hitTo, seekEnd() { if (state.plan) { stop(); state.t = state.plan.timeline.duration; view.seek(state.t); updateTransport(); } } };
+  window.SimpleFielding = { setMode, state, team, board, tester, openReport, buildReport, reportText, openBoard, closeBoard, runEvent, runScenario, hitTo, seekEnd() { if (state.plan) { stop(); endAsk(); state.t = state.plan.timeline.duration; view.seek(state.t); updateTransport(); } } };
 
   window.TeamUI.init({ team, onChange: (t) => { T.save(window.localStorage, t); applyLabels(); } });
   buildLibrary();
   buildQuick();
-  setMode(state.mode);
+  $('#quick-more').textContent = `Show all ${window.Scenarios.ALL.length} plays ▾`;
+  setMode('coach');
   setAskFirst(state.askFirst);
   setGeometry();
   renderSituation();

@@ -59,6 +59,7 @@
       this.layers = {
         paths: el('g', { class: 'layer-paths' }, this.svg),
         marks: el('g', { class: 'layer-marks' }, this.svg),
+        target: el('g', { class: 'layer-target' }, this.svg),
         throws: el('g', { class: 'layer-throws' }, this.svg),
         players: el('g', { class: 'layer-players' }, this.svg),
         runners: el('g', { class: 'layer-runners' }, this.svg),
@@ -280,6 +281,18 @@
       }
       for (const r of plan.runners) this.makeRunner(r.id, r.id === 'batter' ? 'B' : 'R');
       for (const base of ['first', 'second', 'third']) this.baseEls[base].classList.remove('occupied');
+      // Where the ball is going: shown before Play (and with paths hidden), so the question is clear.
+      // A ball that got through also shows the roll, finer dotted, to where it ends up.
+      this.clearLayer('target');
+      const land = plan.ball.landing || plan.ball.at;
+      if (land && plan.ball.at) {
+        el('circle', { cx: land.x, cy: -land.y, r: 5.5, class: 'ball-target' }, this.layers.target);
+        if (plan.through && plan.ball.at) {
+          const end = plan.ball.at;
+          el('path', { d: `M${P(land)} L${P(end)}`, class: 'ball-roll' }, this.layers.target);
+          el('circle', { cx: end.x, cy: -end.y, r: 5.5, class: 'ball-target through' }, this.layers.target);
+        }
+      }
       this.layers.paths.style.display = this.showPaths ? '' : 'none';
       this.layers.marks.style.display = this.showPaths ? '' : 'none';
       this.seek(0);
@@ -360,8 +373,6 @@
       if (!at) return;
       const g = el('g', { class: 'roll-handle', transform: `translate(${at.x},${-at.y})` }, this.layers.handle);
       el('circle', { r: 8, class: 'rh-ring' }, g);
-      const t = el('text', { class: 'rh-text', y: 13 }, g);
-      t.textContent = 'Got through? Drag it';
     }
 
     // ---------------------------------------------------------------------------------------------
