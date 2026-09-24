@@ -2,6 +2,17 @@
 
 ---
 
+## [2026-09-25] v0.17.0 — Infield depth
+
+- **Infield: Auto · DP · In · Corners in**, in the Situation card. This was the coach review's top missing option.
+  - **Auto** is what the app always did: double-play depth with a runner on 1st and less than two outs, normal otherwise.
+  - **DP** puts the middle infielders at double-play depth.
+  - **In** brings the whole infield to the edge of the grass. With a runner on 3rd and less than two outs, a ground ball is thrown home, the runner goes on contact, and the clock decides the play at the plate.
+  - **Corners in** brings the corners in and leaves the middle back. A ball to the corners goes home; a ball to the middle infielders takes the sure out at 1st.
+- Depth carries into saved plays, share links and the builder.
+
+---
+
 ## [2026-09-25] v0.16.0 — 3D, and seeing the play through a player's eyes
 
 - **3D view** (the **3D** button on the control bar). The same play, timeline and field in 3D: the park's real wall shape with its distances, the mound or the pitching circle, bases, foul poles, and the coach on the rubber at 8U.

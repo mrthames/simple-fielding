@@ -612,3 +612,11 @@ test('3D view: turns on, offers player cameras, follows the timeline, and turns 
   await expect(page.locator('canvas.field3d')).toBeHidden();
   await expect(page.locator('#field')).toBeVisible();
 });
+
+test('infield depth: In plays the grounder home', async ({ page }) => {
+  await page.locator('#mini-diamond [data-base="third"]').click();
+  await page.locator('#depth-seg [data-depth="in"]').click();
+  await expect(page.locator('#depth-seg [data-depth="in"]')).toHaveClass(/on/);
+  await page.evaluate(() => (window as any).SimpleFielding.runEvent({ kind: 'ground', at: { x: -22, y: 62 } }));
+  expect(await page.evaluate(() => (window as any).SimpleFielding.state.plan.target)).toBe('home');
+});

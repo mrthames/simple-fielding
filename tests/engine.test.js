@@ -326,3 +326,20 @@ test('runner reads: halfway on a caught fly and back; on a fly that drops, they 
   const mid = Engine.sampleTrack(d, 1.5);
   assert.ok(Math.hypot(mid.x - g.bases.third.x, mid.y - g.bases.third.y) > 10, JSON.stringify(mid));
 });
+
+test('infield depth: in throws home, corners in splits it, DP depth moves the middle in, and links keep it', () => {
+  const run = (depth, at, league = 'highSchool') => Engine.planPlay({ league, runners: { third: true }, outs: 1, depth }, { kind: 'ground', at });
+  assert.equal(run('in', { x: -30, y: 62 }).target, 'home');
+  assert.equal(run('cornersIn', { x: -30, y: 62 }).target, 'home');
+  assert.equal(run('cornersIn', { x: -20, y: 80 }).target, 'first');
+  assert.equal(run('auto', { x: -30, y: 62 }).target, 'first');
+  const g = Field.geometry('pro');
+  const inn = Field.readyPositions(g, { runners: {}, depth: 'in' });
+  const norm = Field.readyPositions(g, { runners: {} });
+  assert.ok(inn.SS.y < norm.SS.y - 30 && inn['3B'].y < norm['3B'].y, 'everyone comes in');
+  const dp = Field.readyPositions(g, { runners: {}, depth: 'dp' });
+  assert.ok(dp['2B'].y < norm['2B'].y, 'DP depth without a runner too');
+  const Share = require('../app/js/share.js');
+  const d = Share.decode(Share.encode({ league: 'pro', runners: { third: true }, outs: 1, depth: 'cornersIn' }, { kind: 'ground', at: { x: -30, y: 62 } }, 'x'));
+  assert.equal(d.situation.depth, 'cornersIn');
+});

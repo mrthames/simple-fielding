@@ -4,7 +4,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '0.16.0';
+  const VERSION = '0.17.0';
   const Field = window.Field;
   const BATTED = ['ground', 'line', 'fly', 'pop', 'bunt'];
   const { POSITIONS, NAMES, LEAGUES } = Field;
@@ -22,6 +22,7 @@
     runners: { first: false, second: false, third: false },
     outs: 0,
     batter: 'R',
+    depth: 'auto',
     kind: 'ground',
     result: 'auto',
     speed: store.get('speed', 1),
@@ -159,7 +160,7 @@
   }
 
   function situation() {
-    return { runners: Object.assign({}, state.runners), outs: state.outs, batter: state.batter, league: state.league, park: state.park || undefined, leadoffs: state.leadoffs,
+    return { runners: Object.assign({}, state.runners), outs: state.outs, batter: state.batter, depth: state.depth !== 'auto' ? state.depth : undefined, league: state.league, park: state.park || undefined, leadoffs: state.leadoffs,
       start: state.pm === 'build' && Object.keys(state.build.start).length ? state.build.start : undefined };
   }
 
@@ -178,6 +179,7 @@
     const ptSit = $('#play-title .pt-sit');
     if (ptSit) ptSit.textContent = $('#sit-strip').textContent;
     for (const b of $$('#batter-seg button')) b.classList.toggle('on', b.dataset.batter === state.batter);
+    for (const b of $$('#depth-seg button')) b.classList.toggle('on', b.dataset.depth === state.depth);
     for (const b of $$('#kind-chips button')) b.classList.toggle('on', b.dataset.kind === state.kind);
     for (const b of $$('#result-chips button')) b.classList.toggle('on', b.dataset.result === state.result);
     // Other plays only make sense with the right runners on.
@@ -841,6 +843,7 @@
   $('#btn-clear').addEventListener('click', () => { state.runners = { first: false, second: false, third: false }; situationChanged(); });
   $('#outs').addEventListener('click', () => { state.outs = (state.outs + 1) % 3; situationChanged(); });
   for (const b of $$('#batter-seg button')) b.addEventListener('click', () => { state.batter = b.dataset.batter; renderSituation(); rerun(); });
+  for (const b of $$('#depth-seg button')) b.addEventListener('click', () => { state.depth = b.dataset.depth; situationChanged(); });
   for (const b of $$('#kind-chips button')) b.addEventListener('click', () => { state.kind = b.dataset.kind; renderSituation(); rerunHit(); });
   for (const b of $$('#result-chips button')) b.addEventListener('click', () => { state.result = b.dataset.result; renderSituation(); rerunHit(); });
   for (const b of $$('#other-plays button')) {
@@ -1673,6 +1676,7 @@
     state.runners = Object.assign({ first: false, second: false, third: false }, s.runners);
     state.outs = s.outs;
     state.batter = s.batter;
+    state.depth = s.depth || 'auto';
     if (typeof s.leadoffs === 'boolean') { state.leadoffs = s.leadoffs; $('#leadoffs').checked = s.leadoffs; }
     if (d.event.at && BATTED.includes(d.event.kind)) { state.kind = d.event.kind; state.result = d.event.result || 'auto'; }
     if (d.event.kind === 'pitch' || s.start) {

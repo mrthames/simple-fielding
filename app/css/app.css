@@ -828,3 +828,5 @@ body.view3d .field-hint, body.view3d .sit-strip { display: none !important; }
 .view3d-btn[aria-pressed="true"] { background: var(--chip-on); color: #fff; border-radius: var(--r); padding: 6px 10px; }
 body.view3d .play-title { top: 58px; }
 @media (max-width: 899px) { .cam-bar { top: auto; bottom: 8px; font-size: 12px; } body.view3d .play-title { top: 8px; } }
+.depth-ctl { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
+.depth-ctl .seg button { padding: 0 9px; font-size: 13px; }

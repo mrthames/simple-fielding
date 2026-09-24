@@ -398,10 +398,12 @@
     const run = (situation && situation.runners) || {};
     const outs = (situation && situation.outs) || 0;
     const k = geo.base / 60;
-    if (run.first && outs < 2) {
+    const depth = (situation && situation.depth) || 'auto';
+    const dpSpots = () => {
       r['2B'] = geo.dp ? { ...geo.dp['2B'] } : { x: 16 * k, y: 2 * geo.side - 10 * k };
       r.SS = geo.dp ? { ...geo.dp.SS } : { x: -16 * k, y: 2 * geo.side - 10 * k };
-    }
+    };
+    if ((depth === 'auto' && run.first && outs < 2) || depth === 'dp') dpSpots();
     if (run.first && !run.second && situation && situation.leadoffs) {
       r['1B'] = { x: geo.side - 2 * k, y: geo.side + 2 * k };
     }
@@ -425,6 +427,21 @@
         const d = Math.hypot(r[p].x, r[p].y);
         const f = (d - sl.ofIn * (p === 'RF' ? 0.6 : 1)) / d;
         r[p] = { x: r[p].x * f, y: r[p].y * f };
+      }
+    }
+    // Infield in: everybody on the edge of the grass, even with (or in front of) the baseline, to cut off the run.
+    // Corners in: the corners in, the middle infielders at normal depth.
+    const B = geo.base, softball = geo.league.sport === 'softball';
+    if (depth === 'in' || depth === 'cornersIn') {
+      const cornerAlong = (softball ? 0.75 : 0.89) * B;
+      r['1B'] = geo.onLine(1, cornerAlong, 6 * k);
+      r['3B'] = geo.onLine(-1, cornerAlong, 6 * k);
+      if (depth === 'in') {
+        r['2B'] = { x: 0.31 * B, y: (softball ? 1.07 : 1.04) * B };
+        r.SS = { x: -0.31 * B, y: (softball ? 1.07 : 1.04) * B };
+      } else if (geo.ready) {
+        r['2B'] = { ...geo.ready['2B'] };
+        r.SS = { ...geo.ready.SS };
       }
     }
     // Where the coach put fielders in the scenario builder.

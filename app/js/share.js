@@ -17,6 +17,7 @@
     'softball8', 'softball14', 'softballHS', 'softballCollege', 'softballPro'];
   const KINDS = ['ground', 'line', 'fly', 'pop', 'bunt', 'steal2', 'steal3', 'firstThirdSteal', 'passedBall', 'primaryLead', 'secondaryLead', 'pitch', 'drawn', 'lookBack', 'delayedSteal', 'droppedThird'];
   const ACTIONS = ['return', 'hesitate', 'break', 'drift'];
+  const DEPTHS = ['auto', 'normal', 'dp', 'in', 'cornersIn'];
   const BASES = ['first', 'second', 'third'];
   const POS = ['P', 'C', '1B', '2B', 'SS', '3B', 'LF', 'CF', 'RF'];
   const RESULTS = [undefined, 'out', 'single', 'double', 'triple'];
@@ -145,6 +146,9 @@
       if (event.through) { put16(out, event.through.x); put16(out, event.through.y); }
     }
     if (nameBytes.length) { out.push(nameBytes.length); out.push(...nameBytes); }
+    // Extras, at the very end so older links stay valid: the infield depth.
+    const di = DEPTHS.indexOf(s.depth || 'auto');
+    if (di > 0) out.push(di);
     return toB64url(out);
   }
 
@@ -203,6 +207,7 @@
       }
       let name = '';
       if (f & 16) { const n = b[i++]; name = unutf8(b.slice(i, i + n)); i += n; }
+      if (i < b.length) { const d = DEPTHS[b[i++] & 7]; if (d && d !== 'auto') situation.depth = d; }
       return { situation, event, name };
     } catch (e) { return null; }
   }

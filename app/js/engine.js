@@ -681,6 +681,8 @@
     // A slow roller or a slap: the force at 2nd is too late unless a middle infielder fields it near the bag.
     if ((plan.ball.slow || situation.batter === 'S') && !forced.home && !(['SS', '2B'].includes(F) && dist(at, b.second) < 30 * (geo.base / 60))) return ['first'];
     if (forced.home) return ['home', 'first'];
+    const depth = situation.depth || 'auto';
+    if (run.third && situation.outs < 2 && (depth === 'in' || (depth === 'cornersIn' && ['1B', '3B', 'P', 'C'].includes(F)))) return ['home'];
     if (forced.third && F === '3B') return ['third', 'first'];
     if (forced.second) return ['second', 'first'];
     return ['first'];
@@ -748,6 +750,7 @@
       if (base === 'third' && plan.squeeze) { r.push({ id: base, from: base, to: 'home', start: Math.max(0, (plan.T0 || 0.5) - 0.35), commit: true }); continue; }
       if (forced[nb]) r.push({ id: base, from: base, to: nb, forced: true });
       else if (situation.outs === 2) r.push({ id: base, from: base, to: nb });
+      else if (base === 'third' && targets[0] === 'home') r.push({ id: base, from: base, to: 'home', commit: true });
       else r.push({ id: base, from: base, to: base });
     }
     plan.runners = r;
@@ -886,6 +889,11 @@
     }
     if (dp) plan.notes.push(isBunt ? '' : 'Double play: get the lead runner first. The second throw only happens if the first out is made cleanly.');
     if (situation.outs === 2) plan.notes.push('Two outs: take the easiest out. Everybody runs on contact.');
+    if (run.third && situation.outs < 2 && targets[0] === 'home' && !forced.home) {
+      plan.notes.push(situation.depth === 'cornersIn'
+        ? 'Corners in, middle back: a ball to the corners goes home to cut off the run; a ball to the middle infielders takes the sure out at 1st.'
+        : 'Infield in: everyone plays on the edge of the grass so a ground ball can be thrown home to stop the run. The price: more ground balls get through.');
+    }
     if (run.third && situation.outs < 2 && targets[0] !== 'home') {
       plan.notes.push(geo.older
         ? 'The runner on 3rd may score. Early with a lead, take the sure out; late and close, the infield plays in to cut the run off.'
