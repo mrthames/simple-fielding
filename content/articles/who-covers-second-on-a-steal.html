@@ -1,0 +1,73 @@
+<script type="application/json">
+{
+  "order": 2,
+  "title": "Who Covers Second Base on a Steal? Shortstop or Second Baseman",
+  "short": "Who covers 2nd on a steal",
+  "ogTitle": "Who covers 2nd on a steal?",
+  "description": "The simple rule for who covers second base when a runner steals in youth baseball and softball, what the other middle infielder does, and how to handle 1st and 3rd.",
+  "date": "2026-09-24",
+  "readTime": "4 min",
+  "plays": {
+    "righty": {
+      "label": "Steal of 2nd with a right-handed batter. The second baseman covers and the shortstop backs up.",
+      "situation": { "runners": { "first": true }, "outs": 0, "batter": "R" },
+      "event": { "kind": "steal2" },
+      "expect": { "target": "second", "roles": { "2B": "cover", "SS": "backup", "CF": "backup" } }
+    },
+    "lefty": {
+      "label": "The same steal with a left-handed batter. Now the shortstop covers.",
+      "situation": { "runners": { "first": true }, "outs": 0, "batter": "L" },
+      "event": { "kind": "steal2" },
+      "expect": { "target": "second", "roles": { "SS": "cover", "2B": "backup" } }
+    },
+    "steal3": {
+      "label": "Steal of 3rd. The third baseman covers and the left fielder charges in to back up.",
+      "situation": { "runners": { "second": true }, "outs": 1 },
+      "event": { "kind": "steal3" },
+      "expect": { "target": "third", "roles": { "3B": "cover", "LF": "backup" } }
+    },
+    "first-third": {
+      "label": "1st & 3rd double steal: the second baseman cuts the throw in front of 2nd and fires home if the runner breaks.",
+      "situation": { "runners": { "first": true, "third": true }, "outs": 0 },
+      "event": { "kind": "firstThirdSteal" },
+      "expect": { "target": "home", "roles": { "2B": "cutoff", "SS": "cover" } }
+    }
+  },
+  "faq": [
+    ["Who covers second base on a steal with a right-handed batter?", "The second baseman covers and the shortstop backs up. A right-handed batter usually pulls the ball to the left side, so the shortstop stays in position."],
+    ["Who covers second on a steal with a left-handed batter?", "The shortstop covers and the second baseman backs up, because a lefty tends to pull the ball toward the right side."],
+    ["Can runners steal in Little League?", "Yes, but in Little League baseball on a 60-foot field runners can't leave the base until the pitch reaches the batter, so steals are much harder. Softball runners can leave when the pitcher releases the ball."]
+  ]
+}
+</script>
+<p>Runner on first, the pitch is on its way, and the runner takes off. The catcher comes up throwing, and two infielders run to second base at the same time. Or worse, neither does. Here's the rule that settles it.</p>
+
+<h2>The rule: cover from the side the batter <em>won't</em> hit to</h2>
+<p>Batters usually <strong>pull</strong> the ball: right-handed hitters to the left side, lefties to the right side. So the infielder on the pull side stays home in case the ball is put in play, and the other one covers.</p>
+<table>
+  <tr><th>Batter</th><th>Covers 2nd</th><th>Backs up</th></tr>
+  <tr><td>Right-handed</td><td>Second baseman</td><td>Shortstop</td></tr>
+  <tr><td>Left-handed</td><td>Shortstop</td><td>Second baseman</td></tr>
+</table>
+<play id="righty"></play>
+<play id="lefty"></play>
+<p>Many teams make it even simpler: the shortstop and second baseman decide before the pitch. One of them shows the other a closed mouth (me) or an open mouth (you) behind the glove. Whatever the system, <strong>they talk before every pitch</strong> with a runner on.</p>
+
+<h2>Everybody else</h2>
+<ul>
+  <li><strong>Center fielder:</strong> charges in behind 2nd to back up the throw. This saves more runs than people think.</li>
+  <li><strong>Pitcher:</strong> after the pitch, gets out of the way. Duck or step aside so the catcher has a clear lane.</li>
+  <li><strong>Catcher:</strong> catches, comes up throwing, and aims at the bag, knee high, so the tag is quick.</li>
+  <li><strong>Covering infielder:</strong> straddles the bag, catches the ball, and puts the tag down in front of the base. Let the runner slide into the tag.</li>
+</ul>
+
+<h2>Stealing 3rd</h2>
+<p>Much simpler: the <strong>third baseman</strong> covers, the shortstop covers 2nd behind the runner, and the <strong>left fielder</strong> charges in to back up the throw. A bad throw to 3rd without a backup is a run.</p>
+<play id="steal3"></play>
+
+<h2>1st &amp; 3rd: the double steal</h2>
+<p>This is where teams differ most. The runner on 1st goes, and if the catcher throws to 2nd, the runner on 3rd breaks for home. Options include throwing through, faking to 3rd, throwing back to the pitcher, or holding the ball. One common youth version is the <strong>cut play</strong>: the second baseman comes in front of the bag, the shortstop covers 2nd, and the third baseman yells "Four!" if the runner breaks for home. The second baseman catches it and throws home.</p>
+<play id="first-third"></play>
+
+<h2>A note on leagues</h2>
+<p>In Little League baseball on a 60-foot field, runners <strong>can't leave the base until the pitch reaches the batter</strong>, so steals are rarer and the throw is shorter. In fastpitch softball, runners can go when the pitcher releases the ball. In 50/70, travel ball and older divisions with leadoffs, pickoffs and pitcher holds come into play too. Simple Fielding has a setting for each, and it changes when runners start moving.</p>

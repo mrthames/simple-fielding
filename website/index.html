@@ -3,11 +3,16 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Simple Fielding</title>
+<title>Simple Fielding: Youth Baseball and Softball Defense, Animated</title>
 <meta name="description" content="Simple Fielding teaches youth baseball and softball players where to go on every play. Drag the ball anywhere and watch all nine fielders move. Free, no ads, no accounts.">
 <meta property="og:title" content="Simple Fielding — where every fielder goes, on every play">
 <meta property="og:description" content="Drag the ball anywhere on the field and watch all nine fielders go where they belong. Free for coaches, players and parents.">
 <meta property="og:type" content="website">
+<meta property="og:site_name" content="Simple Fielding">
+<meta property="og:image" content="https://simplefielding.com/images/og-home.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
 <meta property="og:url" content="https://simplefielding.com/">
 <link rel="canonical" href="https://simplefielding.com/">
 <meta name="theme-color" content="#0b1c3a">
@@ -15,6 +20,37 @@
 <link rel="icon" type="image/svg+xml" href="icon.svg" media="(prefers-color-scheme: light)">
 <link rel="icon" type="image/svg+xml" href="icon-dark.svg" media="(prefers-color-scheme: dark)">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "Simple Fielding",
+  "url": "https://simplefielding.com/app/",
+  "applicationCategory": "SportsApplication",
+  "operatingSystem": "Any (web browser). iOS and Android coming soon.",
+  "description": "An interactive whiteboard for youth baseball and softball defense. Drag the ball to where it's hit and all nine fielders move to their jobs: who fields it, the cutoff or relay, who covers each base, who backs up.",
+  "offers": {
+    "@type": "Offer",
+    "price": "0",
+    "priceCurrency": "USD"
+  },
+  "isAccessibleForFree": true,
+  "image": "https://simplefielding.com/icon-512.png",
+  "publisher": {
+    "@type": "Organization",
+    "name": "Simple Fielding",
+    "url": "https://simplefielding.com"
+  }
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  "name": "Simple Fielding",
+  "url": "https://simplefielding.com/"
+}
+</script>
 <style>
   :root {
     --bg: #F2F2F7; --ink: #0b1c3a; --ink-2: #4a5568; --card: #fff; --line: rgba(60,60,67,.12);
@@ -33,6 +69,12 @@
 .nav a.small { color: #dbe6ff; text-decoration: none; font-weight: 700; }
   .nav-app { display: inline-flex; align-items: center; gap: 8px; background: var(--brand); color: #fff; font-weight: 700; font-size: 15px; padding: 10px 16px; border-radius: 12px; text-decoration: none; }
   .nav-app:hover { filter: brightness(1.08); }
+  .nav-right { display: flex; align-items: center; gap: 16px; }
+  @media (max-width: 480px) { .nav-right .small { display: none; } }
+  .guides { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
+  .guide { display: block; background: var(--card); border: 0.5px solid var(--line); border-radius: 18px; padding: 16px 18px; text-decoration: none; color: var(--ink); }
+  .guide strong { display: block; font-size: 17px; }
+  .guide span { color: var(--ink-2); font-size: 15px; }
 
   .stores { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; max-width: 640px; }
   .store { display: flex; align-items: center; gap: 14px; background: var(--card); border: 0.5px solid var(--line); border-radius: 18px; padding: 16px 18px; }
@@ -86,9 +128,10 @@
   <div class="wrap">
     <nav class="nav">
       <a class="logo" href="./"><img src="icon.svg" alt=""> Simple Fielding</a>
+      <span class="nav-right"><a class="small" href="articles/">Guides</a>
       <a class="nav-app" href="app/">Open the app
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
-      </a>
+      </a></span>
     </nav>
     <div class="hero-grid">
       <div>
@@ -186,6 +229,22 @@
     </div>
   </section>
 
+  <section style="padding-top:0" id="guides">
+    <div class="wrap">
+      <h2>Guides for coaches and parents</h2>
+      <p class="section-lede">Plain-English guides to youth defense. Every one links straight to the plays in the app.</p>
+      <div class="guides">
+        <a class="guide" href="articles/cutoffs-and-relays/"><strong>Cutoffs and relays</strong><span>Which infielder goes out, and who covers every base.</span></a>
+        <a class="guide" href="articles/who-covers-second-on-a-steal/"><strong>Who covers 2nd on a steal</strong><span>Shortstop or second baseman? The simple rule.</span></a>
+        <a class="guide" href="articles/bunt-defense/"><strong>Bunt defense</strong><span>Who charges, who covers first, and taking the sure out.</span></a>
+        <a class="guide" href="articles/backing-up-bases/"><strong>Backing up bases</strong><span>The job kids forget, and the runs it saves.</span></a>
+        <a class="guide" href="articles/pop-up-priority/"><strong>Pop-up priority</strong><span>Who catches it, and how to call it.</span></a>
+        <a class="guide" href="articles/defensive-practice-plan/"><strong>A 30-minute practice plan</strong><span>Show it, walk it, run it.</span></a>
+      </div>
+      <p style="margin-top:14px"><a href="articles/">All guides →</a></p>
+    </div>
+  </section>
+
   <section style="padding-top:0" id="apps">
     <div class="wrap">
       <h2>Coming soon to your phone and tablet</h2>
@@ -214,7 +273,7 @@
 </main>
 
 <footer class="wrap">
-  <a href="app/">Open the app</a> · <a href="privacy.html">Privacy</a> · <a href="https://simplepitchcounter.com">Simple Pitch Counter</a>
+  <a href="app/">Open the app</a> · <a href="articles/">Guides</a> · <a href="privacy/">Privacy</a> · <a href="https://simplepitchcounter.com">Simple Pitch Counter</a>
   <p>© 2026 Simple Fielding</p>
 </footer>
 </body>

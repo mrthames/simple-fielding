@@ -25,6 +25,13 @@ jobs:
       - name: Engine tests
         run: node --test tests/*.test.js
 
+      # Rebuilds the guides. Every "Watch this play" in an article is run through the engine and must
+      # match what the article says; the committed pages must also be up to date.
+      - name: Guides agree with the engine
+        run: |
+          node scripts/build-site.mjs
+          git diff --exit-code -- website ':!website/sitemap.xml'
+
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
 

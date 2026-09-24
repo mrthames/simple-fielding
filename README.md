@@ -7,7 +7,7 @@ ball, who's the cutoff, who covers the base, and who backs it up.
 Free, with no ads and no accounts. It's built for an iPad first, works on phones, and has a projector mode
 for team meetings.
 
-**Try it:** https://mrthames.github.io/simple-fielding/ — web app at [`/app/`](https://mrthames.github.io/simple-fielding/app/)
+**Try it:** https://simplefielding.com (the web app is at [`/app/`](https://simplefielding.com/app/)). A copy is on [GitHub Pages](https://mrthames.github.io/simple-fielding/).
 
 A companion to [Simple Pitch Counter](https://github.com/mrthames/simple-pitch-counter).
 
@@ -54,7 +54,8 @@ simple-fielding/
 │   ├── js/playlog.js     the play log and replay codes (used by tester reports)
 │   ├── js/render.js      SVG drawing and animation playback
 │   └── js/app.js         UI: situation, drag-to-hit, playback
-├── website/              the companion site (landing, privacy)
+├── website/              the companion site: homepage, guides, privacy (guides are generated, see below)
+├── content/              guide sources (content/articles/*.html) and the share-image template
 ├── docs/SCENARIOS.md     the coaching reference
 ├── tests/                engine unit tests (node:test) and UI tests (Playwright)
 ├── marketing/icon-layers/ icon layers for Icon Composer (Liquid Glass) and a monochrome version
@@ -74,6 +75,8 @@ npm install
 npm start               # serves app/ on http://localhost:3344
 npm test                # engine tests + Playwright UI tests
 npm run icons           # regenerate PNG icons from app/icon.svg and app/icon-dark.svg
+npm run site            # rebuild the guides, sitemap and robots.txt (checks every play against the engine)
+npm run site:og         # ...and re-render the share images
 ```
 
 ## Testing on a device
@@ -85,7 +88,8 @@ top of that file), or are copied to the clipboard if no address is set.
 
 ## Deployment
 
-Every push to `main` publishes to GitHub Pages (`.github/workflows/pages.yml`): the website at the root
+**simplefielding.com** is served from the NAS: `bash scripts/deploy-nas.sh` (connection details come from the
+environment, never the repo). Every push to `main` also publishes to GitHub Pages (`.github/workflows/pages.yml`): the website at the root
 and the app under `/app/`. The tests and the personal-data check run on every push and pull request
 (`.github/workflows/test.yml`).
 

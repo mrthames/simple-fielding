@@ -2,6 +2,17 @@
 
 ---
 
+## [2026-09-24] Website — simplefielding.com, guides, search
+
+### Website
+- **Hosted at simplefielding.com** on the NAS (the web server), with the site at the root and the app at `/app/`. `scripts/deploy-nas.sh` publishes it. GitHub Pages keeps a copy for now.
+- **Seven guides** at `/articles/`: cutoffs and relays, who covers 2nd on a steal, bunt defense, backing up bases, pop-up priority, a 30-minute practice plan, and the pitcher's defensive jobs (which links to Simple Pitch Counter). Each has **Watch this play** buttons that open the exact play in the app.
+- **Checked against the engine.** `scripts/build-site.mjs` runs every play in every guide through the play engine and fails if the app doesn't do what the article says. CI runs it on every push.
+- **Search:** `sitemap.xml`, `robots.txt`, canonical URLs, page titles and descriptions, Open Graph share images (1200×630, one per guide), and structured data (WebApplication, Article, BreadcrumbList, FAQPage). Clean URLs (`/privacy/`, `/articles/<slug>/`); the old `privacy.html` redirects.
+- Homepage: a guides section, a Guides link in the header, and "coming soon" to the App Store and Google Play.
+
+---
+
 ## [2026-09-23] v0.4.2 — The field stays put
 
 ### Layout

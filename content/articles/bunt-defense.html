@@ -1,0 +1,69 @@
+<script type="application/json">
+{
+  "order": 3,
+  "title": "Bunt Defense for Youth Baseball and Softball: Who Charges, Who Covers",
+  "short": "Bunt defense",
+  "ogTitle": "Bunt defense: who charges, who covers",
+  "description": "A simple bunt defense for youth baseball and softball teams: who fields the bunt, who covers first base, what changes with a runner on second, and why you take the sure out.",
+  "date": "2026-09-24",
+  "readTime": "5 min",
+  "plays": {
+    "third-line": {
+      "label": "Bunt down the 3rd-base line. The third baseman fields it, and the second baseman covers 1st for the throw.",
+      "situation": { "runners": {}, "outs": 0 },
+      "event": { "kind": "bunt", "at": { "x": -18, "y": 26 } },
+      "expect": { "fielder": "3B", "target": "first", "covers": { "2B": "first" } }
+    },
+    "to-pitcher": {
+      "label": "Bunt back to the pitcher with a runner on 1st. The pitcher fields it and takes the sure out at 1st.",
+      "situation": { "runners": { "first": true }, "outs": 0 },
+      "event": { "kind": "bunt", "at": { "x": 2, "y": 30 } },
+      "expect": { "fielder": "P", "target": "first", "covers": { "2B": "first" } }
+    },
+    "runner-second": {
+      "label": "Bunt with a runner on 2nd. The third baseman charges, so the shortstop covers 3rd.",
+      "situation": { "runners": { "second": true }, "outs": 0 },
+      "event": { "kind": "bunt", "at": { "x": -16, "y": 24 } },
+      "expect": { "fielder": "3B", "target": "first", "covers": { "SS": "third", "2B": "first" } }
+    }
+  },
+  "faq": [
+    ["Who covers first base on a bunt?", "The second baseman. The first baseman charges the bunt, so the second baseman runs to the bag to take the throw."],
+    ["Where should you throw a bunt in youth baseball?", "Usually to first base for the sure out. A bunt is often a sacrifice, and trying to get the lead runner leads to more errors at younger ages than it saves."],
+    ["Who covers third on a bunt with a runner on second?", "The shortstop, because the third baseman may have to charge the bunt."]
+  ]
+}
+</script>
+<p>Bunts cause more chaos in youth games than almost any other play. Three players charge, two of them collide, and nobody is at first base. A simple bunt defense fixes most of it, and it only needs one idea: <strong>who charges and who covers</strong>.</p>
+
+<h2>Who charges</h2>
+<ul>
+  <li><strong>First and third basemen</strong> charge the lines as soon as the batter squares.</li>
+  <li><strong>The pitcher</strong> follows through and comes off the mound toward the plate. They take the middle.</li>
+  <li><strong>The catcher</strong> takes anything right in front of the plate, and is the one who <em>calls</em> the play ("One! One!") because they're facing it.</li>
+</ul>
+<p>Whoever gets there first and has the best angle takes it. The others get out of the way, and the corner who didn't field it gets back toward their base.</p>
+
+<h2>Who covers</h2>
+<ul>
+  <li><strong>Second baseman covers 1st.</strong> This is the key to the whole thing, because the first baseman is charging.</li>
+  <li><strong>Shortstop covers 2nd</strong>, or 3rd if there's a runner on 2nd (see below).</li>
+  <li><strong>Outfielders</strong> run in to back up: right fielder behind 1st, left fielder behind 3rd, center fielder behind 2nd.</li>
+</ul>
+<play id="third-line"></play>
+
+<h2>Take the sure out</h2>
+<p>A bunt is usually a <em>sacrifice</em>. The other team is trading an out to move a runner. At the youth level, the best answer is to <strong>take the out they're giving you at 1st</strong>. Trying for the lead runner at 2nd or 3rd means a hurried throw to a moving target, and the ball in right field turns one base into three.</p>
+<play id="to-pitcher"></play>
+<p class="tip">Exception: bases loaded and the catcher fields it right in front of the plate. Step on home for the force, then throw to 1st.</p>
+
+<h2>Runner on 2nd</h2>
+<p>Now the third baseman has a decision: charge the bunt or stay home to take a throw at 3rd. Keep it simple for younger players: the third baseman charges, and the <strong>shortstop covers 3rd</strong>. The second baseman still covers 1st.</p>
+<play id="runner-second"></play>
+
+<h2>Practice it in five minutes</h2>
+<ol>
+  <li>Put nine kids in their spots and have a coach bunt (or roll) the ball to different places.</li>
+  <li>Before each one, ask the second baseman: "Where are you going?" (First!)</li>
+  <li>Rotate positions so every kid learns the second baseman's job. It's the one that gets forgotten.</li>
+</ol>

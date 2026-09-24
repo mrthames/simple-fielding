@@ -1,0 +1,70 @@
+<script type="application/json">
+{
+  "order": 7,
+  "title": "Your Pitcher Is a Fielder Too: Pitch Counts, Positions and the Pitcher's Defensive Jobs",
+  "short": "The pitcher's defensive jobs",
+  "ogTitle": "Your pitcher is a fielder too",
+  "description": "What a youth pitcher does after the pitch (covering first, backing up bases, covering home) and how to manage pitch counts and positions on game day with two free apps.",
+  "date": "2026-09-24",
+  "readTime": "5 min",
+  "plays": {
+    "cover-first": {
+      "label": "Ground ball to the right side. The pitcher breaks to 1st: to the line, then up the line to the bag.",
+      "situation": { "runners": {}, "outs": 0 },
+      "event": { "kind": "ground", "at": { "x": 30, "y": 62 } },
+      "expect": { "covers": { "P": "first" } }
+    },
+    "comebacker": {
+      "label": "Comebacker with a runner on 1st. The pitcher turns and throws to 2nd to start the double play.",
+      "situation": { "runners": { "first": true }, "outs": 0 },
+      "event": { "kind": "ground", "at": { "x": 2, "y": 40 } },
+      "expect": { "fielder": "P", "target": "second" }
+    },
+    "back-up-home": {
+      "label": "Single to right with a runner on 2nd. The pitcher backs up home, behind the catcher.",
+      "situation": { "runners": { "second": true }, "outs": 0 },
+      "event": { "kind": "ground", "at": { "x": 82, "y": 132 } },
+      "expect": { "target": "home", "roles": { "P": "backup" } }
+    },
+    "cover-home": {
+      "label": "Wild pitch with a runner on 3rd. The pitcher sprints to cover home plate.",
+      "situation": { "runners": { "third": true }, "outs": 1 },
+      "event": { "kind": "passedBall" },
+      "expect": { "covers": { "P": "home" } }
+    }
+  },
+  "faq": [
+    ["What does the pitcher do after the ball is hit?", "The pitcher becomes a fielder: fields comebackers and bunts, covers 1st on balls hit to the right side, backs up 3rd or home on throws from the outfield, and covers home on passed balls and wild pitches."],
+    ["Why does the pitcher cover first base?", "On a ground ball to the first baseman, nobody else can get to the bag in time. The pitcher runs to the baseline, then up the line, and takes the toss on the bag."]
+  ]
+}
+</script>
+<p>Every youth coach knows the pitcher's pitch count matters. League rules cap it, rest days depend on it, and somebody in the dugout is tracking every pitch. But the moment the ball is hit, your pitcher becomes the busiest fielder on the diamond, and that part usually gets far less practice.</p>
+
+<h2>The pitcher's four defensive jobs</h2>
+<h3>1. Cover first on balls to the right side</h3>
+<p>Any ground ball to the left of the mound, the pitcher breaks toward 1st: run to the baseline a few steps short of the bag, then run <em>up the line</em> and take the toss on the bag. Running straight at the base leads to collisions with the runner.</p>
+<play id="cover-first"></play>
+
+<h3>2. Field comebackers and bunts</h3>
+<p>Balls hit back at the mound are the pitcher's. With a runner on 1st and less than two outs, turn and throw to 2nd to start the double play.</p>
+<play id="comebacker"></play>
+
+<h3>3. Back up throws from the outfield</h3>
+<p>On a hit to the outfield, the pitcher backs up the base the throw is going to: behind 3rd, or behind the catcher on a throw home. If it isn't clear yet, go halfway between 3rd and home and read the throw.</p>
+<play id="back-up-home"></play>
+
+<h3>4. Cover home on passed balls</h3>
+<p>When a pitch gets past the catcher with a runner on 3rd, the pitcher sprints to home plate, points to the ball, and yells so the catcher knows where to throw.</p>
+<play id="cover-home"></play>
+
+<h2>Tired arms, slow feet</h2>
+<p>Pitch count limits exist to protect young arms, and a pitcher who is near the limit is usually slower getting off the mound too. That's one more reason to keep a close eye on the count, and to think about the defensive jobs when you plan who pitches when. Keep the rest-day rules in mind when you move a pitcher to catcher or another position later in the game. Many leagues limit that too.</p>
+
+<h2>Two free tools for game day</h2>
+<p>Two free apps from the same maker split the job, with no ads and no accounts:</p>
+<ul>
+  <li><a href="https://simplepitchcounter.com"><strong>Simple Pitch Counter</strong></a> counts pitches, tracks catcher innings, enforces your league's rest-day rules, and writes the post-game summary. It's on iPhone and Android.</li>
+  <li><a href="/app/"><strong>Simple Fielding</strong></a> teaches where everyone goes: drag the ball to where it's hit and watch the pitcher, and every other fielder, move to their job. Use it in practice, before games, or on a projector.</li>
+</ul>
+<p>Simple Pitch Counter has guides for the pitching side too, including <a href="https://simplepitchcounter.com/pitch-count-rules/">pitch count rules by age</a> and <a href="https://simplepitchcounter.com/catcher-innings-rules/">catcher innings rules</a>.</p>

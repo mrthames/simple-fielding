@@ -1,0 +1,63 @@
+<script type="application/json">
+{
+  "order": 5,
+  "title": "Who Catches the Pop-Up? Fly Ball Priority for Youth Players",
+  "short": "Pop-up priority",
+  "ogTitle": "Who catches the pop-up?",
+  "description": "Fly ball and pop-up priority for youth baseball and softball: outfielders over infielders, middle infielders over the corners, and who takes the foul pop behind the plate.",
+  "date": "2026-09-24",
+  "readTime": "4 min",
+  "plays": {
+    "pop-behind-second": {
+      "label": "Pop-up behind 2nd base. The shortstop calls it, and the center fielder comes in behind in case they can call the shortstop off.",
+      "situation": { "runners": {}, "outs": 0 },
+      "event": { "kind": "pop", "at": { "x": 6, "y": 102 } },
+      "expect": { "fielder": "SS", "roles": { "CF": "backup" } }
+    },
+    "shallow-left": {
+      "label": "Shallow fly to left. The left fielder, coming in, takes it over the shortstop going out.",
+      "situation": { "runners": {}, "outs": 0 },
+      "event": { "kind": "pop", "at": { "x": -45, "y": 118 } },
+      "expect": { "fielder": "LF" }
+    },
+    "foul-catcher": {
+      "label": "Foul pop behind the plate. The catcher goes after it, and the pitcher runs in to cover home.",
+      "situation": { "runners": { "first": true }, "outs": 0 },
+      "event": { "kind": "pop", "at": { "x": -12, "y": -14 } },
+      "expect": { "fielder": "C", "covers": { "P": "home" } }
+    }
+  },
+  "faq": [
+    ["Who has priority on a pop-up in youth baseball?", "Outfielders coming in have priority over infielders going out. Among infielders, the shortstop and second baseman have priority over the corners. The pitcher points and yells but lets a fielder catch it."],
+    ["Should the pitcher catch pop-ups?", "Generally no. The pitcher points at the ball, calls out who should take it, and moves out of the way. Infielders have a better angle and better gloves for it."],
+    ["What does the pitcher do on a foul pop-up behind home plate?", "When the catcher leaves home to chase a foul pop, the pitcher runs in and covers home plate."]
+  ]
+}
+</script>
+<p>The ball goes straight up between three players. All three look at it. Nobody calls it. It drops right in the middle of them. Every youth coach has seen this one. The cure is a <strong>priority system</strong>: everyone knows ahead of time who has the right of way, and whoever has it calls it loudly.</p>
+
+<h2>The order</h2>
+<ol>
+  <li><strong>Outfielders coming in</strong> beat infielders going out. It's much easier to catch a ball running toward it than backpedaling.</li>
+  <li><strong>Center fielder</strong> beats the corner outfielders. They're usually the best outfielder, and they can see both sides.</li>
+  <li><strong>Shortstop and second baseman</strong> beat the corners (3rd and 1st).</li>
+  <li><strong>Corners</strong> beat the catcher on pops up the lines, away from the plate.</li>
+  <li><strong>The pitcher</strong> doesn't take pop-ups. They point, yell the name of who should take it, and get out of the way.</li>
+</ol>
+<play id="pop-behind-second"></play>
+<play id="shallow-left"></play>
+
+<h2>Calling it</h2>
+<ul>
+  <li><strong>Call it loud, and call it more than once:</strong> "I got it! I got it!"</li>
+  <li><strong>Call it late, not early.</strong> Wait until you know you can get there.</li>
+  <li><strong>Once someone calls it, everyone else peels off</strong> and says "Take it!" If a higher-priority player calls you off, you peel off. No arguments.</li>
+</ul>
+
+<h2>Foul pops near the plate</h2>
+<p>The catcher takes pop-ups behind and beside the plate. Off with the mask, find the ball, then toss the mask <em>away</em> from where you're going so you don't trip on it. Turn your back to the field, because foul pops curve back toward the infield. When the catcher leaves home, <strong>the pitcher covers home plate</strong>.</p>
+<play id="foul-catcher"></play>
+<p>Down the lines, the first or third baseman takes it and the catcher helps call it. Someone else covers the empty base: the second baseman at 1st, or the shortstop at 3rd.</p>
+
+<h2>A drill that works</h2>
+<p>Throw pop-ups between two or three fielders, and <strong>don't let anyone catch it without calling it</strong>. A catch without a call counts as a drop. After a week, the calling becomes automatic, and so do the catches.</p>
