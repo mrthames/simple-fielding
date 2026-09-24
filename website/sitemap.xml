@@ -51,6 +51,56 @@
     <priority>0.7</priority>
   </url>
   <url>
+    <loc>https://simplefielding.com/positions/</loc>
+    <lastmod>2026-09-24</lastmod>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://simplefielding.com/positions/pitcher/</loc>
+    <lastmod>2026-09-24</lastmod>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://simplefielding.com/positions/catcher/</loc>
+    <lastmod>2026-09-24</lastmod>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://simplefielding.com/positions/first-base/</loc>
+    <lastmod>2026-09-24</lastmod>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://simplefielding.com/positions/second-base/</loc>
+    <lastmod>2026-09-24</lastmod>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://simplefielding.com/positions/shortstop/</loc>
+    <lastmod>2026-09-24</lastmod>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://simplefielding.com/positions/third-base/</loc>
+    <lastmod>2026-09-24</lastmod>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://simplefielding.com/positions/left-field/</loc>
+    <lastmod>2026-09-24</lastmod>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://simplefielding.com/positions/center-field/</loc>
+    <lastmod>2026-09-24</lastmod>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://simplefielding.com/positions/right-field/</loc>
+    <lastmod>2026-09-24</lastmod>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://simplefielding.com/privacy/</loc>
     <lastmod>2026-09-24</lastmod>
     <priority>0.2</priority>

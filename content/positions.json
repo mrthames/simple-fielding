@@ -1,0 +1,185 @@
+{
+  "_about": "The position pages (/positions/<slug>/). The hand-written parts are here; the play-by-play list on each page is generated from the engine at build time, so it always matches the app. Conventions follow the lessons and simple-fielding-notes/fielding-curriculum-research.md: common youth systems, noted where teams differ.",
+  "positions": [
+    {
+      "pos": "P", "slug": "pitcher", "name": "Pitcher",
+      "title": "Pitcher Responsibilities on Defense: Where the Pitcher Goes on Every Play",
+      "description": "After the pitch, the pitcher is a fielder: covering first on balls to the right side, covering home on a passed ball, and backing up bases on hits. Here's every play, from youth baseball and softball.",
+      "intro": [
+        "Once the ball leaves their hand, the pitcher becomes the fifth infielder. The best youth pitchers know that throwing strikes is only half the job.",
+        "The pitcher's defensive work comes down to three habits: field what's hit back to you, run to first on anything to the right side, and back up the base the throw is going to."
+      ],
+      "jobs": [
+        "Field comebackers and bunts in front of the mound, then throw to the base the catcher calls.",
+        "On a ground ball to the right side, run toward first right away. If the first baseman fields it, cover the base: run to a spot a few steps up the line, then turn and run along it to the bag.",
+        "On a passed ball or wild pitch with a runner on third, sprint in and cover home.",
+        "On a hit to the outfield, back up the base the throw is going to: third, or behind the catcher on a throw home."
+      ],
+      "faq": [
+        ["Does the pitcher cover first base?", "Yes, on any ball hit to the right side of the infield. The pitcher breaks toward first on contact. If the first baseman fields the ball, the pitcher covers the bag and takes the throw."],
+        ["Where does the pitcher go on a hit to the outfield?", "Behind the base the throw is going to. On a throw home, the pitcher backs up the catcher. On a throw to third, the pitcher backs up third. If it isn't clear yet, go halfway between third and home and read the throw."],
+        ["Who covers home on a passed ball?", "The pitcher. The catcher chases the ball and the pitcher sprints in to cover the plate."]
+      ]
+    },
+    {
+      "pos": "C", "slug": "catcher", "name": "Catcher",
+      "title": "Catcher Responsibilities on Defense: Where the Catcher Goes on Every Play",
+      "description": "The catcher sees the whole field: backing up first on ground balls, calling cutoffs, covering home, and directing bunt plays. Here's every play for youth baseball and softball catchers.",
+      "intro": [
+        "The catcher is the only player facing the whole field, so the catcher is the defense's eyes and voice: calling where the throw goes, telling the cutoff what to do, and taking charge of plays at the plate.",
+        "When nobody is on base, the youth catcher has one more job that's easy to forget: run down the line behind the batter to back up first."
+      ],
+      "jobs": [
+        "On a ground ball with nobody on (or nobody on second or third), run down the first-base line, in foul territory, to back up the throw to first.",
+        "With a runner who might score, stay home. Set up in front of the plate, and call the cutoff: say nothing to let the throw through, \"Cut!\" to have it caught, \"Cut two!\" to have it thrown to second.",
+        "On a bunt, call who takes it and where the throw goes. The catcher sees it best.",
+        "On a pop-up behind the plate, turn your back to the field, find the ball, then toss the mask away from where you're going."
+      ],
+      "faq": [
+        ["Does the catcher back up first base?", "In youth baseball, yes: on a ground ball to the infield when there's nobody on second or third, the catcher runs down the line in foul territory behind the batter to back up the throw to first."],
+        ["What does the catcher yell to the cutoff?", "Nothing if the throw should go through to the plate. \"Cut!\" to have the cutoff catch it and hold it. \"Cut two!\" (or three) to have the cutoff catch it and throw to that base, usually to get a runner who took an extra base."],
+        ["Who calls where the ball goes on a bunt?", "The catcher, because the catcher is facing the play and can see the runners. The fielder picks up the ball and throws where the catcher calls."]
+      ]
+    },
+    {
+      "pos": "1B", "slug": "first-base", "name": "First baseman",
+      "title": "First Base Responsibilities: Where the First Baseman Goes on Every Play",
+      "description": "Where the first baseman goes on every play: getting to the bag on ground balls, holding runners, charging bunts, and being the cutoff on throws home from center and right. For youth baseball and softball.",
+      "intro": [
+        "On most ground balls the first baseman's job is simple and important: get to the bag, give the thrower a target, and catch it. More outs are made at first than anywhere else.",
+        "On hits to the outfield, the first baseman has a bigger job than most kids expect: in a common youth system, they're the cutoff on throws home from center and right field."
+      ],
+      "jobs": [
+        "On a ground ball to another infielder, get to the bag, set your feet, and stretch toward the throw once you see where it is.",
+        "On a bunt, charge in. The second baseman covers first behind you.",
+        "On a single to center or right with a runner trying to score, be the cutoff for home: line up between the ball and the plate, arms up, and listen for the catcher.",
+        "With a runner on first where leadoffs are allowed (50/70 and up, softball), hold the runner on: foot on the bag, glove up as a target."
+      ],
+      "faq": [
+        ["Who is the cutoff on a throw home from center field?", "In a common youth system, the first baseman is the cutoff on throws home from center and right field, and the third baseman from left field. Some teams use the pitcher instead, so check your team's system."],
+        ["Who covers first base when the first baseman charges a bunt?", "The second baseman. On a bunt, the first baseman charges in and the second baseman runs to cover first."],
+        ["Should the first baseman stretch before the throw?", "No. Get to the bag and set your feet first. Stretch toward the throw once you can see where it's going, so you don't commit the wrong way."]
+      ]
+    },
+    {
+      "pos": "2B", "slug": "second-base", "name": "Second baseman",
+      "title": "Second Base Responsibilities: Where the Second Baseman Goes on Every Play",
+      "description": "Where the second baseman goes on every play: covering second on double plays and steals, covering first on bunts, and going out as the relay on balls to right. For youth baseball and softball.",
+      "intro": [
+        "The second baseman is one half of the middle of the infield, and the busiest player on the right side: turning double plays, covering first on bunts, and going out as the relay on balls hit to right.",
+        "Most of their jobs depend on where the ball is hit, so the second baseman should know before every pitch where they're going if it's hit to short, to first, or bunted."
+      ],
+      "jobs": [
+        "On a ground ball to the shortstop with a runner on first, cover second for the force (and the double play).",
+        "On a bunt, cover first. The first baseman is charging.",
+        "On a deep ball to right or right-center, go out as the relay; the shortstop trails behind you.",
+        "On a steal of second, cover or back up: many teams go by the batter, and the middle infielder on the side the batter pulls to stays home."
+      ],
+      "faq": [
+        ["Who covers second base on a ground ball to the shortstop?", "The second baseman. With a runner on first, the shortstop throws to the second baseman at the bag for the force, and the second baseman turns it to first for the double play."],
+        ["Who covers second on a steal: the shortstop or the second baseman?", "It depends on the team's system. Many teams go by the batter: with a right-handed batter, who tends to pull the ball to the left side, the second baseman covers; with a lefty, the shortstop does. The other one backs up."],
+        ["Where does the second baseman go on a bunt?", "To first base. The first baseman charges the bunt, so the second baseman covers the bag."]
+      ]
+    },
+    {
+      "pos": "SS", "slug": "shortstop", "name": "Shortstop",
+      "title": "Shortstop Responsibilities: Where the Shortstop Goes on Every Play",
+      "description": "Where the shortstop goes on every play: fielding the most ground balls, covering second, going out as the relay on balls to left and center, and leading the infield. For youth baseball and softball.",
+      "intro": [
+        "The shortstop gets more ground balls than anyone and has the longest throw across the infield. They're also the infield's leader: saying the outs, reminding everyone where the play is, and taking charge on pop-ups.",
+        "When the ball isn't hit to them, the shortstop is almost always going somewhere: covering second or third, or out into the outfield as the relay."
+      ],
+      "jobs": [
+        "Field ground balls on the left side, and take the lead runner when there's time.",
+        "On a ground ball to the second baseman with a runner on first, cover second for the force.",
+        "On a deep ball to left or left-center, go out as the relay, in line with the throw; on a ball to right, trail behind the second baseman.",
+        "Before every pitch, say the outs and where the play is. On pop-ups between infielders, the shortstop has priority over the corners."
+      ],
+      "faq": [
+        ["What does the shortstop do on a single to left field?", "In a common youth system, the shortstop goes out as the cutoff toward left field, lined up between the ball and second base, so the left fielder has a close target. The throw comes back in through them."],
+        ["Who covers second base on a ground ball to the second baseman?", "The shortstop. With a runner on first, the second baseman throws to the shortstop covering the bag for the force."],
+        ["Why is the shortstop the infield leader?", "The shortstop can see the whole infield and is involved in most plays, so they call the outs before each pitch, remind everyone where the throw goes, and take charge on pop-ups in the middle of the field."]
+      ]
+    },
+    {
+      "pos": "3B", "slug": "third-base", "name": "Third baseman",
+      "title": "Third Base Responsibilities: Where the Third Baseman Goes on Every Play",
+      "description": "Where the third baseman goes on every play: fielding hard grounders, charging bunts, covering third, and being the cutoff on throws home from left field. For youth baseball and softball.",
+      "intro": [
+        "Third base is the hot corner: the ball gets there fast, so the third baseman needs quick feet and a strong throw across the diamond.",
+        "When the ball is hit elsewhere, the third baseman covers third. On a hit to left with a runner trying to score, they're the cutoff for the throw home."
+      ],
+      "jobs": [
+        "Field hard ground balls and slow rollers on the left side. With runners on first and second, stepping on third is often the quickest out.",
+        "Charge bunts down the third-base line.",
+        "On a single to left with a runner trying to score, be the cutoff for home: in line between the left fielder and the plate.",
+        "On a ball hit elsewhere, cover third base."
+      ],
+      "faq": [
+        ["Who is the cutoff on a throw home from left field?", "The third baseman, in a common youth system: they line up between the left fielder and home plate. From center and right, it's usually the first baseman."],
+        ["Should the third baseman charge a bunt?", "Yes, on a bunt down the third-base line. With a runner on second, the third baseman may need to stay near the bag so the runner can't take third; the pitcher fields that bunt instead."],
+        ["Who covers third base on a steal of third?", "The third baseman, with the left fielder backing up behind the bag."]
+      ]
+    },
+    {
+      "pos": "LF", "slug": "left-field", "name": "Left fielder",
+      "title": "Left Field Responsibilities: Where the Left Fielder Goes on Every Play",
+      "description": "Where the left fielder goes on every play: charging ground balls, hitting the cutoff, and backing up third base and the infield. For youth baseball and softball.",
+      "intro": [
+        "In youth baseball, more balls are hit to left field than anywhere else in the outfield, because most young hitters are right-handed and pull the ball.",
+        "When the ball isn't hit to them, the left fielder is still moving: backing up third, or backing up the infielder on their side."
+      ],
+      "jobs": [
+        "On a hit to left, charge the ball, get it, and throw it to the cutoff chest-high. Don't hold it.",
+        "On a ground ball to the left side of the infield, charge in to back up the fielder.",
+        "On a throw to third (a steal of third, a runner going first to third), back up third base.",
+        "Let the center fielder take fly balls between you: the center fielder has priority."
+      ],
+      "faq": [
+        ["Where does the left fielder throw the ball?", "To the cutoff, usually the shortstop or the third baseman, chest-high. Throwing through the cutoff gets the ball back to the infield fastest, and the cutoff can redirect it."],
+        ["Who backs up third base?", "The left fielder, on throws to third. On a throw home, the pitcher backs up the catcher."],
+        ["Who takes a fly ball between left and center field?", "The center fielder has priority over the corner outfielders. The first clear call wins; if the center fielder calls it, the left fielder backs them up."]
+      ]
+    },
+    {
+      "pos": "CF", "slug": "center-field", "name": "Center fielder",
+      "title": "Center Field Responsibilities: Where the Center Fielder Goes on Every Play",
+      "description": "Where the center fielder goes on every play: leading the outfield, taking fly balls with priority, backing up second base on steals and throws, and backing up the other outfielders. For youth baseball and softball.",
+      "intro": [
+        "The center fielder leads the outfield: they have priority on fly balls, and they move the other outfielders into place.",
+        "On plays at second base, the center fielder is the backup: steals, double plays and throws from the left side."
+      ],
+      "jobs": [
+        "On a fly ball you can reach, call it loud and take it; the corner outfielders back you up.",
+        "On a hit to left or right, back up the outfielder who's getting the ball.",
+        "On a steal of second or a throw to second, charge in behind the bag to back it up.",
+        "On a hit to center, charge the ball and throw it to the cutoff."
+      ],
+      "faq": [
+        ["Does the center fielder have priority on fly balls?", "Yes. The center fielder has priority over the left and right fielders, and outfielders have priority over infielders on balls they can reach running in. The first clear call wins."],
+        ["Who backs up second base on a steal?", "The center fielder: charge in behind second so a throw that gets through doesn't roll into the outfield."],
+        ["What does the center fielder do on a hit to left field?", "Back up the left fielder, in case the ball gets past them."]
+      ]
+    },
+    {
+      "pos": "RF", "slug": "right-field", "name": "Right fielder",
+      "title": "Right Field Responsibilities: Where the Right Fielder Goes on Every Play",
+      "description": "Right field isn't where you hide a player: the right fielder backs up first base on almost every ground ball in the infield. Where the right fielder goes on every play, for youth baseball and softball.",
+      "intro": [
+        "Right field is often where a youth team puts its least experienced player, but the right fielder has a job on almost every ground ball: backing up first base.",
+        "Throws to first are the most common throws in the game, and the one that gets away turns a single out into a runner on second or third. The right fielder is the one who stops it."
+      ],
+      "jobs": [
+        "On a ground ball in the infield, charge in to back up first base, in line with the throw.",
+        "On a hit to right, charge the ball and throw it to the cutoff.",
+        "On a catcher's throw to first (a back-pick in softball, or at 50/70 and up), back up first.",
+        "Let the center fielder take fly balls between you."
+      ],
+      "faq": [
+        ["What does the right fielder do on a ground ball to the infield?", "Charge in to back up first base. If the throw gets past the first baseman, the right fielder stops it before the runner can take another base."],
+        ["Is right field the easiest position?", "It's where the ball is hit least often in youth baseball, but it isn't easy: the right fielder has a backup job on nearly every ground ball, and the longest throw in the outfield, to third base."],
+        ["Who backs up first base?", "The right fielder on ground balls to the infield, and the catcher, who runs down the line behind the batter when nobody is on second or third."]
+      ]
+    }
+  ]
+}

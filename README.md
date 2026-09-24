@@ -61,7 +61,7 @@ simple-fielding/
 │   ├── js/render.js      SVG drawing and animation playback
 │   └── js/app.js         UI: situation, drag-to-hit, playback
 ├── website/              the companion site: homepage, guides, privacy (guides are generated, see below)
-├── content/              guide sources (content/articles/*.html) and the share-image template
+├── content/              guide sources (content/articles/*.html), the position pages (positions.json), the share-image template
 ├── docs/SCENARIOS.md     the coaching reference
 ├── tests/                engine unit tests (node:test) and UI tests (Playwright)
 ├── marketing/icon-layers/ icon layers for Icon Composer (Liquid Glass) and a monochrome version
@@ -81,7 +81,7 @@ npm install
 npm start               # serves app/ on http://localhost:3344
 npm test                # engine tests + Playwright UI tests
 npm run icons           # regenerate PNG icons from app/icon.svg and app/icon-dark.svg
-npm run site            # rebuild the guides, sitemap and robots.txt (checks every play against the engine)
+npm run site            # rebuild the guides, position pages, sitemap and robots.txt (checks every play against the engine)
 npm run site:og         # ...and re-render the share images
 npm run hero            # re-bake the homepage hero animation from the engine
 ```

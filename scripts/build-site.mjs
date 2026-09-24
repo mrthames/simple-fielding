@@ -101,7 +101,7 @@ ${jsonld.map((j) => `<script type="application/ld+json">\n${JSON.stringify(j, nu
 <header class="bar">
   <div class="wrap bar-in">
     <a class="logo" href="/"><img src="/icon.svg" alt="" width="34" height="34"> Simple Fielding</a>
-    <nav><a href="/articles/">Guides</a><a class="nav-app" href="/app/">Open the app</a></nav>
+    <nav><a href="/positions/">Positions</a><a href="/articles/">Guides</a><a class="nav-app" href="/app/">Open the app</a></nav>
   </div>
 </header>`;
 }
@@ -116,7 +116,7 @@ function foot() {
   </div>
 </section>
 <footer class="wrap foot">
-  <a href="/app/">Open the app</a> · <a href="/articles/">Guides</a> · <a href="/privacy/">Privacy</a> · <a href="https://simplepitchcounter.com">Simple Pitch Counter</a>
+  <a href="/app/">Open the app</a> · <a href="/positions/">Positions</a> · <a href="/articles/">Guides</a> · <a href="/privacy/">Privacy</a> · <a href="https://simplepitchcounter.com">Simple Pitch Counter</a>
   <p>© 2026 Simple Fielding</p>
 </footer>
 </body>
@@ -184,7 +184,7 @@ function indexPage(all) {
 <main class="wrap">
   <p class="crumbs"><a href="/">Home</a></p>
   <h1>Guides for coaches, players and parents</h1>
-  <p class="lede">Where every fielder goes, and why, in plain English. Each guide links straight to the plays in the app.</p>
+  <p class="lede">Where every fielder goes, and why, in plain English. Each guide links straight to the plays in the app. Looking for one position? See <a href="/positions/">what every position does</a>.</p>
   <ul class="cards">
 ${all.map((a) => `    <li><a href="/articles/${a.slug}/"><img src="/images/og-${a.slug}.png" alt="" width="1200" height="630" loading="lazy"><strong>${esc(a.title)}</strong><span>${esc(a.description)}</span><em>${esc(a.readTime)} read</em></a></li>`).join('\n')}
   </ul>
@@ -199,14 +199,135 @@ ${src}
 </main>` + foot();
 }
 
+// ---------------------------------------------------------------- positions
+// One page per position: what they do, from the hand-written notes in content/positions.json, then their job on
+// every play in the library, generated from the engine so it always matches the app. Softball plays are run on a
+// 12U field, the 90 ft plays on a high school field, the rest on a Little League field.
+const Scenarios = require(path.join(ROOT, 'app/js/scenarios.js'));
+const Field = require(path.join(ROOT, 'app/js/field.js'));
+const ROLE_LABEL = { field: 'Gets the ball', cutoff: 'Cutoff', relay: 'Relay', trail: 'Trails the relay', cover: 'Covers a base', backup: 'Backs up', hold: 'Stays ready' };
+const ROLE_CLASS = { field: 'field', cutoff: 'cutoff', relay: 'cutoff', trail: 'cutoff', cover: 'cover', backup: 'backup', hold: 'hold' };
+
+function readPositions() {
+  return JSON.parse(readFileSync(path.join(ROOT, 'content/positions.json'), 'utf8')).positions;
+}
+
+function groupLeague(g) {
+  if (!g.levels) return { league: 'littleLeague', label: 'Little League baseball, 60 ft bases' };
+  if (g.levels.includes('softball')) return { league: 'softball', label: '12U fastpitch softball' };
+  return { league: 'highSchool', label: 'high school baseball, 90 ft bases' };
+}
+
+function positionPlays(pos) {
+  const groups = [];
+  const counts = {};
+  let holds = 0, total = 0;
+  for (const g of Scenarios.GROUPS) {
+    const { league, label } = groupLeague(g);
+    const items = [];
+    for (const sc of g.items) {
+      if (!Scenarios.fits(sc, league)) continue;
+      const situation = { runners: Object.assign({}, sc.runners), outs: sc.outs || 0, batter: sc.batter || 'R', league, depth: sc.depth, buntD: sc.buntD, leadoffs: sc.leadoffs };
+      const plan = Engine.planPlay(situation, sc.event);
+      const a = plan.assignments[pos];
+      total++;
+      if (!a || !a.job) continue;
+      if (a.role === 'hold') { holds++; continue; }
+      counts[a.role] = (counts[a.role] || 0) + 1;
+      items.push({ name: sc.name, role: a.role, job: a.job, href: `/app/#replay=${PlayLog.encodeReplay(situation, sc.event)}` });
+    }
+    if (items.length) groups.push({ name: g.name, label, items });
+  }
+  return { groups, counts, holds, total };
+}
+
+function positionPage(p, all) {
+  const url = `${SITE}/positions/${p.slug}/`;
+  const { groups, counts, holds, total } = positionPlays(p.pos);
+  const VERB = { field: 'gets the ball', cutoff: 'is the cutoff', relay: 'is the relay', trail: 'trails the relay', cover: 'covers a base', backup: 'backs somebody up' };
+  const parts = Object.entries(counts).sort((a, b) => b[1] - a[1]).map(([r, n]) => `${VERB[r]} on ${n}`);
+  if (holds) parts.push(`stays ready on the other ${holds}`);
+  const tally = parts.length > 1 ? `${parts.slice(0, -1).join(', ')} and ${parts[parts.length - 1]}` : parts.join('');
+  const jsonld = [
+    {
+      '@context': 'https://schema.org', '@type': 'Article',
+      headline: p.title, description: p.description, image: `${SITE}/images/og-position-${p.slug}.png`,
+      datePublished: '2026-09-25', dateModified: '2026-09-25',
+      author: { '@type': 'Organization', name: 'Simple Fielding', url: SITE }, publisher: PUBLISHER, mainEntityOfPage: url,
+    },
+    {
+      '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemListElement: [
+        { '@type': 'ListItem', position: 1, name: 'Home', item: `${SITE}/` },
+        { '@type': 'ListItem', position: 2, name: 'Positions', item: `${SITE}/positions/` },
+        { '@type': 'ListItem', position: 3, name: p.name, item: url },
+      ],
+    },
+    {
+      '@context': 'https://schema.org', '@type': 'FAQPage',
+      mainEntity: p.faq.map(([q, ans]) => ({ '@type': 'Question', name: q, acceptedAnswer: { '@type': 'Answer', text: ans } })),
+    },
+  ];
+  const others = all.filter((x) => x.slug !== p.slug);
+  return head({ title: `${p.title} | Simple Fielding`, description: p.description, url, image: `/images/og-position-${p.slug}.png`, type: 'article', jsonld }) + `
+<main class="wrap article">
+  <p class="crumbs"><a href="/">Home</a> › <a href="/positions/">Positions</a></p>
+  <h1>${esc(p.title)}</h1>
+  <p class="lede">${esc(p.description)}</p>
+  <div class="body">
+${p.intro.map((t) => `<p>${esc(t)}</p>`).join('\n')}
+<h2>The ${esc(p.name.toLowerCase())}'s main jobs</h2>
+<ul>
+${p.jobs.map((t) => `<li>${esc(t)}</li>`).join('\n')}
+</ul>
+<h2>Every play, and where the ${esc(p.name.toLowerCase())} goes</h2>
+<p>There are ${total} plays in the Simple Fielding library. The ${esc(p.name.toLowerCase())} ${tally}. Tap any play to watch the whole defense move in the app.</p>
+${groups.map((g) => `<h3>${esc(g.name)} <span class="pos-level">(${esc(g.label)})</span></h3>
+<ul class="pos-plays">
+${g.items.map((it) => `  <li><a href="${it.href}"><span class="pos-role r-${ROLE_CLASS[it.role]}">${esc(ROLE_LABEL[it.role])}</span><strong>${esc(it.name)}</strong><span class="pos-job">${esc(it.job)}</span></a></li>`).join('\n')}
+</ul>`).join('\n')}
+<h2>Quick answers</h2>
+<dl class="faq">${p.faq.map(([q, ans]) => `<dt>${esc(q)}</dt><dd>${esc(ans)}</dd>`).join('')}</dl>
+<p class="fine">Where teams do it differently (who's the cutoff home, who covers second on a steal), these pages follow a common youth system. Your coach's system wins.</p>
+  </div>
+  <aside class="cta">
+    <h2>Learn it by playing it</h2>
+    <p>Simple Fielding's free fielding lessons let a player pick their position and step through the plays that matter for it: the play stops at the moment to decide, and you drag yourself where you'd go.</p>
+    <a class="btn" href="/app/">Open Simple Fielding</a>
+  </aside>
+  <nav class="related" aria-label="Other positions">
+    <h2>Other positions</h2>
+    <ul>${others.map((r) => `<li><a href="/positions/${r.slug}/"><strong>${esc(r.name)}</strong><span>${esc(r.description)}</span></a></li>`).join('')}</ul>
+  </nav>
+</main>` + foot();
+}
+
+function positionsIndex(all) {
+  const url = `${SITE}/positions/`;
+  const jsonld = [{
+    '@context': 'https://schema.org', '@type': 'CollectionPage', name: 'Baseball and Softball Positions: What Every Fielder Does', url,
+    hasPart: all.map((p) => ({ '@type': 'Article', headline: p.title, url: `${SITE}/positions/${p.slug}/` })),
+  }];
+  return head({ title: 'Baseball and Softball Positions Explained: What Every Fielder Does | Simple Fielding', description: 'What each of the nine defensive positions does in youth baseball and softball, and where each fielder goes on every play: pitcher, catcher, the infielders and the outfielders.', url, image: '/images/og-positions.png', type: 'website', jsonld }) + `
+<main class="wrap">
+  <p class="crumbs"><a href="/">Home</a></p>
+  <h1>What every position does</h1>
+  <p class="lede">The nine defensive positions in youth baseball and softball, what each one is responsible for, and where each fielder goes on every play in the library.</p>
+  <ul class="cards pos-cards">
+${all.map((p) => `    <li><a href="/positions/${p.slug}/"><span class="pos-badge">${esc(p.pos)}</span><strong>${esc(p.name)}</strong><span>${esc(p.description)}</span></a></li>`).join('\n')}
+  </ul>
+</main>` + foot();
+}
+
 // ---------------------------------------------------------------- sitemap, robots
-function sitemap(all) {
+function sitemap(all, positions) {
   const today = new Date().toISOString().slice(0, 10);
   const urls = [
     { loc: `${SITE}/`, lastmod: today, priority: '1.0' },
     { loc: `${SITE}/app/`, lastmod: today, priority: '0.9' },
     { loc: `${SITE}/articles/`, lastmod: today, priority: '0.8' },
     ...all.map((a) => ({ loc: `${SITE}/articles/${a.slug}/`, lastmod: a.updated || a.date, priority: '0.7' })),
+    { loc: `${SITE}/positions/`, lastmod: today, priority: '0.8' },
+    ...positions.map((x) => ({ loc: `${SITE}/positions/${x.slug}/`, lastmod: today, priority: '0.7' })),
     { loc: `${SITE}/privacy/`, lastmod: today, priority: '0.2' },
   ];
   return `<?xml version="1.0" encoding="UTF-8"?>
@@ -217,7 +338,7 @@ ${urls.map((u) => `  <url>\n    <loc>${u.loc}</loc>\n    <lastmod>${u.lastmod}</
 }
 
 // ---------------------------------------------------------------- share images
-async function renderOg(all) {
+async function renderOg(all, positions) {
   const { chromium } = await import('@playwright/test');
   const tpl = readFileSync(path.join(ROOT, 'content/og-template.html'), 'utf8');
   const icon = 'data:image/svg+xml;base64,' + Buffer.from(readFileSync(path.join(ROOT, 'app/icon.svg'))).toString('base64');
@@ -225,6 +346,8 @@ async function renderOg(all) {
     { file: 'og-home.png', kicker: 'Free for coaches, players and parents', title: 'Where every fielder goes, and why.' },
     { file: 'og-articles.png', kicker: 'Simple Fielding guides', title: 'Youth baseball and softball defense, in plain English' },
     ...all.map((a) => ({ file: `og-${a.slug}.png`, kicker: 'Simple Fielding guide', title: a.ogTitle || a.short || a.title })),
+    { file: 'og-positions.png', kicker: 'Simple Fielding positions', title: 'What every fielder does, and where they go' },
+    ...positions.map((x) => ({ file: `og-position-${x.slug}.png`, kicker: 'Simple Fielding positions', title: `${x.name}: where to go on every play` })),
   ];
   const browser = await chromium.launch();
   const page = await browser.newPage({ viewport: { width: 1200, height: 630 } });
@@ -245,8 +368,11 @@ write('articles/index.html', indexPage(all));
 write('privacy/index.html', privacyPage());
 // The old address keeps working.
 write('privacy.html', `<!DOCTYPE html><meta charset="utf-8"><title>Privacy</title><link rel="canonical" href="${SITE}/privacy/"><meta http-equiv="refresh" content="0; url=/privacy/"><a href="/privacy/">Privacy</a>\n`);
-write('sitemap.xml', sitemap(all));
+const positions = readPositions();
+for (const x of positions) write(`positions/${x.slug}/index.html`, positionPage(x, positions));
+write('positions/index.html', positionsIndex(positions));
+write('sitemap.xml', sitemap(all, positions));
 write('robots.txt', `User-agent: *\nAllow: /\n\nSitemap: ${SITE}/sitemap.xml\n`);
-console.log(`built ${all.length} articles, index, privacy, sitemap, robots`);
-if (process.argv.includes('--og')) await renderOg(all);
+console.log(`built ${all.length} articles, ${positions.length} positions, indexes, privacy, sitemap, robots`);
+if (process.argv.includes('--og')) await renderOg(all, positions);
 if (!existsSync(path.join(WEB, 'images/og-home.png'))) console.log('  (no share images yet: run with --og)');

@@ -2,6 +2,19 @@
 
 ---
 
+## [2026-09-25] Website — What every position does
+
+- **A page for each of the nine positions** (simplefielding.com/positions/), such as "Shortstop Responsibilities: Where the Shortstop Goes on Every Play". Each page has:
+  - what the position does, and its main jobs
+  - quick answers to common questions
+  - that player's job on every play in the library (all 85), grouped by kind of play, each opening in the app
+- **The play lists are generated from the engine** when the site is built, so a page can't say something the app doesn't do. The hand-written answers were each checked against the engine.
+- **The homepage** mentions the fielding lessons and links to the positions. The menu and footer have a Positions link everywhere.
+- **The app page** has a real title, description and share preview.
+- The site is verified in Google Search Console.
+
+---
+
 ## [2026-09-25] v0.36.0 — Nobody lets a ground ball by without trying
 
 - **A ground ball into the outfield now passes through the infield on the way.** If its path comes within a step and a dive of an infielder, that infielder goes hard after it. It gets by them, and they get up and go to their job. Before, a grounder dragged into center right past the shortstop was played as if the shortstop wasn't there.
