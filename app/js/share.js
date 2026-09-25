@@ -22,7 +22,8 @@
   const BUNTD = ['auto', 'standard', 'wheel', 'crash'];
   const BASES = ['first', 'second', 'third'];
   const POS = ['P', 'C', '1B', '2B', 'SS', '3B', 'LF', 'CF', 'RF'];
-  const RESULTS = [undefined, 'out', 'single', 'double', 'triple'];
+  const RESULTS = [undefined, 'out', 'single', 'double', 'triple', 'error'];
+  const ERRORS = ['bobble', 'legs', 'throw'];
   const VERSION = 1;
   const KEY = 'sf.myplays';
 
@@ -146,8 +147,14 @@
     }
     if (event.at) {
       put16(out, event.at.x); put16(out, event.at.y);
-      out.push((event.through ? 1 : 0) | (event.slap === 'soft' ? 2 : 0) | (event.slap === 'hard' ? 4 : 0) | (event.squeeze ? 8 : 0));
+      const err = event.result === 'error' && event.error;
+      out.push((event.through ? 1 : 0) | (event.slap === 'soft' ? 2 : 0) | (event.slap === 'hard' ? 4 : 0) | (event.squeeze ? 8 : 0) | (err ? 16 : 0));
       if (event.through) { put16(out, event.through.x); put16(out, event.through.y); }
+      // An error: which kind, and where the ball ended up if the coach dragged it.
+      if (err) {
+        out.push(Math.max(0, ERRORS.indexOf(err.type)) | (err.to ? 4 : 0));
+        if (err.to) { put16(out, err.to.x); put16(out, err.to.y); }
+      }
     }
     if (nameBytes.length) { out.push(nameBytes.length); out.push(...nameBytes); }
     // Extras, at the very end so older links stay valid: the infield depth.
@@ -211,6 +218,11 @@
         if (fl & 2) event.slap = 'soft'; else if (fl & 4) event.slap = 'hard';
         if (fl & 8) event.squeeze = true;
         if (fl & 1) { event.through = { x: get16(b, i), y: get16(b, i + 2) }; i += 4; }
+        if (fl & 16) {
+          const e = b[i++];
+          event.error = { type: ERRORS[e & 3] || 'bobble' };
+          if (e & 4) { event.error.to = { x: get16(b, i), y: get16(b, i + 2) }; i += 4; }
+        }
       }
       let name = '';
       if (f & 16) { const n = b[i++]; name = unutf8(b.slice(i, i + n)); i += n; }

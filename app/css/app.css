@@ -988,3 +988,8 @@ body.training #btn-3d, body.training #cam-bar { display: none !important; }
 .field-menu .fm-go:hover { background: var(--brand); filter: brightness(1.08); }
 .fm-lead { display: flex; flex-direction: column; gap: 4px; padding: 4px 10px 8px; font-size: 14px; font-weight: 700; }
 .fm-lead input { width: 100%; }
+
+/* The kind of error, under "What happens?" once Error is picked. */
+.error-chips { margin-top: 8px; }
+.error-chips[hidden] { display: none; }
+.error-chips button.on { background: var(--red); color: #fff; }

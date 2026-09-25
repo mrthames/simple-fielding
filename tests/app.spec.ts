@@ -549,6 +549,36 @@ test('build a play on the field: press and hold or right-click a base, a runner,
   expect(plan).toEqual({ title: 'Pickoff at 1st', lead: 14 });
 });
 
+test('errors: pick Error, then the kind; drag where a wild throw ends up', async ({ page }) => {
+  await page.locator('#mini-diamond [data-base="first"]').click();
+  await page.locator('#result-chips [data-result="error"]').click();
+  await expect(page.locator('#error-tip')).toHaveText(/Drag a hit/);
+  await dragBall(page, { x: -40, y: 80 });
+  await expect(page.locator('#error-chips')).toBeVisible();
+  await expect(page.locator('#error-chips button:not([hidden])')).toHaveCount(3);
+  await expect(page.locator('#play-title .pt-name')).toHaveText(/^E\d: bobbled/);
+  await page.locator('#error-chips [data-err="throw"]').click();
+  await expect(page.locator('#play-title .pt-name')).toHaveText(/the throw gets away/);
+  await expect(page.locator('#error-tip')).toHaveText(/Drag the ring/);
+  // Drag the ring to a new spot: the play re-runs with the ball there.
+  const ring = await page.evaluate(() => { const th = (window as any).SimpleFielding.state.plan.throws.find((t: any) => t.wild); return th.wild; });
+  const toScreen = (x: number, y: number) => page.evaluate(([x, y]) => {
+    const svg = document.getElementById('field') as unknown as SVGSVGElement;
+    const p = svg.createSVGPoint(); p.x = x; p.y = -y; const q = p.matrixTransform(svg.getScreenCTM()!); return { x: q.x, y: q.y };
+  }, [x, y]);
+  const a = await toScreen(ring.x, ring.y), b = await toScreen(ring.x + 15, ring.y + 25);
+  await page.mouse.move(a.x, a.y); await page.mouse.down();
+  await page.mouse.move(b.x, b.y, { steps: 8 }); await page.mouse.up();
+  const moved = await page.evaluate(() => { const st = (window as any).SimpleFielding.state; return { to: st.errTo, wild: st.plan.throws.find((t: any) => t.wild).wild }; });
+  expect(Math.abs(moved.to.x - (ring.x + 15)) < 4 && Math.abs(moved.to.y - (ring.y + 25)) < 4).toBeTruthy();
+  expect(Math.hypot(moved.wild.x - moved.to.x, moved.wild.y - moved.to.y) < 6).toBeTruthy();
+  // A pop-up has nothing to misplay: the kinds go away and the tip says why.
+  await page.locator('#kind-chips [data-kind="pop"]').click();
+  await dragBall(page, { x: 5, y: 50 });
+  await expect(page.locator('#error-chips')).toBeHidden();
+  await expect(page.locator('#error-tip')).toHaveText(/Nothing to misplay/);
+});
+
 test('draw what happened: steps with a moved fielder and a caption play back, save, and copy', async ({ page }) => {
   await page.locator('#panel-mode [data-pm="build"]').click();
   await page.locator('#mini-diamond [data-base="first"]').click();

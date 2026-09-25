@@ -4,7 +4,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '0.38.0';
+  const VERSION = '0.39.0';
   const Field = window.Field;
   const BATTED = ['ground', 'line', 'fly', 'pop', 'bunt'];
   const { POSITIONS, NAMES, LEAGUES } = Field;
@@ -27,6 +27,8 @@
     buntD: 'auto',
     kind: 'ground',
     result: 'auto',
+    errType: 'bobble',   // with result 'error': bobble, legs or throw
+    errTo: null,         // where the coach dragged the ball after the error
     speed: store.get('speed', 1),
     showPaths: store.get('showPaths', true),
     showLooks: store.get('showLooks', true),
@@ -191,6 +193,7 @@
     document.body.classList.toggle('kind-bunt', state.kind === 'bunt');
     for (const b of $$('#kind-chips button')) b.classList.toggle('on', b.dataset.kind === state.kind);
     for (const b of $$('#result-chips button')) b.classList.toggle('on', b.dataset.result === state.result);
+    renderErrorChips();
     // Other plays only make sense with the right runners on.
     const r = state.runners;
     const softball = LEAGUES[state.league].sport === 'softball';
@@ -259,10 +262,32 @@
   // -------------------------------------------------------------------------------------------
   // The spot a grounder reached the infield: drag from there to show it getting through.
   function rollHandleAt() {
+    const pe = state.plan && state.plan.error;
+    if (pe && pe.type === 'throw') { const th = state.plan.throws.find((t) => t.wild); return th ? th.wild : null; }
+    if (state.result === 'error' && !(pe && pe.type === 'legs')) return null;
     const e = state.lastEvent;
     if (!state.plan || !e || e.kind !== 'ground' || !e.at) return null;
     if (Math.hypot(e.at.x, e.at.y) >= geo.infieldEdge) return null;
     return e.at;
+  }
+
+  // "What happens?" put on a batted ball: Single, Caught, or an error of the kind picked.
+  function withResult(ev) {
+    if (ev.at && BATTED.includes(ev.kind) && state.result !== 'auto' && !ev.result) ev.result = state.result;
+    if (ev.result === 'error' && !ev.error) { ev.error = { type: state.errType }; if (state.errTo) ev.error.to = state.errTo; }
+    return ev;
+  }
+  function renderErrorChips() {
+    const on = state.result === 'error';
+    const opts = (state.plan && state.plan.errorOptions) || [];
+    $('#error-chips').hidden = !on || !opts.length;
+    for (const b of $$('#error-chips button')) { b.hidden = !opts.includes(b.dataset.err); b.classList.toggle('on', b.dataset.err === state.errType); }
+    const tip = $('#error-tip');
+    tip.textContent = !state.plan || !state.plan.errorOptions ? 'Drag a hit from home plate, then pick the error.'
+      : !opts.length ? 'Nothing to misplay on this one: nobody fields it or throws it.'
+      : state.errType === 'throw' ? 'Drag the ring to where the throw ends up.'
+      : state.errType === 'legs' ? 'Drag the ring to where it rolls.' : '';
+    tip.hidden = !on || !tip.textContent;
   }
 
   function runEvent(event, opts) {
@@ -270,8 +295,7 @@
     if (state.trainer && !(opts && opts.trainer)) exitTrainer();
     if (board.on) closeBoard();
     clearInkOnNewPlay();
-    const ev = Object.assign({}, event);
-    if (ev.at && BATTED.includes(ev.kind) && state.result !== 'auto' && !ev.result) ev.result = state.result;
+    const ev = withResult(Object.assign({}, event));
     // A grounder at an infielder called a hit: it gets through, on the same line into the outfield.
     if (ev.kind === 'ground' && ev.at && !ev.through && /^(single|double|triple)$/.test(ev.result || '')) {
       const d = Math.hypot(ev.at.x, ev.at.y);
@@ -281,6 +305,12 @@
       }
     }
     const plan = window.Engine.planPlay(situation(), ev);
+    // An error this ball can't have (a throw error with no throw): the first one it can.
+    if (ev.result === 'error' && !plan.error && plan.errorOptions && plan.errorOptions.length && !plan.errorOptions.includes(ev.error.type) && !event.error) {
+      state.errType = plan.errorOptions[0];
+      state.errTo = null;
+      return runEvent(event, opts);
+    }
     state.plan = plan;
     // Every play is logged (last 50, on the device) so a tester can report it exactly.
     try { state.entry = window.PlayLog.record(window.localStorage, window.PlayLog.entry(plan, situation(), ev, VERSION)); }
@@ -293,6 +323,7 @@
     markQuick(-1);
     view.load(plan);
     renderResult(plan);
+    renderErrorChips();
     view.showRollHandle(rollHandleAt());
     $('#field-hint').hidden = true;
     setTitle(plan.title);
@@ -859,7 +890,11 @@
     view.hideDrag();
     if (d.scrub) { showScrub(false); return; } // scrubbing never hits the ball
     if (d.fromRoll) {
-      if (d.moved) {
+      if (d.moved && state.plan && state.plan.error && (state.plan.error.type === 'throw' || state.plan.error.type === 'legs')) {
+        // An error: the coach says where the ball ended up.
+        state.errTo = { x: Math.round(d.at.x * 10) / 10, y: Math.round(d.at.y * 10) / 10 };
+        rerunHit();
+      } else if (d.moved) {
         const through = { x: Math.round(d.at.x * 10) / 10, y: Math.round(d.at.y * 10) / 10 };
         runEvent({ kind: 'ground', at: d.fromRoll, through });
         state.lastEvent = { kind: 'ground', at: d.fromRoll, through };
@@ -900,6 +935,7 @@
   function hitTo(p) {
     const at = { x: Math.round(p.x * 10) / 10, y: Math.round(p.y * 10) / 10 };
     // A drop right on top of a fielder in the outfield, with "Let the app decide", is a catch for a fly.
+    state.errTo = null;   // a new hit: the old error spot means nothing here
     runEvent({ kind: state.kind, at });
   }
 
@@ -924,7 +960,8 @@
   });
   for (const b of $$('#buntd-seg button')) b.addEventListener('click', () => { state.buntD = b.dataset.buntd; renderSituation(); rerunHit(); });
   for (const b of $$('#kind-chips button')) b.addEventListener('click', () => { state.kind = b.dataset.kind; renderSituation(); rerunHit(); });
-  for (const b of $$('#result-chips button')) b.addEventListener('click', () => { state.result = b.dataset.result; renderSituation(); rerunHit(); });
+  for (const b of $$('#result-chips button')) b.addEventListener('click', () => { state.result = b.dataset.result; state.errTo = null; renderSituation(); rerunHit(); });
+  for (const b of $$('#error-chips button')) b.addEventListener('click', () => { state.errType = b.dataset.err; state.errTo = null; renderSituation(); rerunHit(); });
   for (const b of $$('#other-plays button')) {
     b.addEventListener('click', () => {
       const play = b.dataset.play;
@@ -2281,8 +2318,7 @@
   // ------------------------------------------------------------------------------------ share links, My plays
   function shareCode() {
     if (!state.lastEvent) return null;
-    const ev = Object.assign({}, state.lastEvent);
-    if (ev.at && state.result !== 'auto' && !ev.result) ev.result = state.result;
+    const ev = withResult(Object.assign({}, state.lastEvent));
     return window.Share.encode(situation(), ev, state.playName || '');
   }
   function shareUrl(code) {
@@ -2307,7 +2343,10 @@
     state.d13 = s.d13 || 'auto';
     state.buntD = s.buntD || 'auto';
     if (typeof s.leadoffs === 'boolean') { state.leadoffs = s.leadoffs; $('#leadoffs').checked = s.leadoffs; }
-    if (d.event.at && BATTED.includes(d.event.kind)) { state.kind = d.event.kind; state.result = d.event.result || 'auto'; }
+    if (d.event.at && BATTED.includes(d.event.kind)) {
+      state.kind = d.event.kind; state.result = d.event.result || 'auto';
+      if (d.event.error) { state.errType = d.event.error.type; state.errTo = d.event.error.to || null; }
+    }
     if (d.event.kind === 'pitch' || s.start) {
       const e = d.event;
       state.build.start = s.start || {};

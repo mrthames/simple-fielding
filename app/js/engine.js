@@ -259,11 +259,29 @@
   function planBattedBall(geo, situation, event) {
     const ready = Field.readyPositions(geo, situation);
     const plan = newPlan(geo, situation, ready);
+    // An error: plan the play as it would have gone, then make the mistake (applyError).
+    let err = null;
+    if (event.result === 'error') {
+      err = Object.assign({ type: 'bobble' }, event.error);
+      event = Object.assign({}, event);
+      delete event.result; delete event.error;
+      if (err.type === 'legs') {
+        // Through the legs: a ground ball at an infielder goes on through, on the same line, into the outfield.
+        const d = dist(event.at, geo.bases.home);
+        if ((event.kind === 'ground' || event.kind === 'bunt') && Field.isFair(event.at) && d > 8 && d < geo.infieldEdge) {
+          // It goes under the glove of whoever would have fielded it, where they would have met it.
+          const clean = planBattedBallAt(newPlan(geo, situation, ready), geo, situation, event);
+          if (clean.fielder && clean.classification !== 'outfieldHit') err.by = { pos: clean.fielder, at: clean.ball.fieldPoint };
+          event.kind = 'ground';
+          event.through = err.to ? inPark(geo, err.to) : round(along(geo.bases.home, event.at, Math.max(d + 60 * (geo.base / 60), geo.infieldEdge + 35 * (geo.base / 60))));
+        } else err.type = 'bobble';
+      }
+    }
     // A ground ball that gets past an infielder: `at` is where they tried for it, `through` is where it
     // rolled to. The play is planned where the ball ended up; the infielder who missed it dives first.
     let tryAt = null;
     if (event.kind === 'ground' && event.through && dist(event.through, event.at) > 4 && Field.isFair(event.at)) {
-      tryAt = { x: event.at.x, y: event.at.y };
+      tryAt = err && err.by ? { x: err.by.at.x, y: err.by.at.y, by: err.by.pos } : { x: event.at.x, y: event.at.y };
       event = Object.assign({}, event, { at: event.through });
       delete event.through;
     } else if (event.kind === 'ground' && !event.through && Field.isFair(event.at) && dist(event.at, geo.bases.home) > geo.infieldEdge) {
@@ -275,9 +293,138 @@
     }
     plan.squeeze = !!event.squeeze && !!situation.runners.third;
     plan.T0 = geo.tempo.pitchFlight;
-    const out = planBattedBallAt(plan, geo, situation, event);
+    let out = planBattedBallAt(plan, geo, situation, event);
+    if (err && err.type === 'bobble' && (out.classification === 'outfieldFly' || out.classification === 'outfieldHit')) {
+      // An outfielder who drops it or lets it get by: the runners take a base more than the hit was worth.
+      const bases = out.classification === 'outfieldFly' ? 1 : Math.min(3, (out.hitBases || 1) + 1);
+      const p2 = newPlan(geo, situation, ready);
+      p2.squeeze = plan.squeeze; p2.T0 = plan.T0;
+      p2.keepPoint = out.ball.fieldPoint;
+      p2.dropped = out.classification === 'outfieldFly';
+      const was = out.classification === 'outfieldFly' ? `Fly ball to ${NAMES[out.fielder].toLowerCase()}` : out.title;
+      out = planBattedBallAt(p2, geo, situation, Object.assign({}, event, { result: ['', 'single', 'double', 'triple'][bases] }));
+      out.title = was;   // named for what was hit, not what the error made of it
+    }
     if (tryAt) missedGrounder(out, tryAt);
+    if (err) applyError(out, err);
     return out;
+  }
+
+  // --- Errors ---------------------------------------------------------------------------------
+  // Scorebook numbers, for "E6".
+  const SCORE_NUM = { P: 1, C: 2, '1B': 3, '2B': 4, '3B': 5, SS: 6, LF: 7, CF: 8, RF: 9 };
+  // A play's title in the middle of an error's: "E6: bobbled — single to left field" (not "through the infield — …").
+  const lowerFirst = (t) => t.replace(/^Through the infield — /, '').replace(/^./, (c) => c.toLowerCase());
+
+  // Youth: a cutoff catches every throw. From high school up, a single cutoff lets a good throw from the outfield go
+  // through; only a relay on an extra-base hit handles it.
+  function letsThrough(plan, th) {
+    return plan.geo.older && !th.cut && th.via && ['LF', 'CF', 'RF'].includes(th.fromPos) && plan.assignments[th.via] && plan.assignments[th.via].role === 'cutoff';
+  }
+
+  /*
+   * The coach says it was an error. The play is planned as it would have gone; this makes the mistake, and the clock
+   * (buildTimeline) decides what it costs:
+   *   bobble  the fielder gets the ball late (errorDelay). An outfielder's was planned a base further (above).
+   *   legs    the ground ball went on through into the outfield (planned above, as a ball that gets through).
+   *   throw   the first real throw gets past its base to err.to. The nearest fielder runs it down and throws to the
+   *           base the lead runner is heading for; every runner tries for one more base.
+   */
+  function applyError(plan, err) {
+    const { geo } = plan;
+    const b = geo.bases;
+    const k = geo.base / 60;
+    if (err.type === 'legs') {
+      const who = plan.missedBy;
+      if (!who) return;
+      plan.error = { type: 'legs', pos: who };
+      plan.title = `E${SCORE_NUM[who]}: through the legs — ${lowerFirst(plan.title.replace(/^Through the infield — /, ''))}`;
+      const a = plan.assignments[who];
+      a.job = a.job.replace(/^Go hard after it — it gets by you!/, 'It goes under your glove!');
+      plan.summary = plan.summary.replace(/^The ball gets past [^.]*\. /, '');
+      plan.notes.unshift('Stay down on a ground ball: glove on the dirt, and give with it. When one gets through anyway, the outfielder behind you is already charging. That is why they back up every ground ball.');
+      return;
+    }
+    const F = plan.fielder;
+    if (err.type === 'bobble') {
+      if (!F || !['infieldGround', 'bunt', 'outfieldHit'].includes(plan.classification)) return;
+      plan.errorDelay = geo.older ? 1.0 : 1.5;
+      plan.error = { type: 'bobble', pos: F };
+      const a = plan.assignments[F];
+      if (plan.classification === 'outfieldHit') {
+        const to = plan.throws[0] && plan.throws[0].via ? (plan.hitBases >= 2 ? 'the relay' : 'the cutoff') : 'the base';
+        plan.title = plan.dropped ? `E${SCORE_NUM[F]}: dropped ${lowerFirst(plan.title)}` : `E${SCORE_NUM[F]}: it gets away — ${lowerFirst(plan.title)}`;
+        a.job = `${plan.dropped ? 'It drops out of your glove!' : 'It gets away from you!'} Don't stop: get the ball, then throw hard to ${to}.`;
+        plan.notes.unshift('After an error, the next play matters most. Get the ball, throw it to the cutoff, and keep it to one extra base, not two.');
+      } else {
+        plan.title = `E${SCORE_NUM[F]}: bobbled — ${lowerFirst(plan.title)}`;
+        const rest = a.job.indexOf('! ') >= 0 ? a.job.slice(a.job.indexOf('! ') + 2) : a.job;
+        a.job = `It pops out of your glove! Pick it up with your throwing hand, set your feet, ${lowerFirst(rest)}`;
+        plan.notes.unshift('A bobble isn\'t the end of the play. Pick the ball up with your throwing hand and make a good throw. If there\'s no chance for the out, hold it: a rushed throw can turn one error into two.');
+      }
+      return;
+    }
+    if (err.type !== 'throw') return;
+    const i = plan.throws.findIndex((t) => !t.step && t.to !== 'mound');
+    if (i < 0) return;
+    const th = plan.throws[i];
+    const through = letsThrough(plan, th);
+    const thrower = th.via && !through ? th.via : th.fromPos;
+    const A = th.via && !through ? plan.assignments[th.via].to : i === 0 ? plan.ball.fieldPoint : b[plan.throws[i - 1].to] || plan.ball.fieldPoint;
+    const B = th.to === 'home' ? { x: 0, y: 1.5 } : b[th.to];
+    const receiver = th.toPos || coverAt(plan, th.to);
+    let W = err.to ? inPark(geo, err.to) : inPark(geo, along(A, B, dist(A, B) + 28 * k));
+    if (dist(W, B) < 6) W = inPark(geo, along(A, B, dist(A, B) + 12 * k));
+    // Whoever is closest to where it ends up runs it down: the backup, if they were where they should be.
+    const end = (a) => (a.path ? a.path[a.path.length - 1] : a.to);
+    let retr = null;
+    for (const pos of POSITIONS) {
+      if (pos === thrower || pos === receiver) continue;
+      const d = dist(end(plan.assignments[pos]), W);
+      if (!retr || d < retr.d) retr = { pos, d };
+    }
+    retr = retr.pos;
+    // Every runner tries for one more base. One who was staying put goes when the throw gets by.
+    for (const r of plan.runners) {
+      if (r.caughtOut || r.halfway || r.freeze || r.to === 'home') continue;
+      if (r.to === r.from) r.start = 'onWild';
+      r.to = nextBase(r.to);
+      r.forced = false; r.commit = false; r.extra = true;
+      delete r.onThrow;
+    }
+    const ORDER = ['third', 'second', 'first', 'batter'];
+    const lead = plan.runners.filter((r) => r.extra).sort((x, y) => BASE_ORDER.indexOf(y.to) - BASE_ORDER.indexOf(x.to) || ORDER.indexOf(x.id) - ORDER.indexOf(y.id))[0];
+    const throwTo = lead ? lead.to : null;
+    th.wild = round(W);
+    th.retriever = retr;
+    plan.throws = plan.throws.slice(0, i + 1);
+    if (throwTo) plan.throws.push({ fromPos: retr, to: throwTo, step: coverAt(plan, throwTo) === retr });
+    delete plan.dp; delete plan.cut2;
+    plan.error = { type: 'throw', pos: thrower, base: th.to, retriever: retr, throwTo };
+    plan.title = `E${SCORE_NUM[thrower]}: the throw gets away — ${lowerFirst(plan.title)}`;
+    const ra = plan.assignments[retr];
+    ra.job = `${ra.job} The throw gets past ${baseName(th.to)}: run it down${throwTo ? ` and throw to ${baseName(throwTo)}` : ''}!`;
+    plan.notes.unshift(`This is why every throw has a backup. ${The(retr)} was on the way, so a bad throw costs one base instead of two or three.`);
+  }
+
+  // What an error cost, from the clock: where each runner ended up.
+  function describeError(plan) {
+    const e = plan.error;
+    const ORDER = ['third', 'second', 'first', 'batter'];
+    const parts = [...plan.runners].sort((x, y) => ORDER.indexOf(x.id) - ORDER.indexOf(y.id)).map((r) => {
+      const who = r.id === 'batter' ? 'the batter' : `the runner from ${baseName(r.from)}`;
+      const fate = r.caughtOut ? 'is out on the catch' : r.out ? `is out at ${baseName(r.to)}` : r.held ? (r.held === r.from ? 'stays at ' + baseName(r.held) : `holds at ${baseName(r.held)}`) : r.to === 'home' ? 'scores' : r.to === r.from ? `stays at ${baseName(r.to)}` : `is safe at ${baseName(r.to)}`;
+      return `${who} ${fate}`;
+    });
+    const line = parts.length ? parts.join(', ').replace(/^t/, 'T') + '.' : '';
+    const what = e.type === 'bobble'
+      ? plan.classification === 'outfieldHit'
+        ? `${The(e.pos)} ${plan.dropped ? 'drops the fly ball' : 'lets it get away'}, so the runners try for an extra base.`
+        : `${The(e.pos)} bobbles it and has to pick it up again.`
+      : e.type === 'legs'
+      ? `The ball goes under ${the(e.pos)}'s glove and into the outfield.`
+      : `${The(e.pos)}'s throw to ${baseName(e.base)} gets away. ${The(e.retriever)} runs it down${e.throwTo ? ` and throws to ${baseName(e.throwTo)}` : ''}.`;
+    plan.summary = `${what} ${line} Scored as an error on ${the(e.pos)} (E${SCORE_NUM[e.pos]}).`;
   }
 
   // Where a ground ball headed for `to` passes closest to an infielder, if within reach of one: the spot that
@@ -298,7 +445,7 @@
 
   function missedGrounder(plan, tryAt) {
     const { geo } = plan;
-    const tryer = dist(tryAt, geo.bases.home) < geo.infieldEdge ? infieldFielder(plan, tryAt, false) : null;
+    const tryer = tryAt.by || (dist(tryAt, geo.bases.home) < geo.infieldEdge ? infieldFielder(plan, tryAt, false) : null);
     if (!tryAt.keepBall) {
       plan.ball.landing = round(tryAt);
       plan.through = true;
@@ -522,7 +669,8 @@
 
     // Extra-base hits roll on toward the fence.
     let fieldPoint = at;
-    if (bases >= 2) {
+    if (plan.keepPoint) fieldPoint = plan.keepPoint;   // an error: where the ball really went
+    else if (bases >= 2) {
       // Youth: it rolls on about 25 ft. Older levels: a ball that gets past the outfielders goes to the wall.
       const roll = along(at, { x: at.x * 3, y: at.y * 3 }, geo.big ? 80 : geo.older ? 40 : 25);
       if (dist(roll, geo.bases.home) > geo.fenceAt(roll) - 6) fieldPoint = along(geo.bases.home, at, geo.fenceAt(at) - 6);
@@ -1912,6 +2060,18 @@
     }
     const arrival = (pos) => fielderTrack[pos][fielderTrack[pos].length - 1].t;
 
+    // A bobble: the ball pops out a few feet and the fielder picks it up again, errorDelay seconds later.
+    function bobble(fp, tMiss) {
+      const pop = { x: fp.x + 2.5, y: fp.y - 2.5 };
+      const tGot = tMiss + plan.errorDelay;
+      ball.push({ t: tMiss + 0.35, x: pop.x, y: pop.y, h: 1 });
+      ball.push({ t: tGot, x: pop.x, y: pop.y, h: 0 });
+      events.push({ t: tMiss + 0.05, type: 'note', text: plan.dropped ? 'Dropped!' : 'Bobbled!', at: { x: fp.x, y: fp.y } });
+      const tr = fielderTrack[fieldPos];
+      if (tr) { const last = tr[tr.length - 1]; if (last.t < tGot) tr.push({ t: tGot, x: last.x, y: last.y }); }
+      return tGot;
+    }
+
     if (!plan.pitchOnly) {
       // Pitch arrives, batter hits it.
       ball.push({ t: T0, x: 0, y: 1, h: 3 });
@@ -1966,6 +2126,7 @@
           }
           ball.push({ t: rollT, x: fp.x, y: fp.y, h: 0 });
           ball.push({ t: tBallAtFielder, x: fp.x, y: fp.y, h: 0 });
+          if (plan.errorDelay) tBallAtFielder = bobble(fp, tBallAtFielder);
         }
       } else {
         // Grounder: a few bounces.
@@ -1983,6 +2144,7 @@
         if (dist(at, fp) > 1) ball.push({ t: tRoll + dist(at, fp) / (plan.through ? TP.through : TP.roll), x: fp.x, y: fp.y, h: 0 });
         tBallAtFielder = Math.max(endT, ball[ball.length - 1].t);
         ball.push({ t: tBallAtFielder, x: fp.x, y: fp.y, h: 0 });
+        if (plan.errorDelay) tBallAtFielder = bobble(fp, tBallAtFielder);
       }
     } else if (plan.passed) {
       ball.push({ t: PITCH_TIME, x: 0, y: -2, h: 1 });
@@ -2007,12 +2169,13 @@
     let from = { x: ball[ball.length - 1].x, y: ball[ball.length - 1].y };
     let firstThrowCatch = null;
     let firstThrowRelease = null;
+    let wildT = null, wildDone = false;
     const outsMade = [];
     for (const th of plan.throws) {
       const legs = [];
       // Youth throws go through the cutoff, who catches and throws on. From high school up, a single cutoff
       // lets a good throw go through (the catcher says nothing); only a relay on an extra-base hit handles it.
-      const letThrough = geo.older && !th.cut && th.via && ['LF', 'CF', 'RF'].includes(th.fromPos) && plan.assignments[th.via] && plan.assignments[th.via].role === 'cutoff';
+      const letThrough = letsThrough(plan, th);
       if (th.via && !letThrough) {
         const a = plan.assignments[th.via];
         legs.push({ to: a.to, pos: th.via });
@@ -2050,11 +2213,34 @@
           events.push({ t, type: 'throw', from: { ...from }, to: { ...leg.to }, tEnd: tt });
           if (firstThrowRelease === null) firstThrowRelease = t;
           t = tt;
+          if (th.wild && li === legs.length - 1) {
+            // The throw gets away: it carries on to th.wild, and the retriever runs it down from wherever they are.
+            const W = th.wild;
+            wildT = tt;
+            events.push({ t: tt, type: 'note', text: 'Gets away!', at: { ...leg.to } });
+            const tw = tt + dist(leg.to, W) / (TP.through * 1.2);
+            ball.push({ t: tw, x: W.x, y: W.y, h: 0 });
+            const go = Math.max(tt - 0.3, 0.1);
+            const rk = fielderTrack[th.retriever];
+            const here = sampleTrack(rk, go);
+            const kept = rk.filter((q) => q.t < go);
+            kept.push({ t: go, x: here.x, y: here.y });
+            const arr = go + dist(here, W) / RUN;
+            kept.push({ t: arr, x: W.x, y: W.y });
+            fielderTrack[th.retriever] = kept;
+            t = Math.max(tw, arr);
+            ball.push({ t, x: W.x, y: W.y, h: 0 });
+            if (firstThrowCatch === null) firstThrowCatch = tt;
+            from = { x: W.x, y: W.y };
+            wildDone = true;
+            break;
+          }
         }
         if (firstThrowCatch === null) firstThrowCatch = t;
         if (leg.base) outsMade.push({ base: leg.base, t });
         from = leg.to;
       }
+      if (wildDone) { wildDone = false; continue; }
       // Stepping after a relay/cutoff: the covering fielder may have to wait.
     }
     if (plan.pickoff && plan.throws.length === 0) firstThrowCatch = 1;
@@ -2117,6 +2303,7 @@
       let t0 = r.start === undefined ? (slapper ? runnerStart - 0.15 : lefty ? runnerStart - 0.1 : runnerStart) : r.start === 'afterFirstThrow' ? (firstThrowCatch || 1) - 0.6
         : r.start === 'afterFirstCatch' ? (firstThrowCatch || 1) + 0.1
         : r.start === 'onFirstThrow' ? (firstThrowRelease || 1)
+        : r.start === 'onWild' ? (wildT || runnerStart) + 0.1
         : r.start;
       // A fly ball that might be caught: runners read it. (A line drive into a gap is plainly a hit almost at once.)
       const airHit = plan.classification === 'outfieldHit' && plan.ball.kind === 'fly' && landTime;
@@ -2259,7 +2446,7 @@
         continue;
       }
       // The batter on a clean hit reaches the base the hit is worth.
-      if (r.id === 'batter' && plan.classification === 'outfieldHit' && !r.onThrow) { taken.add(r.to); continue; }
+      if (r.id === 'batter' && plan.classification === 'outfieldHit' && !r.onThrow && !r.extra) { taken.add(r.to); continue; }
 
       const ballThere = path.length ? outsMade.find((x) => x.base === r.to) : null;
       if (!ballThere) { if (r.to !== 'home') taken.add(r.to); continue; }
@@ -2598,10 +2785,22 @@
     }
     // One throw to 1st that doesn't win: say so, rather than let the summary imply the out.
     const batter = plan.runners.find((r) => r.id === 'batter');
-    if (!plan.dp && plan.targets && plan.targets[0] === 'first' && plan.throws.length && batter && !batter.out && !plan.ball.caught) {
+    if (plan.error) describeError(plan);
+    else if (!plan.dp && plan.targets && plan.targets[0] === 'first' && plan.throws.length && batter && !batter.out && !plan.ball.caught) {
       plan.summary += plan.situation.batter === 'S'
         ? ' The slapper beats the throw this time: the running start is what a slap is for. The throw to 1st is still the play.'
         : ' This time the batter beats the throw. It is still the right throw.';
+    }
+    // Which errors this batted ball can have (the app offers only these). An error play lists the same as the clean one.
+    if (batted) {
+      if (event.result === 'error') plan.errorOptions = planPlay(situation, Object.assign({}, event, { result: undefined, error: undefined })).errorOptions;
+      else {
+        const o = [];
+        if (['infieldGround', 'bunt', 'outfieldHit', 'outfieldFly'].includes(plan.classification) && !plan.through) o.push('bobble');
+        if (plan.classification === 'infieldGround' && !plan.through) o.push('legs');
+        if (plan.throws.some((t) => !t.step && t.to !== 'mound')) o.push('throw');
+        plan.errorOptions = o;
+      }
     }
     plan.jobs = POSITIONS.map((p) => plan.assignments[p])
       .sort((a, b) => ROLE_ORDER.indexOf(a.role) - ROLE_ORDER.indexOf(b.role));

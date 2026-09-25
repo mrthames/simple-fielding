@@ -2,6 +2,19 @@
 
 ---
 
+## [2026-09-25] v0.39.0 — Errors
+
+- **"What happens?" has Error.** Hit a ball, pick **Error**, then the kind:
+  - **Bobbled or dropped:** the fielder has to pick it up again. On a ground ball the throw is late; an outfielder who drops a fly or lets a hit get by gives every runner a try at an extra base.
+  - **Through the legs** (a ground ball at an infielder): it goes on into the outfield, and the outfielder behind charges it. Drag the ring to where it rolls.
+  - **Throw gets away:** the throw sails past the base. The nearest fielder, usually the one backing up, runs it down and throws to the base the lead runner is heading for, and every runner tries for one more base. Drag the ring to where the throw ends up.
+- **Whether a runner is safe, out or holds is decided by the timing**, just as it is for every other play. The summary says where each runner ends up and how the error is scored ("E6").
+- The play's title says what happened: "E6: bobbled — ground ball to the shortstop", "E7: dropped fly ball to left field".
+- Only the errors that fit are offered: a caught pop-up has none, and a bunt can't go through the legs.
+- **Errors go into share links and My plays**, including where the coach dragged the ball.
+
+---
+
 ## [2026-09-25] v0.38.0 — Build a play on the field itself
 
 - **Press and hold (or right-click) on the field while building a play** to set up what's there, without going to the side panel:
