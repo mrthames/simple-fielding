@@ -60,6 +60,7 @@
   <main class="stage">
     <div class="field-wrap" id="field-wrap">
       <svg id="field" class="field" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Baseball field"></svg>
+      <div class="field-menu" id="field-menu" role="menu" aria-label="Set up this part of the play" hidden></div>
       <div class="field-hint" id="field-hint">
         <span class="hint-ball"></span>
         <span class="fh-text">Drag the ball from home plate to where it's hit</span>
@@ -219,6 +220,7 @@
         <h2>Build a play</h2>
         <button type="button" class="text-btn small" id="build-reset">Start over</button>
       </div>
+      <p class="fine build-hold-tip">Or press and hold on the field (right-click with a mouse): a base or runner, a fielder, or home plate.</p>
       <h3>What happens?</h3>
       <div class="chips" id="build-what">
         <button type="button" data-what="pitch">Pitch</button>

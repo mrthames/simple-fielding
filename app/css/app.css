@@ -965,3 +965,26 @@ body.training #btn-3d, body.training #cam-bar { display: none !important; }
   .trainer-bar { position: fixed; left: auto; right: 12px; top: 72px; transform: none; background: #fff; width: calc(min(380px, 42vw) - 24px); max-height: calc(100dvh - 90px); overflow-y: auto; }
   body.training .panel { padding-top: 12px; }
 }
+
+/* The builder's press-and-hold menu on the field. */
+.field-menu {
+  position: absolute; z-index: 30; min-width: 220px; max-width: min(300px, calc(100% - 16px));
+  display: flex; flex-direction: column; gap: 2px; padding: 8px;
+  background: var(--panel); color: var(--ink); border-radius: 14px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, .28), 0 0 0 1px var(--line);
+}
+.field-menu[hidden] { display: none; }
+.field-menu .fm-title { font-weight: 800; font-size: 14px; color: var(--ink-2); padding: 4px 10px 6px; }
+.field-menu button {
+  min-height: 44px; padding: 0 12px; border: 0; border-radius: 10px; background: none; color: var(--ink);
+  font: inherit; font-weight: 600; text-align: left;
+}
+.field-menu button:hover:not(:disabled), .field-menu button:focus-visible { background: var(--chip); }
+.field-menu button.on { color: var(--brand); }
+.field-menu button.on::after { content: ' ✓'; }
+.field-menu button.danger { color: var(--red); }
+.field-menu button:disabled { color: var(--ink-3); font-size: 14px; }
+.field-menu .fm-go { margin-top: 4px; background: var(--brand); color: #fff; text-align: center; font-weight: 800; }
+.field-menu .fm-go:hover { background: var(--brand); filter: brightness(1.08); }
+.fm-lead { display: flex; flex-direction: column; gap: 4px; padding: 4px 10px 8px; font-size: 14px; font-weight: 700; }
+.fm-lead input { width: 100%; }

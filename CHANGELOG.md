@@ -2,6 +2,18 @@
 
 ---
 
+## [2026-09-25] v0.38.0 — Build a play on the field itself
+
+- **Press and hold (or right-click) on the field while building a play** to set up what's there, without going to the side panel:
+  - **a base:** put a runner on it
+  - **a runner:** set their lead, send them on the pitch, throw a pickoff to them, or take them off
+  - **home plate or the catcher:** the catcher catches it, it gets by, strike 3 in the dirt, or ball in play
+  - **the pitcher:** throw a pickoff to any base with a runner
+  - **any fielder:** put them back in their normal spot, or give them a player's name
+- Each menu has **Set play ▶**, so you can build a play and run it without leaving the field.
+
+---
+
 ## [2026-09-25] v0.37.0 — Read out loud removed
 
 - **Read out loud is gone:** the Read button on a play, the "Read each play out loud" setting, and the speaker in the lesson bar. It wasn't reliable on iPad and iPhone, and it wasn't needed. The website no longer mentions it.

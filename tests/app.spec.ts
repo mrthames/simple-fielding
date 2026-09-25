@@ -505,6 +505,50 @@ test('build a play: drag a fielder to a new spot; it is saved into a shared link
   expect(d.situation.start.SS.y).toBeCloseTo(start.y, 0);
 });
 
+test('build a play on the field: press and hold or right-click a base, a runner, the plate and the pitcher', async ({ page }) => {
+  await page.locator('#btn-settings').click();
+  await page.locator('#league').selectOption('pro');
+  await page.locator('#settings [data-close]').click();
+  await page.locator('#panel-mode [data-pm="build"]').click();
+  const toScreen = (x: number, y: number) => page.evaluate(([x, y]) => {
+    const svg = document.getElementById('field') as unknown as SVGSVGElement;
+    const p = svg.createSVGPoint(); p.x = x; p.y = -y; const q = p.matrixTransform(svg.getScreenCTM()!); return { x: q.x, y: q.y };
+  }, [x, y]);
+  const menu = page.locator('#field-menu');
+  // Right-click 1st base: put a runner there.
+  let at = await page.evaluate(() => { const r = document.querySelector('#field .base[data-base="first"]')!.getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; });
+  await page.mouse.click(at.x, at.y, { button: 'right' });
+  await expect(menu).toBeVisible();
+  await menu.getByRole('menuitem', { name: 'Put a runner on 1st' }).click();
+  await expect(menu).toBeHidden();
+  expect(await page.evaluate(() => (window as any).SimpleFielding.state.runners.first)).toBe(true);
+  // Press and hold the runner: set the lead and send them. The long press must not take the runner off.
+  await page.mouse.move(at.x, at.y);
+  await page.mouse.down();
+  await page.waitForTimeout(700);
+  await page.mouse.up();
+  await expect(menu).toBeVisible();
+  expect(await page.evaluate(() => (window as any).SimpleFielding.state.runners.first)).toBe(true);
+  await menu.locator('input[type=range]').fill('14');
+  await expect(menu.locator('.fm-lead span')).toHaveText('Lead: 14 ft');
+  await menu.getByRole('menuitem', { name: 'Steals on the pitch' }).click();
+  await expect(page.locator('#build-runners .br-go').first()).toHaveText('Stealing');
+  // Home plate: what happens on the pitch.
+  at = await toScreen(0, 1);
+  await page.mouse.click(at.x, at.y, { button: 'right' });
+  await expect(menu.locator('.fm-title')).toHaveText('What happens?');
+  await menu.getByRole('menuitem', { name: /It gets by/ }).click();
+  await expect(page.locator('#build-result [data-res="passed"]')).toHaveClass(/on/);
+  // The pitcher: a pickoff throw to 1st, then run it from the menu.
+  const p = await page.evaluate(() => document.querySelector('.player[data-pos="P"]')!.getBoundingClientRect());
+  await page.mouse.click(p.x + p.width / 2, p.y + p.height / 2, { button: 'right' });
+  await menu.getByRole('menuitem', { name: 'Pickoff throw to 1st' }).click();
+  await page.mouse.click(p.x + p.width / 2, p.y + p.height / 2, { button: 'right' });
+  await menu.locator('.fm-go').click();
+  const plan = await page.evaluate(() => { const p = (window as any).SimpleFielding.state.plan; return { title: p.title, lead: p.runners[0].leadStart }; });
+  expect(plan).toEqual({ title: 'Pickoff at 1st', lead: 14 });
+});
+
 test('draw what happened: steps with a moved fielder and a caption play back, save, and copy', async ({ page }) => {
   await page.locator('#panel-mode [data-pm="build"]').click();
   await page.locator('#mini-diamond [data-base="first"]').click();

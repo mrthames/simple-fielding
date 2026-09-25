@@ -4,7 +4,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '0.37.0';
+  const VERSION = '0.38.0';
   const Field = window.Field;
   const BATTED = ['ground', 'line', 'fly', 'pop', 'bunt'];
   const { POSITIONS, NAMES, LEAGUES } = Field;
@@ -228,6 +228,8 @@
   }
 
   function showReady() {
+    const fm = document.getElementById('field-menu');
+    if (fm && !fm.hidden) { fm.hidden = true; fm.innerHTML = ''; }  // the field's builder menu
     stop();
     state.plan = null;
     state.lastEvent = null;
@@ -240,7 +242,7 @@
     if (hint) hint.textContent = !building || state.build.what === 'hit' ? "Drag the ball from home plate to where it's hit"
       : state.build.what === 'pickoff' ? 'Set the lead, then press Set play'
       : state.build.result === 'passed' || state.build.result === 'dropped' ? 'Tap where the ball ends up, then Set play'
-      : 'Set the runners, then press Set play';
+      : 'Hold a base, runner or player to set it up, then Set play';
     $('#field-hint').classList.toggle('top', building && state.build.what !== 'hit');
     view.showRollHandle(null);
     $('#result').hidden = true;
@@ -2131,6 +2133,150 @@
   };
   svg.addEventListener('pointerup', endF, true);
   svg.addEventListener('pointercancel', endF, true);
+
+  // Builder, on the field: press and hold (or right-click) a fielder, a base or runner, or home plate for a menu
+  // of what can be set there. The same settings as the Build a play card, where the thing is.
+  const fmenu = $('#field-menu');
+  const building = () => state.pm === 'build' && !state.plan && !board.on && !state.trainer;
+  let fhold = null;
+  // What's under a point on the field: a fielder, a base (with or without its runner), or home plate.
+  function menuTarget(e, p) {
+    const pl = e.target.closest && e.target.closest('.player');
+    const tol = 12 * view.us;
+    const leads = buildLeads();
+    const b = geo.bases;
+    const next = { first: b.second, second: b.third, third: { x: 0, y: 0 } };
+    for (const base of ['first', 'second', 'third']) {
+      const L = state.runners[base] && state.build.what !== 'hit' ? leads[base] || 0 : 0;
+      const dx = next[base].x - b[base].x, dy = next[base].y - b[base].y, d = Math.hypot(dx, dy) || 1;
+      const at = { x: b[base].x + dx / d * L, y: b[base].y + dy / d * L };
+      if (Math.hypot(p.x - at.x, p.y - at.y) < tol || Math.hypot(p.x - b[base].x, p.y - b[base].y) < tol) return { base };
+    }
+    if (pl && pl.dataset.pos !== 'C') return { pos: pl.dataset.pos };
+    if (Math.hypot(p.x, p.y - 1) < 16 * view.us) return { plate: true };
+    if (pl) return { pos: pl.dataset.pos };
+    return null;
+  }
+  function closeFieldMenu() { fmenu.hidden = true; fmenu.innerHTML = ''; }
+  function openFieldMenu(target, clientX, clientY) {
+    const b = state.build;
+    const canLead = leadMax() > 0;
+    const canSteal = geo.rules.stealing !== 'none';
+    const withRunners = ['first', 'second', 'third'].filter((x) => state.runners[x]);
+    const items = [];   // [label, action, { on, danger }] or a heading string
+    const after = () => { saveBuild(); renderBuild(); showReady(); };
+    const pitchResult = (res) => () => { b.what = 'pitch'; b.result = res; after(); };
+    const pickoffTo = (base) => () => { b.what = 'pickoff'; b.pickoff = base; after(); };
+    let title = '', lead = null;
+    if (target.base) {
+      const base = target.base;
+      title = state.runners[base] ? `Runner on ${baseName(base)}` : `${baseName(base)} base`;
+      if (!state.runners[base]) items.push([`Put a runner on ${baseName(base)}`, () => toggleRunner(base)]);
+      else {
+        const r = buildRunner(base);
+        if (b.what !== 'hit') lead = { base, r };
+        if (canSteal && b.what === 'pitch') items.push(['Steals on the pitch', () => { r.go = !r.go; after(); }, { on: r.go }]);
+        if (canLead && b.what !== 'hit') items.push([`Pickoff throw to ${baseName(base)}`, pickoffTo(base), { on: b.what === 'pickoff' && b.pickoff === base }]);
+        items.push(['Take the runner off', () => toggleRunner(base), { danger: true }]);
+      }
+    } else if (target.plate || target.pos === 'C') {
+      title = 'What happens?';
+      items.push(['Catcher catches it', pitchResult('caught'), { on: b.what === 'pitch' && b.result === 'caught' }]);
+      items.push(['It gets by (passed ball / wild pitch)', pitchResult('passed'), { on: b.what === 'pitch' && b.result === 'passed' }]);
+      if (geo.rules.droppedThird !== false) items.push(['Strike 3 in the dirt', pitchResult('dropped'), { on: b.what === 'pitch' && b.result === 'dropped' }]);
+      items.push(['Ball in play (drag it from the plate)', () => { b.what = 'hit'; after(); }, { on: b.what === 'hit' }]);
+      if (target.pos === 'C' && state.build.start.C) items.push(['Catcher back to the normal spot', () => { delete state.build.start.C; after(); }]);
+    } else if (target.pos) {
+      const pos = target.pos;
+      title = `${pos} · ${Field.PLAYERS[pos]}`;
+      if (pos === 'P' && canLead) for (const x of withRunners) items.push([`Pickoff throw to ${baseName(x)}`, pickoffTo(x), { on: b.what === 'pickoff' && b.pickoff === x }]);
+      if (pos === 'P' && b.what === 'pickoff') items.push(['Pitch instead', pitchResult(b.result || 'caught')]);
+      if (state.build.start[pos]) items.push(['Back to the normal spot', () => { delete state.build.start[pos]; after(); }]);
+      else items.push(['Drag to move where they start', null]);
+      if (state.mode === 'coach') items.push(["Player's name…", () => { stop(); window.TeamUI.openPosition(pos); }]);
+    }
+    if (!title) return;
+    fmenu.innerHTML = '';
+    const h = document.createElement('div'); h.className = 'fm-title'; h.textContent = title; fmenu.appendChild(h);
+    if (lead) {
+      const max = leadMax();
+      const row = document.createElement('label'); row.className = 'fm-lead';
+      row.innerHTML = `<span></span><input type="range" min="0" max="${max}" step="1" ${max ? '' : 'disabled'}>`;
+      const inp = row.querySelector('input'), lbl = row.querySelector('span');
+      inp.value = lead.r.lead;
+      inp.setAttribute('aria-label', `Lead off ${baseName(lead.base)}`);
+      const label = () => { lbl.textContent = max ? `Lead: ${lead.r.lead} ft` : 'No lead on this field'; };
+      label();
+      inp.addEventListener('input', () => { lead.r.lead = Number(inp.value); label(); saveBuild(); renderBuild(); view.setRunners(state.runners, buildLeads()); });
+      fmenu.appendChild(row);
+    }
+    for (const [label, act, o = {}] of items) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.setAttribute('role', 'menuitem');
+      btn.textContent = label;
+      btn.className = (o.on ? 'on ' : '') + (o.danger ? 'danger' : '');
+      if (!act) btn.disabled = true;
+      else btn.addEventListener('click', () => { closeFieldMenu(); act(); });
+      fmenu.appendChild(btn);
+    }
+    if (b.what !== 'hit' && !(b.what === 'pickoff' && !withRunners.length)) {
+      const go = document.createElement('button');
+      go.type = 'button'; go.className = 'fm-go'; go.textContent = 'Set play ▶';
+      go.addEventListener('click', () => { closeFieldMenu(); $('#build-go').click(); });
+      fmenu.appendChild(go);
+    }
+    // Beside the press, kept inside the field.
+    fmenu.hidden = false;
+    const wrap = $('#field-wrap').getBoundingClientRect();
+    const w = fmenu.offsetWidth, hgt = fmenu.offsetHeight;
+    let x = clientX - wrap.left + 14, y = clientY - wrap.top - 20;
+    if (x + w > wrap.width - 8) x = clientX - wrap.left - w - 14;
+    x = Math.max(8, Math.min(x, wrap.width - w - 8));
+    y = Math.max(8, Math.min(y, wrap.height - hgt - 8));
+    fmenu.style.left = `${x}px`; fmenu.style.top = `${y}px`;
+    const first = fmenu.querySelector('button:not(:disabled), input');
+    if (first) first.focus({ preventScroll: true });
+  }
+  // Opening the menu ends whatever the press had started (a drag of the ball or a fielder, a passed-ball tap).
+  function menuFromPress(e, target, x, y) {
+    fdrag = null; drag = null;
+    svg.classList.remove('dragging');
+    view.cancelHolds();
+    view.hideDrag();
+    showReady();
+    swallowClick = true;
+    openFieldMenu(target, x, y);
+  }
+  let swallowClick = false;
+  // On the field's frame, in the capture phase: it sees a press before the fielder drag and the ball drag do.
+  const fwrap = $('#field-wrap');
+  fwrap.addEventListener('pointerdown', (e) => {
+    if (fmenu.contains(e.target)) return;
+    clearTimeout(fhold && fhold.t); fhold = null;
+    if (!fmenu.hidden) closeFieldMenu();
+    if (!building()) return;
+    const p = view.toField(e.clientX, e.clientY);
+    const target = menuTarget(e, p);
+    if (!target) return;
+    if (e.button === 2) { e.stopImmediatePropagation(); e.preventDefault(); menuFromPress(e, target, e.clientX, e.clientY); return; }
+    fhold = { id: e.pointerId, x0: e.clientX, y0: e.clientY };
+    fhold.t = setTimeout(() => { const h = fhold; fhold = null; if (h && building()) menuFromPress(e, target, h.x0, h.y0); }, 500);
+  }, true);
+  fwrap.addEventListener('pointermove', (e) => {
+    if (fhold && e.pointerId === fhold.id && Math.hypot(e.clientX - fhold.x0, e.clientY - fhold.y0) > 8) { clearTimeout(fhold.t); fhold = null; }
+  }, true);
+  const endHold = (e) => {
+    if (fhold && e.pointerId === fhold.id) { clearTimeout(fhold.t); fhold = null; }
+    if (swallowClick && !fmenu.contains(e.target)) { e.stopImmediatePropagation(); setTimeout(() => { swallowClick = false; }, 400); }
+  };
+  fwrap.addEventListener('pointerup', endHold, true);
+  fwrap.addEventListener('pointercancel', endHold, true);
+  // The click that ends a long press on a base would toggle its runner: that press opened the menu instead.
+  svg.addEventListener('click', (e) => { if (swallowClick) { swallowClick = false; e.stopImmediatePropagation(); } }, true);
+  svg.addEventListener('contextmenu', (e) => { if (building()) e.preventDefault(); });
+  document.addEventListener('pointerdown', (e) => { if (!fmenu.hidden && !fmenu.contains(e.target) && !svg.contains(e.target)) closeFieldMenu(); });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !fmenu.hidden) { closeFieldMenu(); e.stopPropagation(); } }, true);
 
   // ------------------------------------------------------------------------------------ share links, My plays
   function shareCode() {
