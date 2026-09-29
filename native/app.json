@@ -2,7 +2,6 @@
   "expo": {
     "name": "Simple Fielding",
     "slug": "simple-fielding",
-    "version": "0.38.0",
     "orientation": "default",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
