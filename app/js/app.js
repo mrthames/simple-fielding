@@ -5,6 +5,9 @@
   'use strict';
 
   const VERSION = '0.40.0';
+  // Set by the iPhone/iPad/Android apps (native/plugins/with-web-app.js). The store apps send nothing
+  // anywhere, so tester reporting can't be turned on in them.
+  const NATIVE = window.SF_NATIVE === true;
   const Field = window.Field;
   const BATTED = ['ground', 'line', 'fly', 'pop', 'bunt'];
   const { POSITIONS, NAMES, LEAGUES } = Field;
@@ -48,7 +51,7 @@
   state.leadoffs = store.get('leadoffs.' + state.league, LEAGUES[state.league].leadoffs);
   state.park = store.get('park.' + state.league, null);
 
-  const tester = { on: store.get('tester', false), url: store.get('testerUrl', '') };
+  const tester = NATIVE ? { on: false, url: '' } : { on: store.get('tester', false), url: store.get('testerUrl', '') };
   const view = new window.FieldView($('#field'));
 
   // ------------------------------------------------------------------------------------ 3D
@@ -1494,6 +1497,7 @@
   const PL = window.PlayLog;
 
   function setTester(on) {
+    if (NATIVE) on = false;
     tester.on = on;
     store.set('tester', on);
     $('#tester').hidden = !on;
@@ -1506,7 +1510,7 @@
     taps += 1;
     clearTimeout(tapTimer);
     tapTimer = setTimeout(() => { taps = 0; }, 1500);
-    if (taps >= 5) { taps = 0; setTester(true); $('#tester-url').focus(); }
+    if (taps >= 5 && !NATIVE) { taps = 0; setTester(true); $('#tester-url').focus(); }
   });
   $('#tester-url').value = tester.url;
   $('#tester-url').addEventListener('change', (e) => { tester.url = e.target.value.trim(); store.set('testerUrl', tester.url); });
@@ -1550,6 +1554,7 @@
   }
 
   async function sendReport(r) {
+    if (NATIVE) throw new Error('reports are not sent from the app');
     if (!tester.url) throw new Error('no address');
     const body = JSON.stringify(r);
     // text/plain keeps this a "simple" request: no CORS preflight, which Apps Script can't answer.
@@ -2546,7 +2551,7 @@
     }
     if (h.startsWith('tester')) {
       const url = decodeURIComponent(h.split('=').slice(1).join('='));
-      if (url) { tester.url = url; store.set('testerUrl', url); $('#tester-url').value = url; }
+      if (url && !NATIVE) { tester.url = url; store.set('testerUrl', url); $('#tester-url').value = url; }
       setTester(true);
       history.replaceState(null, '', location.href.split('#')[0]);
       return;
