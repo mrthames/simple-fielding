@@ -28,6 +28,9 @@
       "eas": {
         "projectId": "6fe3fd7f-133b-4298-b2ea-426e2757a0d5"
       }
-    }
+    },
+    "plugins": [
+      "./plugins/with-web-app"
+    ]
   }
 }
