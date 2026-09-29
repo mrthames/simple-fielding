@@ -552,7 +552,10 @@ test('build a play on the field: press and hold or right-click a base, a runner,
 test('errors: pick Error, then the kind; drag where a wild throw ends up', async ({ page }) => {
   await page.locator('#mini-diamond [data-base="first"]').click();
   await page.locator('#result-chips [data-result="error"]').click();
-  await expect(page.locator('#error-tip')).toHaveText(/Drag a hit/);
+  // The kinds come first, before any drag, with the default picked.
+  await expect(page.locator('#error-tip')).toHaveText(/^Pick the error, then drag the hit/);
+  await expect(page.locator('#error-chips button:not([hidden])')).toHaveCount(3);
+  await expect(page.locator('#error-chips [data-err="bobble"]')).toHaveClass(/on/);
   await dragBall(page, { x: -40, y: 80 });
   await expect(page.locator('#error-chips')).toBeVisible();
   await expect(page.locator('#error-chips button:not([hidden])')).toHaveCount(3);
@@ -572,11 +575,75 @@ test('errors: pick Error, then the kind; drag where a wild throw ends up', async
   const moved = await page.evaluate(() => { const st = (window as any).SimpleFielding.state; return { to: st.errTo, wild: st.plan.throws.find((t: any) => t.wild).wild }; });
   expect(Math.abs(moved.to.x - (ring.x + 15)) < 4 && Math.abs(moved.to.y - (ring.y + 25)) < 4).toBeTruthy();
   expect(Math.hypot(moved.wild.x - moved.to.x, moved.wild.y - moved.to.y) < 6).toBeTruthy();
-  // A pop-up has nothing to misplay: the kinds go away and the tip says why.
+  // A pop-up in the infield has nothing to misplay (yet): the kinds go away and the tip says why.
   await page.locator('#kind-chips [data-kind="pop"]').click();
   await dragBall(page, { x: 5, y: 50 });
   await expect(page.locator('#error-chips')).toBeHidden();
-  await expect(page.locator('#error-tip')).toHaveText(/Nothing to misplay/);
+  await expect(page.locator('#error-tip')).toHaveText(/^A pop-up caught in the infield/);
+});
+
+test('errors show on the field: the callout, E5 on the fielder, SAFE calls, and the outcome under the title', async ({ page }) => {
+  await page.locator('#mini-diamond [data-base="first"]').click();
+  await page.locator('#result-chips [data-result="error"]').click();
+  await dragBall(page, { x: -40, y: 80 });
+  await expect(page.locator('#play-title .pt-name')).toHaveText(/^E5: bobbled/);
+  const err = await page.evaluate(() => (window as any).SimpleFielding.state.plan.error);
+  // Just before the error: no badge. At the moment: the big callout, and the badge on the third baseman.
+  await page.evaluate((t) => (window as any).SimpleFielding.seek(t), err.t - 0.2);
+  await expect(page.locator('.player[data-pos="3B"] .ebadge')).toBeHidden();
+  await page.evaluate((t) => (window as any).SimpleFielding.seek(t), err.t + 0.1);
+  await expect(page.locator('.caption.note.err')).toHaveText('Bobbled!');
+  await expect(page.locator('.player[data-pos="3B"] .ebadge')).toBeVisible();
+  await page.evaluate(() => (window as any).SimpleFielding.seekEnd());
+  await expect(page.locator('.caption.note.err')).toHaveCount(0);
+  // At the end: the badge is still on 3B, SAFE calls stay up, and the outcome line says what it cost.
+  await expect(page.locator('.player[data-pos="3B"] .ebadge')).toBeVisible();
+  await expect(page.locator('.player[data-pos="3B"] .ebadge text')).toHaveText('E5');
+  await expect(page.locator('.player[data-pos="SS"] .ebadge')).toBeHidden();
+  await expect(page.locator('.caption.safe')).toHaveCount(2);
+  await expect(page.locator('#play-title .pt-outcome')).toBeVisible();
+  await expect(page.locator('#play-title .pt-outcome')).toHaveText('E5, bobbled: batter safe at 1st, runner from 1st safe at 2nd.');
+});
+
+test('errors: the callout is big and orange at the moment, and the outcome waits for the end', async ({ page }) => {
+  await page.locator('#result-chips [data-result="error"]').click();
+  await page.locator('#error-chips [data-err="legs"]').click();
+  await dragBall(page, { x: -40, y: 80 });
+  await expect(page.locator('#play-title .pt-name')).toHaveText(/^E\d: through the legs/);
+  // Scrub to just after the ball goes through: the callout is up, the badge is on, the outcome isn't yet.
+  const { t, pos, code } = await page.evaluate(() => (window as any).SimpleFielding.state.plan.error);
+  await page.evaluate((t) => {
+    const sf = (window as any).SimpleFielding, dur = sf.state.plan.timeline.duration;
+    const s = document.getElementById('scrub') as HTMLInputElement;
+    s.value = String(Math.round(((t + 0.2) / dur) * 1000)); s.dispatchEvent(new Event('input', { bubbles: true }));
+  }, t);
+  await expect(page.locator('.caption.note.err')).toHaveText('Through the legs!');
+  await expect(page.locator(`.player[data-pos="${pos}"] .ebadge`)).toBeVisible();
+  await expect(page.locator('#play-title .pt-outcome')).toBeHidden();
+  await page.evaluate(() => (window as any).SimpleFielding.seekEnd());
+  await expect(page.locator('#play-title .pt-outcome')).toHaveText(new RegExp(`^${code}, through the legs: batter safe at 1st\\.$`));
+});
+
+test('errors: an error the hit can\'t have is switched, and the tip says so', async ({ page }) => {
+  await page.locator('#mini-diamond [data-base="first"]').click();
+  await page.locator('#kind-chips [data-kind="line"]').click();
+  await page.locator('#result-chips [data-result="error"]').click();
+  await expect(page.locator('#error-chips button:not([hidden])')).toHaveCount(2);
+  await expect(page.locator('#error-chips [data-err="legs"]')).toBeHidden();
+  await page.locator('#error-chips [data-err="bobble"]').click();
+  // A liner caught by the shortstop can't be bobbled here; the only error is the throw.
+  await dragBall(page, { x: -20, y: 60 });
+  await expect(page.locator('#error-tip')).toHaveText('This hit can’t be bobbled or dropped, so it’s a throw that gets away instead.');
+  await expect(page.locator('#error-chips [data-err="throw"]')).toHaveClass(/on/);
+});
+
+test('errors point to passed balls and wild pitches, which live with the steals', async ({ page }) => {
+  await expect(page.locator('#error-more')).toBeHidden();
+  await page.locator('#result-chips [data-result="error"]').click();
+  await expect(page.locator('#error-more')).toBeVisible();
+  await page.locator('#to-other').click();
+  await expect(page.locator('#other-card')).toHaveClass(/flash/);
+  await expect(page.locator('#other-card')).toBeInViewport();
 });
 
 test('draw what happened: steps with a moved fielder and a caption play back, save, and copy', async ({ page }) => {

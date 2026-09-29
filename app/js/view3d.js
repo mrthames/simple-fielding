@@ -792,6 +792,16 @@
         }
         return best;
       };
+      const err = plan.error;
+      const add = (text, bg, size, call) => {
+        const sp = this.textSprite(text, '#ffffff', bg, 56);
+        sp.material.sizeAttenuation = false;
+        sp.center.set(0.5, 0);
+        sp.userData.base = [size * sp.userData.aspect, size];
+        sp.visible = false;
+        this.field.add(sp);
+        this.calls.push(Object.assign({ sprite: sp, height: 8.6 }, call));
+      };
       for (const e of plan.timeline.events) {
         let text = null, runner = null;
         if (e.type === 'out' || e.type === 'safe') {
@@ -799,25 +809,26 @@
           text = e.type === 'safe' ? 'SAFE!' : /doubled/i.test(e.text) ? 'DOUBLED OFF!' : 'OUT!';
         } else if (e.type === 'catch' && plan.runners.some((r) => r.id === 'batter')) {
           runner = 'batter'; text = 'OUT!';
+        } else if (e.error && err) {
+          // The error itself, over the fielder who made it, held long enough to read.
+          add(e.text.toUpperCase(), 'rgba(214,110,20,.95)', 0.085, { t: e.t, fielder: err.pos, at: e.at, dur: 3.2, height: 13 });
+          continue;
         }
         if (!text) continue;
-        const sp = this.textSprite(text, '#ffffff', e.type === 'safe' ? 'rgba(22,150,70,.95)' : 'rgba(210,35,50,.95)', 56);
-        sp.material.sizeAttenuation = false;
-        sp.center.set(0.5, 0);
-        sp.userData.base = [0.07 * sp.userData.aspect, 0.07];
-        sp.visible = false;
-        this.field.add(sp);
-        this.calls.push({ t: e.t, runner, at: e.at, sprite: sp });
+        // In an error play the calls stay up, so the end of the play shows what the error cost.
+        add(text, e.type === 'safe' ? 'rgba(22,150,70,.95)' : 'rgba(210,35,50,.95)', 0.07, { t: e.t, runner, at: e.at, keep: !!err });
       }
+      // E5 on the fielder who made the error, from the moment it happens to the end of the play.
+      if (err && err.t !== undefined) add(err.code, 'rgba(210,35,50,.95)', 0.06, { t: err.t, fielder: err.pos, at: err.at, keep: true, height: 10 });
     }
     showCalls(t) {
       for (const c of this.calls || []) {
-        const on = t >= c.t && t < c.t + 1.8;
+        const on = t >= c.t && (c.keep || t < c.t + (c.dur || 1.8));
         c.sprite.visible = on;
         if (!on) continue;
-        const pose = c.runner && this.pose['runner:' + c.runner];
+        const pose = c.fielder ? this.pose['player:' + c.fielder] : c.runner && this.pose['runner:' + c.runner];
         const at = pose ? pose.p : c.at;
-        c.sprite.position.copy(this.w(at.x, at.y, 8.6 * this.fs));
+        c.sprite.position.copy(this.w(at.x, at.y, c.height * this.fs));
         const pop = 1 + 0.4 * Math.max(0, 1 - (t - c.t) / 0.18);
         c.sprite.scale.set(c.sprite.userData.base[0] * pop, c.sprite.userData.base[1] * pop, 1);
       }

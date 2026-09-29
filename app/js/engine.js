@@ -2752,6 +2752,7 @@
     const plan = batted ? planBattedBall(geo, s, event) : planSituationPlay(geo, s, event);
     finish(plan);
     plan.timeline = buildTimeline(plan);
+    if (plan.missedBy) syncDive(plan);
     // "Cut 2": the runner is going to score easily, so the catcher has the cutoff catch it and throw the batter
     // out at 2nd instead.
     if (plan.cut2 && plan.homeMargin !== undefined && plan.homeMargin > 0.35 && plan.throws[0] && plan.throws[0].via) {
@@ -2791,6 +2792,7 @@
         ? ' The slapper beats the throw this time: the running start is what a slap is for. The throw to 1st is still the play.'
         : ' This time the batter beats the throw. It is still the right throw.';
     }
+    if (plan.error) markError(plan);
     // Which errors this batted ball can have (the app offers only these). An error play lists the same as the clean one.
     if (batted) {
       if (event.result === 'error') plan.errorOptions = planPlay(situation, Object.assign({}, event, { result: undefined, error: undefined })).errorOptions;
@@ -2805,6 +2807,67 @@
     plan.jobs = POSITIONS.map((p) => plan.assignments[p])
       .sort((a, b) => ROLE_ORDER.indexOf(a.role) - ROLE_ORDER.indexOf(b.role));
     return plan;
+  }
+
+  /*
+   * What the app shows about an error: when and where it happens (plan.error.t / .at, and the timeline's error
+   * event, flagged `error: true`), what to call it (plan.error.label), and what it cost, in one line
+   * (plan.error.outcome: "E5, bobbled: batter safe at 1st, runner from 1st safe at 2nd.").
+   */
+  // A ground ball that gets past an infielder: they dive for it as it goes by, not before. Someone who would reach
+  // the spot early leaves a little later instead (then goes on to their job), and the clock is rebuilt around that.
+  function syncDive(plan) {
+    const who = plan.missedBy, a = plan.assignments[who];
+    if (!a || !a.path || !a.path.length) return;
+    const spot = a.path[0], tr = plan.timeline.tracks;
+    let pass = null, closest = Infinity, arrive = null;
+    for (let t = 0; t <= plan.timeline.duration; t += 0.05) {
+      const b = sampleTrack(tr.ball, t);
+      const d = Math.hypot(b.x - spot.x, b.y - spot.y);
+      if (b.h < 3 && d < closest) { closest = d; pass = t; }
+      const f = sampleTrack(tr[who], t);
+      if (arrive === null && Math.hypot(f.x - spot.x, f.y - spot.y) < 1) arrive = t;
+    }
+    if (pass === null || arrive === null || arrive >= pass - 0.25) return;
+    a.delay = (a.delay || 0) + (pass - 0.15 - arrive);
+    plan.timeline = buildTimeline(plan);
+  }
+
+  const ERROR_LABEL = { bobble: 'bobbled', legs: 'through the legs', throw: 'throw gets away' };
+  const BASE_WORD = { first: '1st', second: '2nd', third: '3rd' };
+  function markError(plan) {
+    const err = plan.error;
+    const events = plan.timeline.events;
+    let ev = events.find((e) => e.type === 'note' && /^(Bobbled|Dropped|Gets away|Through the legs)!$/.test(e.text));
+    if (!ev && err.type === 'legs') {
+      // Through the legs has no moment of its own on the clock: it's when the ball passes the fielder who missed it.
+      const tr = plan.timeline.tracks;
+      let best = null;
+      for (let t = 0; t <= plan.timeline.duration; t += 0.05) {
+        const b = sampleTrack(tr.ball, t), f = sampleTrack(tr[err.pos], t);
+        const d = Math.hypot(b.x - f.x, b.y - f.y);
+        if (b.h < 3 && (!best || d < best.d)) best = { t, d, at: { x: f.x, y: f.y } };
+      }
+      if (best) {
+        ev = { t: best.t, type: 'note', text: 'Through the legs!', at: best.at };
+        const i = events.findIndex((e) => e.t > ev.t);
+        events.splice(i < 0 ? events.length : i, 0, ev);
+      }
+    }
+    if (ev) { ev.error = true; err.t = ev.t; err.at = { ...ev.at }; }
+    err.label = err.type === 'bobble' && plan.dropped ? 'dropped' : ERROR_LABEL[err.type];
+    err.code = `E${SCORE_NUM[err.pos]}`;
+    // The same fates as the summary (describeError), batter first, and runners who stay put left out.
+    const who = (r) => (r.id === 'batter' ? 'batter' : `runner from ${BASE_WORD[r.from]}`);
+    const at = (b) => BASE_WORD[b] || 'home';
+    const parts = plan.runners
+      .filter((r) => r.caughtOut || r.out || (r.held ? r.held !== r.from : r.to !== r.from))
+      .sort((a, b) => (a.id === 'batter' ? -1 : b.id === 'batter' ? 1 : 0))
+      .map((r) => (r.caughtOut ? `${who(r)} out on the catch`
+        : r.out ? `${who(r)} out at ${at(r.to)}`
+        : r.held ? `${who(r)} holds at ${at(r.held)}`
+        : r.to === 'home' ? `${who(r)} scores` : `${who(r)} safe at ${at(r.to)}`));
+    err.outcome = `${err.code}, ${err.label}` + (parts.length ? `: ${parts.join(', ')}.` : '.');
   }
 
   const api = { planPlay, sampleTrack, classify, basePath, forcedBases, ROLE_ORDER, _dist: dist };

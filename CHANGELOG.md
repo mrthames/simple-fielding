@@ -2,6 +2,19 @@
 
 ---
 
+## [2026-09-29] v0.40.0 — Errors you can see
+
+Errors worked out the right result, but the field didn't show it: the kind was picked silently, the only sign on the field was a small bubble for under two seconds, and the explanation sat out of sight in the side panel.
+
+- **Pick the error first.** Choose **Error** and the kinds that fit the hit appear straight away, with the default picked: bobbled or dropped, through the legs, or a throw that gets away for a grounder; bobbled or a bad throw for the rest. Then drag the hit. Once the ball is placed, only the errors that play can have stay on offer. If the one you picked doesn't fit, the app picks one that does and says so ("This hit can't be bobbled or dropped, so it's a throw that gets away instead.").
+- **The error shows on the field.** A big orange callout at the moment it happens ("Bobbled!", "Dropped!", "Through the legs!", "Gets away!"), and an **E5** badge on the fielder who made it that stays to the end of the play. In 2D and in 3D.
+- **The finished play shows what it cost.** In an error play, SAFE and OUT stay up on the runners, and a line under the play's title says it in one go: "E5, bobbled: batter safe at 1st, runner from 1st safe at 2nd."
+- **Passed balls and wild pitches:** they aren't errors in the scorebook, so they stay under Steals, passed balls & pickoffs, and Error now points there.
+- **Fixed: through the legs could miss the fielder.** A shortstop or second baseman could reach the spot early and leave before the ball got there, so it went by 15 feet away. Whoever it gets past now dives for it as it goes by (this also fixes clean grounders that get through the infield).
+- Honest tips where there's nothing to misplay: a home run ("nobody fields it"), and a ball caught in the infield, which the app doesn't drop yet.
+
+---
+
 ## [2026-09-25] v0.39.0 — Errors
 
 - **"What happens?" has Error.** Hit a ball, pick **Error**, then the kind:

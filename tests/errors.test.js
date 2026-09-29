@@ -124,3 +124,38 @@ test('an error survives a share link', () => {
   const d2 = Share.decode(Share.encode({ league: 'softball', runners: {}, outs: 0 }, Object.assign({ kind: 'ground', at: { x: -30, y: 60 } }, err('legs')), ''));
   assert.deepEqual(d2.event.error, { type: 'legs' });
 });
+
+test('every error has its moment on the clock, a code, and a one-line outcome that agrees with the summary', () => {
+  const cases = [
+    [on('first'), { kind: 'ground', at: SS }, 'bobble', 'E5, bobbled: batter safe at 1st, runner from 1st safe at 2nd.'],
+    [on('first'), { kind: 'ground', at: SS }, 'legs', 'E5, through the legs: batter safe at 1st, runner from 1st holds at 2nd.'],
+    [on('first'), { kind: 'ground', at: SS }, 'throw', 'E5, throw gets away: batter safe at 2nd, runner from 1st safe at 3rd.'],
+    [{}, { kind: 'fly', at: { x: 60, y: 150 } }, 'bobble', 'E9, dropped: batter safe at 1st.'],
+  ];
+  for (const [runners, ev, type, outcome] of cases) {
+    const p = play('littleLeague', runners, Object.assign({}, ev, err(type)));
+    const e = p.error;
+    assert.equal(e.outcome, outcome, `${type}: ${p.title}`);
+    assert.equal(e.code, p.title.slice(0, 2));
+    assert.ok(e.t > 0 && e.t < p.timeline.duration, `${type}: the error happens during the play`);
+    const flagged = p.timeline.events.filter((x) => x.error);
+    assert.equal(flagged.length, 1, `${type}: exactly one error moment`);
+    assert.equal(flagged[0].t, e.t);
+    // Each runner's fate in the outcome is the one the summary gives.
+    for (const part of outcome.replace(/^E\d, [^:]+: /, '').replace(/\.$/, '').split(', ')) {
+      const fate = part.replace(/^(batter|runner from \w+) /, '');
+      assert.ok(p.summary.includes(fate), `${type}: the summary says "${fate}"`);
+    }
+  }
+});
+
+test('through the legs gets its moment where the ball passes the fielder who missed it', () => {
+  const ground = () => play('littleLeague', {}, Object.assign({ kind: 'ground', at: SS }, err('legs')));
+  const p = ground();
+  const ev = p.timeline.events.find((x) => x.error);
+  assert.equal(ev.text, 'Through the legs!');
+  const f = Engine.sampleTrack(p.timeline.tracks[p.error.pos], ev.t);
+  const b = Engine.sampleTrack(p.timeline.tracks.ball, ev.t);
+  assert.ok(Math.hypot(b.x - f.x, b.y - f.y) < 6, 'the ball is at the fielder then');
+  assert.equal(ground().timeline.events.filter((x) => x.error).length, 1, 'one moment, however often the play is planned');
+});

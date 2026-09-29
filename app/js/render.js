@@ -202,6 +202,12 @@
         el('rect', { class: 'tag-bg', x: -8, y: -3.4, width: 16, height: 6.8, rx: 3.4 }, tag);
         el('text', { class: 'tag-text', y: 0.2 }, tag);
         tag.style.display = 'none';
+        // E5 on the fielder who made the play's error, from the moment it happens (see seek).
+        const eb = el('g', { class: 'ebadge', transform: 'translate(7,-7)' }, g);
+        el('circle', { r: 5.4 }, eb);
+        el('text', { y: 0.3 }, eb);
+        eb.style.display = 'none';
+        outer.ebadge = eb;
 
         // Tap spotlights; press and hold opens the position editor.
         let hold = null, held = false, start = null;
@@ -309,6 +315,9 @@
       for (const pos of POSITIONS) {
         const a = plan.assignments[pos];
         this.actors[pos].setAttribute('class', `player role-${a.role}`);
+        const eb = this.actors[pos].ebadge;
+        eb.style.display = 'none';
+        eb.querySelector('text').textContent = plan.error && plan.error.pos === pos ? plan.error.code : '';
         // The route as assigned, start to destination. The player may stop short of it when the play ends first,
         // but the chalk still shows where they were going.
         const keys = plan.timeline.tracks[pos];
@@ -353,6 +362,8 @@
       this.t = t;
       const tr = plan.timeline.tracks;
       for (const pos of POSITIONS) this.place(this.actors[pos], sample(tr[pos], t, true));
+      const err = plan.error;
+      if (err && err.t !== undefined) this.actors[err.pos].ebadge.style.display = t >= err.t ? '' : 'none';
       for (const r of plan.runners) {
         const node = this.runnerEls[r.id];
         const keys = tr['runner:' + r.id];
@@ -371,8 +382,13 @@
         if (ev.type === 'throw' && t >= ev.t && t <= ev.tEnd + 0.6) {
           el('line', { x1: ev.from.x, y1: -ev.from.y, x2: ev.to.x, y2: -ev.to.y, class: 'throw', 'marker-end': 'url(#arrow)' }, this.layers.throws);
         }
-        if ((ev.type === 'out' || ev.type === 'catch' || ev.type === 'hold' || ev.type === 'safe' || ev.type === 'note') && t >= ev.t && t <= ev.t + 1.8) {
-          const g = el('g', { class: 'caption ' + ev.type, transform: `translate(${ev.at.x},${-ev.at.y - 12 * this.us}) scale(${this.us})` }, this.layers.captions);
+        // The error's own callout is bigger and stays up longer. In an error play, OUT and SAFE stay up to the end,
+        // so the finished play shows what the error cost.
+        const call = ev.type === 'out' || ev.type === 'catch' || ev.type === 'safe';
+        const until = ev.error ? ev.t + 3.2 : err && call ? Infinity : ev.t + 1.8;
+        if ((call || ev.type === 'hold' || ev.type === 'note') && t >= ev.t && t <= until) {
+          const s = this.us * (ev.error ? 1.35 : 1);
+          const g = el('g', { class: 'caption ' + ev.type + (ev.error ? ' err' : ''), transform: `translate(${ev.at.x},${-ev.at.y - 12 * s}) scale(${s})` }, this.layers.captions);
           const w = ev.text.length * 3.6 + 8;
           el('rect', { x: -w / 2, y: -6, width: w, height: 11, rx: 5.5 }, g);
           el('text', { y: 0.5 }, g).textContent = ev.text;

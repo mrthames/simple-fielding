@@ -4,7 +4,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '0.39.0';
+  const VERSION = '0.40.0';
   const Field = window.Field;
   const BATTED = ['ground', 'line', 'fly', 'pop', 'bunt'];
   const { POSITIONS, NAMES, LEAGUES } = Field;
@@ -277,18 +277,39 @@
     if (ev.result === 'error' && !ev.error) { ev.error = { type: state.errType }; if (state.errTo) ev.error.to = state.errTo; }
     return ev;
   }
+  // The errors a kind of hit can have somewhere on the field, offered before the drag. Once the ball is placed,
+  // the play's own list (plan.errorOptions) narrows it.
+  const KIND_ERRORS = { ground: ['bobble', 'legs', 'throw'], line: ['bobble', 'throw'], fly: ['bobble', 'throw'], pop: ['bobble', 'throw'], bunt: ['bobble', 'throw'] };
+  const ERR_NAME = { bobble: 'bobbled or dropped', legs: 'through the legs', throw: 'a throw that gets away' };
   function renderErrorChips() {
     const on = state.result === 'error';
-    const opts = (state.plan && state.plan.errorOptions) || [];
+    const plan = state.plan;
+    // A play for the hit being set up: its own list. Otherwise (nothing dragged yet, or a new kind picked) the kind's.
+    const placed = plan && plan.errorOptions && state.lastEvent && state.lastEvent.kind === state.kind;
+    const opts = placed ? plan.errorOptions : KIND_ERRORS[state.kind] || [];
+    if (!placed && opts.length && !opts.includes(state.errType)) state.errType = opts[0];
     $('#error-chips').hidden = !on || !opts.length;
     for (const b of $$('#error-chips button')) { b.hidden = !opts.includes(b.dataset.err); b.classList.toggle('on', b.dataset.err === state.errType); }
     const tip = $('#error-tip');
-    tip.textContent = !state.plan || !state.plan.errorOptions ? 'Drag a hit from home plate, then pick the error.'
-      : !opts.length ? 'Nothing to misplay on this one: nobody fields it or throws it.'
+    const sw = state.errSwitched;
+    tip.textContent = !placed ? 'Pick the error, then drag the hit from home plate.'
+      : !opts.length ? (plan.classification === 'homeRun' ? 'Over the fence: nobody fields it, so there’s nothing to misplay.'
+        : plan.classification === 'infieldFly' ? `${state.kind === 'line' ? 'A liner' : state.kind === 'fly' ? 'A fly ball' : 'A pop-up'} caught in the infield: dropping one isn’t in the app yet.`
+        : 'Nothing to misplay on this one: nobody fields it or throws it.')
+      : sw ? `This hit can’t be ${ERR_NAME[sw.from]}, so it’s ${ERR_NAME[sw.to]} instead.`
       : state.errType === 'throw' ? 'Drag the ring to where the throw ends up.'
       : state.errType === 'legs' ? 'Drag the ring to where it rolls.' : '';
     tip.hidden = !on || !tip.textContent;
+    $('#error-more').hidden = !on;
   }
+  // Passed balls and wild pitches aren't errors in the scorebook, so they live with the steals. Point there.
+  $('#to-other').addEventListener('click', () => {
+    const card = $('#other-card');
+    card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    card.classList.remove('flash');
+    void card.offsetWidth;
+    card.classList.add('flash');
+  });
 
   function runEvent(event, opts) {
     // Picking any other play ends a lesson.
@@ -305,12 +326,14 @@
       }
     }
     const plan = window.Engine.planPlay(situation(), ev);
-    // An error this ball can't have (a throw error with no throw): the first one it can.
+    // An error this ball can't have (a throw error with no throw): the first one it can, and the tip says so.
     if (ev.result === 'error' && !plan.error && plan.errorOptions && plan.errorOptions.length && !plan.errorOptions.includes(ev.error.type) && !event.error) {
+      const from = ev.error.type;
       state.errType = plan.errorOptions[0];
       state.errTo = null;
-      return runEvent(event, opts);
+      return runEvent(event, Object.assign({}, opts, { errSwitched: { from, to: state.errType } }));
     }
+    state.errSwitched = (opts && opts.errSwitched) || null;
     state.plan = plan;
     // Every play is logged (last 50, on the device) so a tester can report it exactly.
     try { state.entry = window.PlayLog.record(window.localStorage, window.PlayLog.entry(plan, situation(), ev, VERSION)); }
@@ -354,11 +377,21 @@
   // The title card: the play's name, and while asking, the question under it.
   function setTitle(name) {
     const t = $('#play-title');
-    t.innerHTML = '<span class="pt-name"></span><span class="pt-ask" hidden>Where does everybody go? <span class="pt-quiz">Tap a player to see their job.</span></span><span class="pt-sit"></span>';
+    t.innerHTML = '<span class="pt-name"></span><span class="pt-ask" hidden>Where does everybody go? <span class="pt-quiz">Tap a player to see their job.</span></span><span class="pt-outcome" hidden></span><span class="pt-sit"></span>';
     t.querySelector('.pt-name').textContent = name;
     t.querySelector('.pt-sit').textContent = $('#sit-strip').textContent;
     t.querySelector('.pt-ask').hidden = !state.asking;
     t.hidden = false;
+    syncOutcome();
+  }
+  // After an error play has run to the end: what it cost, in one line ("E5, bobbled: batter safe at 1st, …").
+  function syncOutcome() {
+    const o = $('#play-title .pt-outcome');
+    if (!o) return;
+    const err = state.plan && state.plan.error;
+    const done = state.plan && state.t >= state.plan.timeline.duration - 0.01;
+    o.textContent = err ? err.outcome : '';
+    o.hidden = !(err && done && !state.asking);
   }
   function setAskFirst(on) {
     state.askFirst = on;
@@ -520,6 +553,7 @@
     const dur = state.plan ? state.plan.timeline.duration : 1;
     $('#scrub').value = Math.round((state.t / dur) * 1000);
     $('#scrub').style.setProperty('--pct', `${(state.t / dur) * 100}%`);
+    syncOutcome();
   }
 
   function updateTransport() {
