@@ -1,0 +1,33 @@
+{
+  "expo": {
+    "name": "Simple Fielding",
+    "slug": "simple-fielding",
+    "version": "0.38.0",
+    "orientation": "default",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.thamesproductions.simplefielding"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#E6F4FE",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false,
+      "package": "com.thamesproductions.simplefielding"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "owner": "justinthames",
+    "extra": {
+      "eas": {
+        "projectId": "6fe3fd7f-133b-4298-b2ea-426e2757a0d5"
+      }
+    }
+  }
+}
