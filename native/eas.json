@@ -6,14 +6,23 @@
   "build": {
     "preview": {
       "distribution": "internal",
-      "android": { "buildType": "apk" },
-      "env": { "EXPO_PUBLIC_WEBVIEW_DEBUG": "1" }
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_WEBVIEW_DEBUG": "1"
+      }
     },
     "production": {
       "autoIncrement": true
     }
   },
   "submit": {
-    "production": {}
+    "production": {
+      "ios": {
+        "ascAppId": "6817473927",
+        "appleTeamId": "M93M8498E3"
+      }
+    }
   }
 }
