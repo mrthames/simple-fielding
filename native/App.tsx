@@ -26,6 +26,10 @@ function Shell() {
   // clear of the home indicator. It reads the edges as --safe-top and --safe-bottom, which Android's WebView leaves
   // at zero, so the app sets them. Left and right (landscape) are kept clear here, in navy.
   const edges = `(function(){var s=document.documentElement.style;s.setProperty('--safe-top','${insets.top}px');s.setProperty('--safe-bottom','${insets.bottom}px');})();true;`;
+  // Sent before the page loads, again whenever the edges change (rotation), and once more when it has loaded:
+  // Android can report the real edges a moment after launch, while the page is still loading.
+  const latest = useRef(edges);
+  latest.current = edges;
   useEffect(() => { web.current?.injectJavaScript(edges); }, [edges]);
 
   // Android's back button closes what's open in the app first (SimpleFielding.back), and closes the app when nothing is.
@@ -64,6 +68,7 @@ function Shell() {
           allowingReadAccessToURL={webRoot}
           domStorageEnabled
           injectedJavaScriptBeforeContentLoaded={edges}
+          onLoadEnd={() => web.current?.injectJavaScript(latest.current)}
           onShouldStartLoadWithRequest={onShouldStart}
           setSupportMultipleWindows={false}
           onMessage={onMessage}

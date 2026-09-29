@@ -118,6 +118,8 @@ body { overflow: hidden; }
   .field-wrap { flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; }
   .field { max-height: 100%; height: 100%; width: 100%; }
   .panel { grid-row: 2; border-left: 1px solid var(--line); background: var(--bg); }
+  /* Side by side, the play controls are the bottom row: keep them clear of the home indicator / gesture bar. */
+  .transport { padding-bottom: calc(10px + var(--safe-bottom)); }
 }
 
 /* ---------------------------------------------------------------- buttons */
