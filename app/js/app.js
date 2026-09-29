@@ -8,6 +8,9 @@
   // Set by the iPhone/iPad/Android apps (native/plugins/with-web-app.js). The store apps send nothing
   // anywhere, so tester reporting can't be turned on in them.
   const NATIVE = window.SF_NATIVE === true;
+  // Links to a play: the page's own address, except in the store apps, where that's a file on the phone.
+  // There they point to the web app, so they open for anyone.
+  const pageUrl = () => (NATIVE ? 'https://simplefielding.com/app/' : location.href.split('#')[0]);
   const Field = window.Field;
   const BATTED = ['ground', 'line', 'fly', 'pop', 'bunt'];
   const { POSITIONS, NAMES, LEAGUES } = Field;
@@ -1518,7 +1521,7 @@
   $('#tester').hidden = !tester.on;
 
   function replayUrl(code) {
-    return location.href.split('#')[0] + '#replay=' + code;
+    return pageUrl() + '#replay=' + code;
   }
 
   function buildReport(said, positions) {
@@ -2361,7 +2364,7 @@
     return window.Share.encode(situation(), ev, state.playName || '');
   }
   function shareUrl(code) {
-    return location.href.split('#')[0] + '#p=' + code;
+    return pageUrl() + '#p=' + code;
   }
   // Open a play from a code: set the field and the situation, then run it.
   function openCode(code, nameOverride, savedId) {
@@ -2578,8 +2581,20 @@
   }
   window.addEventListener('hashchange', fromHash);
 
+  // Android's back button in the store app: close what's open, the top-most first. False when nothing is,
+  // so the app itself closes (native/App.tsx).
+  function back() {
+    const open = $$('dialog[open]');
+    if (open.length) { closeSheet(open[open.length - 1]); return true; }
+    if (!fmenu.hidden) { closeFieldMenu(); return true; }
+    if (board.on) { closeBoard(); return true; }
+    if (document.body.classList.contains('projector')) { toggleProjector(); return true; }
+    if (state.trainer) { exitTrainer(); return true; }
+    return false;
+  }
+
   // Test hook: lets the Playwright suite drive plays without synthesising drags.
-  window.SimpleFielding = { setMode, state, team, board, tester, openReport, buildReport, reportText, openBoard, closeBoard, runEvent, runScenario, hitTo, seekEnd() { if (state.plan) { stop(); endAsk(); state.t = state.plan.timeline.duration; view.seek(state.t); updateTransport(); } },
+  window.SimpleFielding = { setMode, state, team, board, tester, openReport, buildReport, reportText, openBoard, closeBoard, runEvent, runScenario, hitTo, back, seekEnd() { if (state.plan) { stop(); endAsk(); state.t = state.plan.timeline.duration; view.seek(state.t); updateTransport(); } },
     // Paused at time t (seconds): used by scripts/render-hero-video.mjs to film a play frame by frame.
     view3d: () => v3,
     // The trainer, for tests: start a lesson by id (with a position filter), answer, choose, move on.
