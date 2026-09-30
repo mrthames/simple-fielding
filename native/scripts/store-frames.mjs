@@ -1,18 +1,19 @@
 // The store images: each screen from store-screenshots.mjs in a device, on Simple Pitch Counter's navy, under a
 // headline that says what it shows. The same look as Simple Pitch Counter's App Store images (its marketing/).
 // Run from the repo root, after store-screenshots.mjs: node native/scripts/store-frames.mjs
-//   in:  marketing/store/raw/<store>/<device>/<scene>.png
-//   out: marketing/store/final/<store>/<device>/<scene>.png at the store's exact size, and the Play feature graphic.
+//   in:  marketing/store/raw/<store>/<device>/<scene>.png        (ignored: regenerated from the app)
+//   out: store/app-store/… and store/play/…, at each store's exact size, plus the Play feature graphic and icon.
+//        The same layout as Soapstone's store/ folder; these are committed, ready to upload.
 //
 // Headlines are for coaches and parents (the store listing is Option A: never "for kids"), and don't claim
 // "every play".
 import { chromium } from '@playwright/test';
-import { readFileSync, mkdirSync, readdirSync } from 'node:fs';
+import { readFileSync, mkdirSync, readdirSync, copyFileSync } from 'node:fs';
 import path from 'node:path';
 import sharp from 'sharp';
 
 const RAW = path.resolve('marketing/store/raw');
-const OUT = path.resolve('marketing/store/final');
+const OUT = path.resolve('store');
 
 // [headline, accent word(s), accent color, the line under it]
 const CAPTIONS = {
@@ -25,16 +26,16 @@ const CAPTIONS = {
 };
 const ACCENT = { green: '#34C759', blue: '#3D8BFF', amber: '#FF9500' };
 
-// [store/device, output width, output height, frame kind, the screen's CSS height of status bar (as captured)]
+// [raw folder, output folder under store/, output width, output height, frame kind, status-bar CSS height as captured]
 const FORMATS = [
-  ['app-store/ipad-13', 2752, 2064, 'ipad', 24],
-  ['app-store/iphone-6.9', 1320, 2868, 'iphone', 62],
-  ['google-play/tablet-10', 2560, 1600, 'tablet', 28],
-  ['google-play/tablet-7', 1200, 1920, 'tablet', 28],
-  ['google-play/phone', 1080, 1920, 'android', 32],
+  ['app-store/ipad-13', 'app-store/screenshots-ipad-13', 2752, 2064, 'ipad', 24],
+  ['app-store/iphone-6.5', 'app-store/screenshots-6.5', 1284, 2778, 'iphone', 50],
+  ['google-play/phone', 'play/screenshots', 1080, 1920, 'android', 32],
+  ['google-play/tablet-7', 'play/screenshots-tablet-7', 1200, 1920, 'tablet', 28],
+  ['google-play/tablet-10', 'play/screenshots-tablet-10', 2560, 1600, 'tablet', 28],
 ];
 // The CSS width each screen was captured at (store-screenshots.mjs), to scale the status bar with it.
-const CSS_WIDTH = { 'app-store/ipad-13': 1376, 'app-store/iphone-6.9': 440, 'google-play/tablet-10': 1280, 'google-play/tablet-7': 480, 'google-play/phone': 432 };
+const CSS_WIDTH = { 'app-store/ipad-13': 1376, 'app-store/iphone-6.5': 428, 'google-play/tablet-10': 1280, 'google-play/tablet-7': 480, 'google-play/phone': 432 };
 
 const dataUri = (file) => 'data:image/png;base64,' + readFileSync(file).toString('base64');
 
@@ -122,7 +123,7 @@ async function render(html, W, H, file) {
   console.log(path.relative(OUT, file), `${m.width}x${m.height}`);
 }
 
-for (const [dev, W, H, kind, statusCss] of FORMATS) {
+for (const [dev, outDir, W, H, kind, statusCss] of FORMATS) {
   const dir = path.join(RAW, dev);
   for (const f of readdirSync(dir).filter((x) => x.endsWith('.png')).sort()) {
     const scene = f.replace(/\.png$/, '');
@@ -130,8 +131,11 @@ for (const [dev, W, H, kind, statusCss] of FORMATS) {
     if (!cap) continue;
     const meta = await sharp(path.join(dir, f)).metadata();
     const html = slide({ W, H, kind, screen: dataUri(path.join(dir, f)), rawW: meta.width, rawH: meta.height, statusCss, cssW: CSS_WIDTH[dev], cap });
-    await render(html, W, H, path.join(OUT, dev, f));
+    await render(html, W, H, path.join(OUT, outDir, f));
   }
 }
-await render(featureGraphic(dataUri('native/assets/splash-icon.png')), 1024, 500, path.join(OUT, 'google-play', 'feature-graphic.png'));
+await render(featureGraphic(dataUri('native/assets/splash-icon.png')), 1024, 500, path.join(OUT, 'play', 'feature-graphic-1024x500.png'));
+// Play's hi-res icon: the 512 px master the web app already uses (32-bit PNG, as Play asks).
+copyFileSync('app/icon-512.png', path.join(OUT, 'play', 'icon-512.png'));
+console.log('play/icon-512.png 512x512');
 await browser.close();

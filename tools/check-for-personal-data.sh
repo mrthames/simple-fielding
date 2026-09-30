@@ -6,6 +6,10 @@
 # in order to understand Simple Fielding, build it, and run it — and nothing whatsoever about the
 # machine it happens to be developed on, or about the people who use it.
 #
+# The author's own name is allowed here on purpose (his call, 2026-09-29): Simple Fielding is published under it
+# and by Thames Productions, as Simple Pitch Counter is. Contact addresses, machine paths, the server's layout and
+# credentials are not.
+#
 # Run by CI on every push and pull request, because a rule nobody checks is a rule that holds until
 # the first time somebody is in a hurry.
 #
@@ -33,10 +37,9 @@ find_in_tracked() {
     | grep -vE "$allowed" || true
 }
 
-# --- A name or a contact address.
-# Word boundaries, or "adjusting" matches "justin" and the check cries wolf until nobody reads it.
-hits=$(find_in_tracked '\bjustin\b|\bthames\b|@gmail\.com|@outlook\.com|@hotmail\.com')
-[ -n "$hits" ] && report "a name or contact address" "$hits"
+# --- A contact address. (The author's name is allowed; see the top of this file.)
+hits=$(find_in_tracked '@gmail\.com|@outlook\.com|@hotmail\.com')
+[ -n "$hits" ] && report "a contact address" "$hits"
 
 # --- Paths from somebody's own machine.
 hits=$(find_in_tracked 'C:\\Users\\|/home/[a-z]|/Users/[a-z]')

@@ -16,7 +16,8 @@ const url = pathToFileURL(path.resolve('app/index.html')).href;
 // [folder, CSS width, CSS height, pixel ratio, safe top, safe bottom] -> CSS size x ratio is the screen in pixels.
 const DEVICES = [
   ['app-store/ipad-13', 1376, 1032, 2, 24, 20],     // iPad 13" landscape (required: the app runs on iPad)
-  ['app-store/iphone-6.9', 440, 956, 3, 62, 34],    // iPhone 6.9" portrait (required)
+  // iPhone 6.5" portrait: App Store Connect asks for 1242 x 2688 or 1284 x 2778 (SPC's size) here, not 6.9".
+  ['app-store/iphone-6.5', 428, 926, 3, 50, 34],
   ['google-play/tablet-10', 1280, 800, 2, 28, 24],
   // Portrait, and narrower than 600 CSS px: in landscape at this size the color key covers home plate, and from
   // 600 to about 720 px wide the full header doesn't fit (a web layout bug, logged). 480 x 2.5 = 1200 x 1920.
