@@ -1642,6 +1642,28 @@
             { id: 'third', from: 'third', to: 'home', start: 'afterFirstThrow' },
           ];
           plan.notes.push('With two outs, many teams throw through to 2nd. If the tag beats the runner from 3rd to the plate, the inning is over and the run doesn\'t count. If the runner scores first, it counts, so the throw has to be quick.');
+        } else if (def === 'cutSS') {
+          // The set play: the catcher sells a throw to 2nd but throws it short, on purpose, to the
+          // shortstop in front of the bag, who fires home. The runner on 3rd is baited into
+          // breaking when the catcher's arm comes forward. The mirror of the cut play below.
+          plan.title = '1st & 3rd — shortstop cuts it, throw home';
+          plan.summary = 'The runner on 1st steals. The catcher fakes a throw to 2nd but throws to the shortstop in front of the bag. The runner on 3rd breaks for home on the throw, and the shortstop throws home to get them.';
+          plan.target = 'home';
+          const cutSpot = { x: -4 * k, y: b.second.y - 18 * k };
+          assign(plan, 'C', 'field', { x: 0, y: -3 }, 'Catch the pitch and throw like it\'s going to 2nd, but aim at the shortstop in front of the bag. Then get back to the plate fast for the throw home!', { delay: 0 });
+          assign(plan, 'SS', 'cutoff', cutSpot, 'Cut it! Come in front of 2nd, in line with the throw. Catch it and throw home right away: the runner on 3rd will be breaking.', { delay: 0.8 });
+          assign(plan, '2B', 'cover', b.second, 'Cover 2nd base, so the runner from 1st thinks the throw is coming there.', { delay: 0.8 });
+          assign(plan, '3B', 'cover', b.third, 'Stay on 3rd and yell "Four! Four!" when the runner breaks for home.', { delay: 0.8 });
+          assign(plan, 'P', 'backup', { x: 8 * k, y: geo.backstop * 0.62 }, 'Duck out of the throw, then circle around the 1st-base side to back up home. Never cross in front of the plate.',
+            { delay: 0.9, path: [{ x: 18 * k, y: 14 * k }, { x: 14 * k, y: -6 * k }] });
+          assign(plan, 'CF', 'backup', behind(geo, b.second, b.home, 50), 'Charge in to back up 2nd base.', { delay: 0.8 });
+          assign(plan, '1B', 'cover', b.first, 'Cover 1st base.', { delay: 0.8 });
+          plan.throws.push({ fromPos: 'C', via: 'SS', to: 'home' });
+          plan.runners = [
+            { id: 'first', from: 'first', to: 'second', start: go },
+            { id: 'third', from: 'third', to: 'home', start: 'afterFirstThrow', commit: true },
+          ];
+          plan.notes.push('A set play, called before the pitch: the throw never goes to 2nd. It works because the runner on 3rd breaks when the catcher\'s arm comes forward. The runner from 1st gets 2nd for free; the out at home is worth it.');
         } else {
           plan.title = '1st & 3rd — double steal';
           plan.summary = 'The runner on 1st steals. The catcher throws toward 2nd, the second baseman cuts it in front of the bag, and the ball comes home if the runner on 3rd breaks.';

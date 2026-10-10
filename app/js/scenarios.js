@@ -84,6 +84,7 @@
         { name: 'Steal of 2nd — left-handed batter', runners: on('first'), outs: 0, batter: 'L', event: { kind: 'steal2' } },
         { name: 'Steal of 3rd', runners: on('second'), outs: 1, event: { kind: 'steal3' } },
         { name: '1st & 3rd double steal', runners: on('first', 'third'), outs: 0, event: { kind: 'firstThirdSteal' } },
+        { name: '1st & 3rd — fake to 2nd, shortstop throws home', runners: on('first', 'third'), outs: 1, d13: 'cutSS', event: { kind: 'firstThirdSteal' } },
         { name: 'Primary lead — pickoff at 1st', runners: on('first'), outs: 0, leadoffs: true, event: { kind: 'primaryLead' } },
         { name: 'Secondary lead — catcher back-pick', runners: on('first'), outs: 0, leadoffs: true, event: { kind: 'secondaryLead' } },
       ],

@@ -141,6 +141,7 @@ not covered yet.
 | Steal of 2nd — **left-handed batter** | C to 2nd | **SS covers** | 2B backs up; CF charges in |
 | Steal of 3rd | C to 3rd | 3B covers | LF charges in; SS covers 2nd |
 | **1st & 3rd double steal** (cut play) | C throws toward 2nd | **2B cuts in front of the bag**; SS covers 2nd; 3B yells "Four!" if the runner breaks home | P backs up home; CF backs up 2nd |
+| **1st & 3rd, shortstop cut** (set play) | C fakes a throw to 2nd, throws to SS | **SS cuts in front of the bag and throws home**; 2B covers 2nd; 3B yells "Four!" | P backs up home; CF backs up 2nd |
 
 Who covers 2nd: batters usually pull the ball, so the fielder on the pull side stays put. Righty → 2B covers;
 lefty → SS covers. *(Softball: the pull logic flips for a left-handed slapper, who hits to the left side. Most fastpitch
@@ -151,7 +152,8 @@ runner from 3rd to the plate, the inning is over and the run doesn't count; if t
 counts. So the throw has to be quick.
 
 1st & 3rd is where teams differ most: throw through, fake to 3rd, throw back to the pitcher, or hold the
-ball. The app shows the cut play.
+ball. The app shows the cut play by default; the 1st & 3rd picker also has the shortstop cut, a set play where the
+throw always goes to the shortstop to bait the runner on 3rd into breaking.
 
 ## 9. Passed balls and wild pitches
 
