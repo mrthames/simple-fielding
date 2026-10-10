@@ -612,7 +612,8 @@
       load(event, name, savedId) {
         B.script = { title: event.title || name || '', steps: clone(event.steps || []), main: event.main || '', alts: clone(event.alts || []) };
         B.alt = Number.isInteger(event.branch) && B.script.alts[event.branch] ? event.branch : -1;
-        B.sel = steps().length - 1;
+        // At the start, before the pitch: opening on the last step showed a shared play already over (his phone, 2026-10-10).
+        B.sel = -1;
         B.savedId = savedId || null;
         B.undo = []; B.redo = []; B.pending = null; B.choosing = null;
         saveDraft();

@@ -2,6 +2,13 @@
 
 ---
 
+## [2026-10-10] v0.43.2: a shared play opens at the start
+
+- A built play opened from a link or My plays now starts **before the pitch**, instead of on its last step with the
+  play already over.
+
+---
+
 ## [2026-10-10] v0.43.1: an ending can't swallow the rest of a play
 
 - **Add another ending** only shows on a step with another step after it. On the last step it read like "add the

@@ -622,6 +622,9 @@ test('a shared play with endings: anyone, on a phone too, can switch endings and
     ] }] }, '1st & 3rd cut'));
   await page.goto('/#p=' + code);
   await expect(page.locator('#bp-endings [data-ending]')).toHaveText(['He commits', 'He turns back']);
+  // It opens at the start, not with the play already over.
+  await expect(page.locator('.bp-step.setup')).toHaveClass(/\bon\b/);
+  await expect(page.locator('#scrub')).toHaveValue('0');
   await expect(page.locator('.bp-step:not(.setup)')).toHaveCount(4);
   await page.locator('#bp-endings [data-ending="0"]').click();
   await expect(page.locator('.bp-step:not(.setup)')).toHaveCount(6);
