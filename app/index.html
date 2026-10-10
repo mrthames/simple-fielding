@@ -60,7 +60,6 @@
   <main class="stage">
     <div class="field-wrap" id="field-wrap">
       <svg id="field" class="field" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Baseball field"></svg>
-      <div class="field-menu" id="field-menu" role="menu" aria-label="Set up this part of the play" hidden></div>
       <div class="field-hint" id="field-hint">
         <span class="hint-ball"></span>
         <span class="fh-text">Drag the ball from home plate to where it's hit</span>
@@ -215,39 +214,8 @@
       <p class="sit-hint">Tap the bases to put runners on. <button class="text-btn small inline" id="btn-clear" type="button">Clear bases</button></p>
     </section>
 
-    <section class="card build" id="build">
-      <div class="card-head">
-        <h2>Build a play</h2>
-        <button type="button" class="text-btn small" id="build-reset">Start over</button>
-      </div>
-      <p class="fine build-hold-tip">Or press and hold on the field (right-click with a mouse): a base or runner, a fielder, or home plate.</p>
-      <h3>What happens?</h3>
-      <div class="chips" id="build-what">
-        <button type="button" data-what="pitch">Pitch</button>
-        <button type="button" data-what="pickoff">Pickoff</button>
-        <button type="button" data-what="hit">Ball in play</button>
-      </div>
-      <button type="button" class="text-btn draw-own" id="build-draw">✎ Draw what happened, step by step</button>
-      <div class="build-sub" id="build-pitch">
-        <div class="chips small" id="build-result">
-          <button type="button" data-res="caught">Catcher catches it</button>
-          <button type="button" data-res="passed">It gets by (passed ball / wild pitch)</button>
-          <button type="button" data-res="dropped">Strike 3 in the dirt</button>
-        </div>
-        <p class="fine" id="build-passed-tip">Tap the field behind the plate where the ball ends up.</p>
-      </div>
-      <div class="build-sub" id="build-pickoff">
-        <div class="chips small" id="build-pickoff-bases"></div>
-      </div>
-      <p class="fine build-sub" id="build-hit-tip">Pick how it's hit below, then drag the ball from home plate to where it goes.</p>
-      <h3>Runners</h3>
-      <div class="build-runners" id="build-runners"></div>
-      <p class="fine" id="build-no-runners">Tap the bases above (or on the field) to put runners on.</p>
-      <p class="fine" id="build-lead-note"></p>
-      <h3>Fielders</h3>
-      <p class="fine">Drag any fielder on the field to set where they start. <button class="text-btn small inline" id="build-fielders-reset" type="button">Put everyone back</button></p>
-      <button type="button" class="primary build-go" id="build-go">Set play ▶</button>
-    </section>
+    <!-- Build a play: written step by step (builder.js draws this card). -->
+    <section class="card build bp" id="bp" aria-label="Build a play"></section>
 
     <section class="card quick" id="quick">
       <div class="card-head">
@@ -597,6 +565,7 @@
 <script src="js/playlog.js"></script>
 <script src="js/share.js"></script>
 <script src="js/training.js"></script>
+<script src="js/builder.js"></script>
 <script src="js/app.js"></script>
 </body>
 </html>

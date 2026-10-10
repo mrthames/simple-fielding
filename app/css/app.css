@@ -761,23 +761,9 @@ body.projector .field-key { font-size: 15px; max-width: none; }
 /* ---------------------------------------------------------------- scenario builder */
 .panel-mode { display: flex; }
 .panel-mode button { flex: 1; min-height: 40px; font-weight: 700; }
-body.pm-build #quick, body.pm-build #other-card, body:not(.pm-build) #build { display: none; }
+body.pm-build #quick, body.pm-build #other-card, body:not(.pm-build) #bp { display: none; }
 body.pm-build:not(.build-hit) #hit-card { display: none; }
-.build-sub[hidden] { display: none; }
-.build-runners { display: flex; flex-direction: column; gap: 8px; }
-.br-row { display: grid; grid-template-columns: 44px 1fr auto; align-items: center; gap: 10px; padding: 8px 10px; border-radius: var(--r); background: var(--bg); }
-.br-base { font-weight: 800; }
-.br-lead { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-.br-lead input { width: 100%; }
-.br-lead span { font-size: 13px; color: var(--ink-2); font-weight: 600; }
-.br-go { min-height: 38px; padding: 0 12px; border: 0; border-radius: var(--r); background: var(--chip); color: var(--ink); font-weight: 700; }
-.br-go.on { background: var(--red); color: #fff; }
-.build-go { display: block; width: 100%; margin-top: 14px; min-height: 48px; border: 0; border-radius: 12px; background: var(--brand); color: #fff; font-weight: 800; font-size: 17px; }
-.build-go:disabled { opacity: .45; }
-.field.building .player { cursor: grab; }
 .ball-spot { fill: rgba(255, 255, 255, .2); stroke: #fff; stroke-width: calc(.8 * var(--u, 1)); stroke-dasharray: calc(2 * var(--u, 1)) calc(1.6 * var(--u, 1)); }
-/* While building a pitch play the hint sits at the top, out of the way of the plate. */
-.field-hint.top { top: 12px; bottom: auto; }
 .caption.note rect { fill: #2b4a7e; }
 
 /* ---------------------------------------------------------------- drawing a play, step by step */
@@ -792,9 +778,8 @@ body.pm-build:not(.build-hit) #hit-card { display: none; }
 .db-step-opts .text-input { flex: 1; min-width: 0; padding: 8px 10px; font-size: 15px; }
 .db-tip { flex-basis: 100%; margin: 0; }
 .db-finish { margin-left: auto; }
-.text-btn.danger { color: var(--red); }
 body.drawing .board-bar .bb-done { display: none; }
-.draw-own { display: block; margin: 10px 0 0; }
+.bp-draw { display: block; margin: 10px 0 0; padding-left: 0; }
 .ghost { fill: none; stroke: #fff; stroke-width: calc(.8 * var(--u, 1)); stroke-dasharray: calc(1 * var(--u, 1)) calc(2 * var(--u, 1)); opacity: .7; }
 .ghost-dot { fill: rgba(255, 255, 255, .35); }
 #result.drawn .legend, #result.drawn h3, #result.drawn .jobs { display: none; }
@@ -810,8 +795,7 @@ body.drawing .board-bar .bb-done { display: none; }
 }
 
 /* Softball: pitchers don't throw over, so the builder has no pickoff. 8U has no stealing at all. */
-body.softball #build-what [data-what="pickoff"] { display: none; }
-body.no-steals #other-card, body.no-steals .br-go { display: none; }
+body.no-steals #other-card { display: none; }
 .coach-marker { fill: #f5f1e6; stroke: #2a3b4d; stroke-width: calc(1 * var(--u, 1)); }
 .coach-marker-text { fill: #2a3b4d; font: 800 2.6px var(--font); text-anchor: middle; dominant-baseline: central; }
 /* Three batter choices in softball: keep them on one line in the panel. */
@@ -820,7 +804,7 @@ body.softball #batter-seg button { font-size: 13px; padding: 0 7px; }
 .panel { overflow-x: hidden; }
 /* The first-run hint sits to the left so it never covers the color key. */
 @media (min-width: 900px) { .field-hint:not(.top) { left: 12px; transform: none; } }
-body.no-dropped #other-plays [data-play="droppedThird"], body.no-dropped #build-result [data-res="dropped"] { display: none; }
+body.no-dropped #other-plays [data-play="droppedThird"] { display: none; }
 body:not(.softball) #other-plays [data-play="delayedSteal"] { display: none; }
 
 /* Where each player is looking. */
@@ -829,7 +813,6 @@ body:not(.softball) #other-plays [data-play="delayedSteal"] { display: none; }
 .look.fielder.spot { fill: rgba(255, 214, 107, .35); }
 .look.runner { fill: rgba(255, 120, 110, .28); }
 body.board-on .layer-looks { display: none; }
-body.no-steals #build-result [data-res="passed"], body.no-steals #build-result [data-res="dropped"] { display: none; }
 
 /* ---------------------------------------------------------------- 3D */
 .field3d { position: absolute; inset: 0; display: block; touch-action: none; cursor: ew-resize; }
@@ -977,30 +960,83 @@ body.training #btn-3d, body.training #cam-bar { display: none !important; }
   body.training .panel { padding-top: 12px; }
 }
 
-/* The builder's press-and-hold menu on the field. */
-.field-menu {
-  position: absolute; z-index: 30; min-width: 220px; max-width: min(300px, calc(100% - 16px));
-  display: flex; flex-direction: column; gap: 2px; padding: 8px;
-  background: var(--panel); color: var(--ink); border-radius: 14px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, .28), 0 0 0 1px var(--line);
-}
-.field-menu[hidden] { display: none; }
-.field-menu .fm-title { font-weight: 800; font-size: 14px; color: var(--ink-2); padding: 4px 10px 6px; }
-.field-menu button {
-  min-height: 44px; padding: 0 12px; border: 0; border-radius: 10px; background: none; color: var(--ink);
-  font: inherit; font-weight: 600; text-align: left;
-}
-.field-menu button:hover:not(:disabled), .field-menu button:focus-visible { background: var(--chip); }
-.field-menu button.on { color: var(--brand); }
-.field-menu button.on::after { content: ' ✓'; }
-.field-menu button.danger { color: var(--red); }
-.field-menu button:disabled { color: var(--ink-3); font-size: 14px; }
-.field-menu .fm-go { margin-top: 4px; background: var(--brand); color: #fff; text-align: center; font-weight: 800; }
-.field-menu .fm-go:hover { background: var(--brand); filter: brightness(1.08); }
-.fm-lead { display: flex; flex-direction: column; gap: 4px; padding: 4px 10px 8px; font-size: 14px; font-weight: 700; }
-.fm-lead input { width: 100%; }
-
 /* The kind of error, under "What happens?" once Error is picked. */
 .error-chips { margin-top: 8px; }
 .error-chips[hidden] { display: none; }
 .error-chips button.on { background: var(--red); color: #fff; }
+
+/* ------------------------------------------------------------------ Build a play (builder.js) */
+.bp .card-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.bp-tools { display: flex; gap: 2px; }
+.bp-tools .text-btn:disabled { color: var(--ink-3); }
+.bp-phone { color: var(--ink-2); font-size: 15px; margin: 4px 0 10px; }
+.bp-name { display: flex; align-items: center; gap: 10px; font-size: 13px; font-weight: 700; color: var(--ink-2); margin: 2px 0 10px; }
+.bp-name input, .bp-cap input {
+  flex: 1; min-width: 0; min-height: 44px; border: 1px solid var(--line-2); border-radius: var(--r); padding: 0 12px;
+  font: inherit; font-size: 16px; font-weight: 600; color: var(--ink); background: var(--panel);
+}
+.bp-steps { list-style: none; margin: 0 0 12px; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.bp-step {
+  display: grid; grid-template-columns: 28px 1fr; gap: 10px; align-items: start; cursor: pointer;
+  padding: 9px 10px; border-radius: var(--r); border: 1px solid var(--line); background: var(--panel);
+  -webkit-tap-highlight-color: transparent;
+}
+.bp-step .n {
+  width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center;
+  background: var(--brand-deep); color: #fff; font-weight: 800; font-size: 13px;
+}
+.bp-step.setup .n { background: var(--chip); color: var(--ink-2); }
+.bp-step .txt { display: flex; flex-direction: column; gap: 2px; min-width: 0; font-size: 14.5px; line-height: 1.3; }
+.bp-step .mw { color: var(--ink-2); font-size: 13px; }
+.bp-step .fix { color: #8a5a00; background: #FFF4D6; border-radius: 6px; padding: 3px 7px; font-size: 12.5px; font-weight: 700; margin-top: 3px; align-self: flex-start; }
+.bp-step.on { border: 2px solid var(--amber); padding: 8px 9px; box-shadow: 0 0 0 3px rgba(255, 149, 0, .15); }
+.bp-step.on .n { background: var(--amber); }
+.bp-step.bad:not(.on) { border-color: #F2C65A; }
+.bp-next { border-top: 1px dashed var(--line-2); padding-top: 12px; margin-bottom: 12px; }
+.bp-q { font-weight: 800; font-size: 15px; margin-bottom: 8px; }
+.bp-acts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.bp-act {
+  min-height: 48px; border-radius: 12px; border: 1.5px solid var(--line-2); background: var(--panel);
+  color: var(--ink); font: inherit; font-weight: 800; font-size: 15px; padding: 0 10px;
+}
+.bp-act.prim { background: var(--brand-deep); border-color: var(--brand-deep); color: #fff; }
+.bp-act:active, .bp-chip:active { transform: scale(.98); }
+.bp-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.bp-chip {
+  border: 0; background: var(--chip); color: var(--ink); min-height: 44px; padding: 0 13px;
+  border-radius: var(--r); font: inherit; font-weight: 700; font-size: 14.5px;
+}
+.bp-chip.on { background: var(--chip-on); color: #fff; }
+.bp-chips.pos { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.bp-chips.pos .bp-chip { padding: 0; }
+.bp-chip.call-out.on { background: var(--red); }
+.bp-chip.call-safe.on { background: var(--green); }
+.bp-tip { color: var(--ink-2); font-size: 13px; margin: 8px 0 0; }
+.bp-cancel { margin-top: 6px; padding-left: 0; }
+.bp-detail { border-top: 1px solid var(--line); padding-top: 10px; margin-bottom: 12px; }
+.bp-detail-head { display: flex; align-items: center; justify-content: space-between; }
+.bp-detail-head h3 { margin: 0; }
+.text-btn.danger { color: var(--red); }
+.bp-row { display: grid; grid-template-columns: 78px 1fr; gap: 8px; align-items: start; margin-top: 10px; }
+.bp-row-body { min-width: 0; }
+.bp-label { font-size: 13px; font-weight: 700; color: var(--ink-2); padding-top: 12px; }
+.bp-link { min-height: 44px; border: 1.5px dashed var(--line-2); background: none; border-radius: var(--r); font: inherit; font-weight: 700; color: var(--brand); padding: 0 12px; }
+.bp-runners h4, .bp-fielders h4 { margin: 14px 0 6px; font-size: 12px; font-weight: 700; color: var(--ink-2); text-transform: uppercase; letter-spacing: .6px; }
+.bp-runner { display: flex; flex-direction: column; gap: 4px; margin-bottom: 8px; }
+.bp-runner .bp-label { padding-top: 0; }
+.bp-cap { display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 700; color: var(--ink-2); margin-top: 12px; }
+.bp-save { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; border-top: 1px solid var(--line); padding-top: 12px; }
+.bp-save .bp-warn { grid-column: 1 / -1; margin: 0; color: #8a5a00; font-size: 13px; font-weight: 700; }
+.bp-primary, .bp-secondary { min-height: 48px; border-radius: 12px; font: inherit; font-weight: 800; font-size: 15px; }
+.bp-primary { border: 0; background: var(--brand); color: #fff; }
+.bp-secondary { border: 1.5px solid var(--brand); background: var(--panel); color: var(--brand); }
+.bp-primary:disabled, .bp-secondary:disabled { opacity: .4; }
+/* On the field: who or where can be tapped for the question being asked. */
+#field.bp-picking { cursor: crosshair; }
+.layer-builder { pointer-events: none; }
+.bp-ring { fill: none; stroke: var(--amber); stroke-width: calc(1.6px * var(--u, 1)); animation: bp-pulse 1.4s ease-in-out infinite; }
+.bp-ring.suggest { stroke: #FFCC00; stroke-width: calc(2.4px * var(--u, 1)); }
+.bp-ring.base { stroke: #fff; stroke-dasharray: 2 2; }
+.bp-path { fill: none; stroke: var(--amber); stroke-width: calc(3px * var(--u, 1)); stroke-dasharray: 4 3; opacity: .9; }
+@keyframes bp-pulse { 0%, 100% { opacity: 1; } 50% { opacity: .35; } }
+@media (prefers-reduced-motion: reduce) { .bp-ring { animation: none; } }

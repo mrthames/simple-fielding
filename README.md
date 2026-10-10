@@ -25,6 +25,12 @@ A companion to [Simple Pitch Counter](https://github.com/mrthames/simple-pitch-c
   up, stays ready. Tap a player or a job to spotlight it.
 - **Other plays:** steal of 2nd (coverage by batter hand), steal of 3rd, the 1st & 3rd double steal, passed ball
   or wild pitch, primary lead and pickoff, secondary lead and back-pick, and the softball look-back rule.
+- **Build a play**, step by step (tablets and computers): start with the pitch, then answer "What happens next?"
+  one step at a time. The choices fit who has the ball: the pitch is caught, hit, gets by or is strike 3 in the dirt;
+  a fielder throws (with an optional fake), runs with it, tags a runner, steps on a base or holds it. Tap who catches
+  it, on the field or in the list; tap where a ball goes or a fielder runs. In each step, send runners on, back, or
+  partway, and drag fielders to move them. The coach calls every safe and out. Undo, redo, a name, then Save to
+  My plays or Share as a link. Phones watch and share built plays.
 - **Eighty-six ready-made plays** in the play library, in eleven groups (some only for softball or the 90 ft field), for running a practice. Press `N` for the next one.
 - **Fields:** Little League baseball (60 ft, no leadoffs), 50/70 (leadoffs), fastpitch softball.
 - **Whiteboard mode** (`W`): freeze any play, or the starting positions, and change it by hand. Drag fielders,

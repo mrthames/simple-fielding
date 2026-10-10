@@ -2,6 +2,37 @@
 
 ---
 
+## [2026-10-09] v0.42.0 — Build a play, step by step
+
+Build a play is new from the ground up. The old card stopped at the pitch, hid its setup behind press-and-hold, and
+let the app decide everything after the first throw. Now the coach writes the whole play.
+
+- **One question at a time: "What happens next?"** The choices fit who has the ball after the step before:
+  - the pitcher: **Pitch** or a **Pickoff throw** (where leadoffs are allowed);
+  - the pitch: **Catcher catches it**, **Batter hits it** (ground ball, line drive, fly ball, pop-up or bunt, then tap
+    where it goes), **It gets by the catcher**, or **Strike 3 in the dirt** (tap where it rolls);
+  - a loose ball: **who gets it** (the nearest fielder is suggested);
+  - a fielder with the ball: **Throw** (tap who catches it, or a base), **Run with it**, **Tag a runner**,
+    **Step on a base**, or **Hold it: play over**.
+- **Taps on the field.** When the app asks who, the players who can answer get a ring; tap one, or use the buttons.
+  Tap a base to throw to whoever covers it. Tap where a ball goes or where someone runs.
+- **Change any step.** Tap a step to see the field at that moment. Change who catches the throw, where they catch
+  it, add a **fake** to a base first, choose **Out** or **Safe**, add a caption, or delete it.
+- **Runners in each step:** run to the next base, go back, **stop partway** (tap the base path), or hold. They keep
+  going across steps until told otherwise, so a runner can break for home in one step and turn back in the next.
+- **Fielders in each step:** drag one on the field to send them somewhere during that step.
+- **The coach decides safe and out.** Nothing is judged: a tag or a force is out unless you make it safe.
+- **Timing is real:** throws, runners and fielders move at the level's speeds, and a fielder going to take a throw
+  starts moving while the step before is still happening.
+- **Undo and redo** (Ctrl/Cmd+Z), a name, **Save to My plays** and **Share link**. The link holds every step; a
+  six-step play is about 100 characters. Your play in progress stays on the device between visits.
+- **Phones watch and share** built plays from My plays or a link; building is for tablets and computers.
+- Drawing a play by hand, frame by frame, is still there: the link at the bottom of Build a play.
+- Old links to plays made with the old builder open and play as before.
+- The version number in Settings shows the right version again (0.41.0 still said 0.40.0).
+
+---
+
 ## [2026-10-09] v0.41.0 — 1st & 3rd: the shortstop cut
 
 - **A new 1st & 3rd defense: SS cut.** The catcher fakes a throw to 2nd and throws it to the shortstop instead, standing in front of the bag. The runner on 3rd, thinking the ball is going to 2nd, breaks for home, and the shortstop throws home to get them. The second baseman covers 2nd so the runner from 1st believes the throw is coming. It's in the 1st & 3rd picker (**SS cut**) and in the play library under Steals & leads: "1st & 3rd — fake to 2nd, shortstop throws home".

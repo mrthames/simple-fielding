@@ -16,6 +16,20 @@ async function dragBall(page: Page, to: { x: number; y: number }) {
   await page.mouse.up();
 }
 
+// Taps a field point given in feet (Build a play answers questions with taps on the field).
+async function tapField(page: Page, x: number, y: number) {
+  const pt = await page.evaluate(([x, y]) => {
+    const svg = document.getElementById('field') as unknown as SVGSVGElement;
+    const p = svg.createSVGPoint(); p.x = x; p.y = -y; const q = p.matrixTransform(svg.getScreenCTM()!); return { x: q.x, y: q.y };
+  }, [x, y]);
+  await page.mouse.click(pt.x, pt.y);
+}
+// Taps a player or a base on the field.
+async function tapOnField(page: Page, selector: string) {
+  const b = (await page.locator('#field ' + selector).boundingBox())!;
+  await page.mouse.click(b.x + b.width / 2, b.y + b.height / 2);
+}
+
 test.beforeEach(async ({ page }) => {
   const errors: string[] = [];
   page.on('pageerror', (e) => errors.push(e.message));
@@ -458,104 +472,128 @@ test('a share link opens the same play on the right field, and the address is ti
   expect(page.url()).not.toContain('#p=');
 });
 
-test('build a play: runner on 1st stealing with a lead, then a pickoff, then a passed ball placed on the field', async ({ page }) => {
-  await page.locator('#btn-settings').click();
-  await page.locator('#league').selectOption('pro');
-  await page.locator('#settings [data-close]').click();
+test('build a play: the 1st & 3rd trap, step by step, with taps on the field', async ({ page }, info) => {
+  test.skip(info.project.name === 'phone', 'building a play is for tablets and computers');
   await page.locator('#panel-mode [data-pm="build"]').click();
-  await expect(page.locator('#build')).toBeVisible();
-  await expect(page.locator('#quick')).toBeHidden();
-  await page.locator('#mini-diamond [data-base="first"]').click();
-  const row = page.locator('#build-runners .br-row').first();
-  await row.locator('input').fill('14');
-  await row.locator('.br-go').click();
-  await expect(row.locator('.br-go')).toHaveText('Stealing');
-  await page.locator('#build-go').click();
-  let plan = await page.evaluate(() => { const p = (window as any).SimpleFielding.state.plan; return { title: p.title, lead: p.runners[0].leadStart }; });
-  expect(plan).toEqual({ title: 'Stealing 2nd', lead: 14 });
-  // Pickoff at 1st with a big lead is an out at pro.
-  await page.locator('#build-what [data-what="pickoff"]').click();
-  await row.locator('input').fill('17');
-  await page.locator('#build-go').click();
-  plan = await page.evaluate(() => { const p = (window as any).SimpleFielding.state.plan; return { title: p.title, out: !!p.runners[0].out }; });
-  expect(plan).toEqual({ title: 'Pickoff at 1st', out: true });
-  // Passed ball: tap behind the plate to put it there.
-  await page.locator('#build-what [data-what="pitch"]').click();
-  await page.locator('#btn-reset').click();
-  const pt = await page.evaluate(() => {
-    const svg = document.getElementById('field') as unknown as SVGSVGElement;
-    const p = svg.createSVGPoint(); p.x = -30; p.y = 30; const q = p.matrixTransform(svg.getScreenCTM()!); return { x: q.x, y: q.y };
-  });
-  await page.mouse.click(pt.x, pt.y);
-  await expect(page.locator('#build-result [data-res="passed"]')).toHaveClass(/on/);
-  await expect(page.locator('.ball-spot')).toHaveCount(1);
-  await page.locator('#build-go').click();
-  expect(await page.evaluate(() => (window as any).SimpleFielding.state.plan.title)).toContain('Passed ball');
+  await page.locator('.mini-base.b1').click();
+  await page.locator('.mini-base.b3').click();
+  await expect(page.locator('.bp-q')).toHaveText('What does the pitcher do?');
+  await page.locator('.bp-act', { hasText: 'Pitch' }).click();
+  await page.locator('.bp-chip', { hasText: 'Catcher catches it' }).click();
+  await page.locator('.bp-runner[data-runner="first"] .bp-chip', { hasText: 'Run to 2nd' }).click();
+  await expect(page.locator('.bp-q')).toHaveText('What does the catcher do?');
+  // The catcher throws to the shortstop, faking to 2nd; the runner on 3rd breaks.
+  await page.locator('.bp-act', { hasText: 'Throw' }).click();
+  await page.locator('.bp-chips.pos [data-pos="SS"]').click();
+  await page.locator('.bp-detail .bp-chip', { hasText: /^To 2nd$/ }).click();
+  await page.locator('.bp-runner[data-runner="third"] .bp-chip', { hasText: 'Run home' }).click();
+  // The shortstop throws home: tap the catcher on the field. The runner turns back.
+  await page.locator('.bp-act', { hasText: 'Throw' }).click();
+  await expect(page.locator('.bp-ring')).not.toHaveCount(0);
+  await tapOnField(page, '.player[data-pos="C"]');
+  await page.locator('.bp-runner[data-runner="third"] .bp-chip', { hasText: 'Back to 3rd' }).click();
+  // The catcher runs at the runner, throws to 3rd (tap the base), and the third baseman tags.
+  await page.locator('.bp-act', { hasText: 'Run with it' }).click();
+  await tapField(page, -18, 20);
+  await page.locator('.bp-act', { hasText: 'Throw' }).click();
+  await tapOnField(page, '.base[data-base="third"]');
+  await page.locator('.bp-act', { hasText: 'Tag a runner' }).click();
+  await page.locator('.bp-chip', { hasText: 'The runner from 3rd' }).click();
+  expect(await page.locator('.bp-step:not(.setup) b').allTextContents()).toEqual([
+    'Pitch. The catcher catches it.',
+    'The catcher throws to the shortstop (fakes to 2nd first).',
+    'The shortstop throws to the catcher.',
+    'The catcher runs with the ball.',
+    'The catcher throws to the third baseman.',
+    'The third baseman tags the runner from 3rd. Out.',
+  ]);
+  await expect(page.locator('.bp-step .fix')).toHaveCount(0);
+  const types = await page.evaluate(() => (window as any).SimpleFielding.state.plan.timeline.events.map((e: any) => e.type));
+  expect(types.filter((t: string) => t === 'throw')).toHaveLength(3);
+  expect(types.filter((t: string) => t === 'out')).toHaveLength(1);
+  // Undo the tag, then redo it.
+  await page.locator('#bp-undo').click();
+  await expect(page.locator('.bp-step:not(.setup)')).toHaveCount(5);
+  await page.locator('#bp-redo').click();
+  await expect(page.locator('.bp-step:not(.setup)')).toHaveCount(6);
+  // Name it, save it to My plays, and its link opens it again as steps.
+  await page.locator('#bp-title').fill('Trap');
+  await page.locator('#bp-title').press('Tab');
+  await page.locator('#bp-save').click();
+  await expect(page.locator('#save-name')).toHaveValue('Trap');
+  await page.locator('#save-go').click();
+  const saved = await page.evaluate(() => (window as any).Share.list(localStorage));
+  expect(saved.map((p: any) => p.name)).toEqual(['Trap']);
+  const d = await page.evaluate((c) => (window as any).Share.decode(c), saved[0].code);
+  expect(d.event.kind).toBe('script');
+  expect(d.event.steps).toHaveLength(6);
+  await page.locator('#bp-reset').click();
+  await expect(page.locator('.bp-step:not(.setup)')).toHaveCount(0);
+  await page.goto('/#p=' + saved[0].code);
+  await expect(page.locator('.bp-step:not(.setup)')).toHaveCount(6);
+  await expect(page.locator('#bp-title')).toHaveValue('Trap');
 });
 
-test('build a play: drag a fielder to a new spot; it is saved into a shared link', async ({ page }) => {
+test('build a play: a ground ball to short, thrown to 1st; only moves that fit, and the coach makes the calls', async ({ page }, info) => {
+  test.skip(info.project.name === 'phone', 'building a play is for tablets and computers');
   await page.locator('#panel-mode [data-pm="build"]').click();
-  await page.locator('#mini-diamond [data-base="first"]').click();
-  const toScreen = (x: number, y: number) => page.evaluate(([x, y]) => {
-    const svg = document.getElementById('field') as unknown as SVGSVGElement;
-    const p = svg.createSVGPoint(); p.x = x; p.y = -y; const q = p.matrixTransform(svg.getScreenCTM()!); return { x: q.x, y: q.y };
-  }, [x, y]);
-  const ss = await page.evaluate(() => (window as any).SimpleFielding.state && document.querySelector('.player[data-pos="SS"]')!.getBoundingClientRect());
-  await page.mouse.move(ss.x + ss.width / 2, ss.y + ss.height / 2);
+  // Nobody on: no pickoff to offer.
+  await expect(page.locator('.bp-act', { hasText: 'Pickoff' })).toHaveCount(0);
+  await page.locator('.bp-act', { hasText: 'Pitch' }).click();
+  await page.locator('.bp-chip', { hasText: 'Batter hits it' }).click();
+  await page.locator('.bp-chip', { hasText: 'Ground ball' }).click();
+  await tapField(page, -22, 62);
+  // A loose ball: the only question is who gets it, and the nearest fielder is suggested.
+  await expect(page.locator('.bp-q')).toHaveText('Who gets the ball? Tap them on the field.');
+  await expect(page.locator('.bp-ring.suggest')).toHaveCount(1);
+  await tapOnField(page, '.player[data-pos="SS"]');
+  await page.locator('.bp-act', { hasText: 'Throw' }).click();
+  await tapOnField(page, '.base[data-base="first"]');
+  await expect(page.locator('.bp-step:not(.setup) b').last()).toHaveText('The shortstop throws to the first baseman.');
+  await page.locator('.bp-act', { hasText: 'Step on a base' }).click();
+  await page.locator('.bp-next .bp-chip', { hasText: /^1st$/ }).click();
+  // The force on the batter is out unless the coach says safe.
+  await expect(page.locator('.bp-step:not(.setup) b').last()).toHaveText('The first baseman steps on 1st. The batter is out.');
+  await page.locator('.bp-chip.call-safe').click();
+  await expect(page.locator('.bp-step:not(.setup) b').last()).toHaveText('The first baseman steps on 1st. The batter is safe.');
+  expect(await page.evaluate(() => (window as any).SimpleFielding.state.plan.timeline.events.some((e: any) => e.type === 'safe'))).toBe(true);
+  // Drag the second baseman during step 3 (the throw): they move in that step.
+  await page.locator('.bp-step[data-step="2"]').click();
+  const b2 = (await page.locator('#field .player[data-pos="2B"]').boundingBox())!;
+  await page.mouse.move(b2.x + b2.width / 2, b2.y + b2.height / 2);
   await page.mouse.down();
-  const to = await toScreen(-10, 60);
-  await page.mouse.move(to.x, to.y, { steps: 8 });
+  await page.mouse.move(b2.x + b2.width / 2 + 30, b2.y + b2.height / 2 + 25, { steps: 6 });
   await page.mouse.up();
-  const start = await page.evaluate(() => (window as any).SimpleFielding.state.build.start.SS);
-  expect(Math.abs(start.x + 10) < 4 && Math.abs(start.y - 60) < 4).toBeTruthy();
-  await page.locator('#build-go').click();
-  const code = await page.evaluate(() => { const S = (window as any).Share; const st = (window as any).SimpleFielding.state; return S.encode({ league: st.league, runners: st.runners, outs: st.outs, start: st.build.start }, st.lastEvent, 'SS in'); });
-  const d = await page.evaluate((c) => (window as any).Share.decode(c), code);
-  expect(d.situation.start.SS.y).toBeCloseTo(start.y, 0);
+  await expect(page.locator('.bp-step[data-step="2"] .mw')).toHaveText('The second baseman moves.');
+  // Delete the last step.
+  await page.locator('.bp-step[data-step="3"]').click();
+  await page.locator('#bp-delete').click();
+  await expect(page.locator('.bp-step:not(.setup)')).toHaveCount(3);
 });
 
-test('build a play on the field: press and hold or right-click a base, a runner, the plate and the pitcher', async ({ page }) => {
-  await page.locator('#btn-settings').click();
-  await page.locator('#league').selectOption('pro');
-  await page.locator('#settings [data-close]').click();
-  await page.locator('#panel-mode [data-pm="build"]').click();
-  const toScreen = (x: number, y: number) => page.evaluate(([x, y]) => {
-    const svg = document.getElementById('field') as unknown as SVGSVGElement;
-    const p = svg.createSVGPoint(); p.x = x; p.y = -y; const q = p.matrixTransform(svg.getScreenCTM()!); return { x: q.x, y: q.y };
-  }, [x, y]);
-  const menu = page.locator('#field-menu');
-  // Right-click 1st base: put a runner there.
-  let at = await page.evaluate(() => { const r = document.querySelector('#field .base[data-base="first"]')!.getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; });
-  await page.mouse.click(at.x, at.y, { button: 'right' });
-  await expect(menu).toBeVisible();
-  await menu.getByRole('menuitem', { name: 'Put a runner on 1st' }).click();
-  await expect(menu).toBeHidden();
-  expect(await page.evaluate(() => (window as any).SimpleFielding.state.runners.first)).toBe(true);
-  // Press and hold the runner: set the lead and send them. The long press must not take the runner off.
-  await page.mouse.move(at.x, at.y);
-  await page.mouse.down();
-  await page.waitForTimeout(700);
-  await page.mouse.up();
-  await expect(menu).toBeVisible();
-  expect(await page.evaluate(() => (window as any).SimpleFielding.state.runners.first)).toBe(true);
-  await menu.locator('input[type=range]').fill('14');
-  await expect(menu.locator('.fm-lead span')).toHaveText('Lead: 14 ft');
-  await menu.getByRole('menuitem', { name: 'Steals on the pitch' }).click();
-  await expect(page.locator('#build-runners .br-go').first()).toHaveText('Stealing');
-  // Home plate: what happens on the pitch.
-  at = await toScreen(0, 1);
-  await page.mouse.click(at.x, at.y, { button: 'right' });
-  await expect(menu.locator('.fm-title')).toHaveText('What happens?');
-  await menu.getByRole('menuitem', { name: /It gets by/ }).click();
-  await expect(page.locator('#build-result [data-res="passed"]')).toHaveClass(/on/);
-  // The pitcher: a pickoff throw to 1st, then run it from the menu.
-  const p = await page.evaluate(() => document.querySelector('.player[data-pos="P"]')!.getBoundingClientRect());
-  await page.mouse.click(p.x + p.width / 2, p.y + p.height / 2, { button: 'right' });
-  await menu.getByRole('menuitem', { name: 'Pickoff throw to 1st' }).click();
-  await page.mouse.click(p.x + p.width / 2, p.y + p.height / 2, { button: 'right' });
-  await menu.locator('.fm-go').click();
-  const plan = await page.evaluate(() => { const p = (window as any).SimpleFielding.state.plan; return { title: p.title, lead: p.runners[0].leadStart }; });
-  expect(plan).toEqual({ title: 'Pickoff at 1st', lead: 14 });
+test('a built play opened from a link: a phone watches and shares it; a tablet can change it', async ({ page }, info) => {
+  const code = await page.evaluate(() => (window as any).Share.encode({ league: 'littleLeague', runners: { first: true, second: false, third: true }, outs: 1 },
+    { kind: 'script', title: 'Trap', steps: [
+      { a: 'pitch', r: 'caught', runners: { first: { go: 'second' } } },
+      { a: 'throw', to: 'SS', at: { x: -4, y: 66 }, fake: 'second', runners: { third: { go: 'home' } } },
+      { a: 'throw', to: 'C', at: { x: 0, y: 2 } },
+      { a: 'tag', runner: 'third', call: 'out' },
+    ] }, 'Trap'));
+  await page.goto('/#p=' + code);
+  await expect(page.locator('#play-title .pt-name')).toHaveText('Trap');
+  await expect(page.locator('.bp-step:not(.setup)')).toHaveCount(4);
+  if (info.project.name === 'phone') {
+    await expect(page.locator('.bp-phone')).toBeVisible();
+    await expect(page.locator('.bp-act')).toHaveCount(0);
+    await expect(page.locator('#btn-edit')).toBeHidden();
+    await expect(page.locator('#btn-share')).toBeVisible();
+    // Watching still works: play it to the end.
+    await page.evaluate(() => (window as any).SimpleFielding.seekEnd());
+    expect(await page.evaluate(() => (window as any).SimpleFielding.state.plan.timeline.events.filter((e: any) => e.type === 'out').length)).toBe(1);
+  } else {
+    await expect(page.locator('.bp-act').first()).toBeVisible();
+    await expect(page.locator('#bp-title')).toHaveValue('Trap');
+  }
 });
 
 test('errors: pick Error, then the kind; drag where a wild throw ends up', async ({ page }) => {
@@ -732,7 +770,7 @@ test('softball levels: the list, the slapper, and 8U coach pitch', async ({ page
   expect(await page.evaluate(() => (window as any).SimpleFielding.state.league)).toBe('softball8');
 });
 
-test('dropped third strike, delayed steal and look-back plays', async ({ page }) => {
+test('dropped third strike, delayed steal and look-back plays', async ({ page }, info) => {
   await page.locator('#other-plays [data-play="droppedThird"]').click();
   await expect(page.locator('#play-title .pt-name')).toContainText('Dropped third strike');
   await page.locator('#sport-seg [data-sport="softball"]').click();
@@ -740,11 +778,14 @@ test('dropped third strike, delayed steal and look-back plays', async ({ page })
   await expect(page.locator('#play-title .pt-name')).toContainText('delayed steal');
   await page.locator('#quick-list .lib-item', { hasText: 'stops: out by rule' }).click();
   await expect(page.locator('#result-title')).toContainText('Look-back');
-  // Builder: strike three in the dirt.
+  // Build a play: strike three in the dirt (tablets and computers).
+  if (info.project.name === 'phone') return;
   await page.locator('#panel-mode [data-pm="build"]').click();
-  await page.locator('#build-result [data-res="dropped"]').click();
-  await page.locator('#build-go').click();
-  expect(await page.evaluate(() => (window as any).SimpleFielding.state.plan.title)).toContain('Dropped third strike');
+  await page.locator('.bp-act', { hasText: 'Pitch' }).click();
+  await page.locator('.bp-chip', { hasText: 'Strike 3 in the dirt' }).click();
+  await page.locator('.bp-chip', { hasText: 'Just behind the plate' }).click();
+  await expect(page.locator('.bp-step:not(.setup) b').first()).toHaveText('Pitch. Strike 3 in the dirt.');
+  expect(await page.evaluate(() => Object.keys((window as any).SimpleFielding.state.plan.scriptStates[0].runners))).toContain('batter');
 });
 
 test('3D view: turns on, offers player cameras, follows the timeline, and turns off', async ({ page }) => {
@@ -921,22 +962,19 @@ test('3D follows a level and park changed while it was off', async ({ page }) =>
   expect(g).toEqual({ key: 'pro', park: expect.stringContaining('wrigley'), base: 90 });
 });
 
-test('changing the level starts a clean slate: no runners, a fresh builder, and no pickoff without leadoffs', async ({ page }) => {
+test('changing the level starts a clean slate: no runners, and no pickoff without leadoffs', async ({ page }, info) => {
+  test.skip(info.project.name === 'phone', 'building a play is for tablets and computers');
   const pick = async (lg: string) => page.evaluate((lg) => { const s = document.getElementById('league') as HTMLSelectElement; s.value = lg; s.dispatchEvent(new Event('change')); }, lg);
   await pick('pro');
   await page.locator('#panel-mode [data-pm="build"]').click();
   await page.locator('.mini-base.b1').click();
-  const lead = page.locator('#build-runners input[type=range]').first();
-  await lead.fill('25');
-  await expect(page.locator('#build-runners .br-lead span').first()).toHaveText('25 ft lead');
-  await expect(page.locator('#build-what [data-what="pickoff"]')).toBeVisible();
+  await expect(page.locator('.bp-act', { hasText: 'Pickoff throw' })).toBeVisible();
   await pick('littleLeague');
   expect(await page.evaluate(() => (window as any).SimpleFielding.state.runners)).toEqual({ first: false, second: false, third: false });
-  await expect(page.locator('#build-runners .br-row')).toHaveCount(0);
-  await expect(page.locator('#build-what [data-what="pickoff"]')).toBeHidden();
-  // A runner put on at Little League has no lead to set.
+  // Little League runners can't lead off, so there is nothing to pick off.
   await page.locator('.mini-base.b1').click();
-  await expect(page.locator('#build-runners .br-lead span').first()).toHaveText('No lead');
+  await expect(page.locator('.bp-act', { hasText: 'Pitch' })).toBeVisible();
+  await expect(page.locator('.bp-act', { hasText: 'Pickoff throw' })).toHaveCount(0);
 });
 
 test('fielding lessons: pick a track and position, answer by dragging your player, get graded, finish the lesson', async ({ page }) => {
