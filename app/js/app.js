@@ -4,7 +4,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '0.40.0';
+  const VERSION = '0.42.0';
   // Set by the iPhone/iPad/Android apps (native/plugins/with-web-app.js). The store apps send nothing
   // anywhere, so tester reporting can't be turned on in them.
   const NATIVE = window.SF_NATIVE === true;
@@ -46,7 +46,6 @@
     scenarioIndex: -1,
     askFirst: store.get('askFirst', true),
     pm: store.get('panelMode', 'plays') === 'build' ? 'build' : 'plays',
-    build: Object.assign({ what: 'pitch', result: 'caught', pickoff: 'first', ballTo: null, runners: {}, start: {} }, store.get('build', {})),
     asking: false,
     mode: 'coach', // Basic mode is off for now (2026-09-25); the code stays for when it's revisited.
   };
@@ -56,6 +55,7 @@
 
   const tester = NATIVE ? { on: false, url: '' } : { on: store.get('tester', false), url: store.get('testerUrl', '') };
   const view = new window.FieldView($('#field'));
+  let builder = null;   // Build a play (builder.js), created at start-up
 
   // ------------------------------------------------------------------------------------ 3D
   // A second renderer for the same plans. It follows everything the 2D view is told to do, whenever it's on.
@@ -175,7 +175,7 @@
   function situation() {
     return { runners: Object.assign({}, state.runners), outs: state.outs, batter: state.batter, depth: state.depth !== 'auto' ? state.depth : undefined,
       d13: state.d13 !== 'auto' ? state.d13 : undefined, buntD: state.buntD !== 'auto' ? state.buntD : undefined, league: state.league, park: state.park || undefined, leadoffs: state.leadoffs,
-      start: state.pm === 'build' && Object.keys(state.build.start).length ? state.build.start : undefined };
+      start: state.openStart || undefined };
   }
 
   // -------------------------------------------------------------------------------------------
@@ -237,22 +237,17 @@
   }
 
   function showReady() {
-    const fm = document.getElementById('field-menu');
-    if (fm && !fm.hidden) { fm.hidden = true; fm.innerHTML = ''; }  // the field's builder menu
     stop();
+    if (state.pm === 'build' && builder) { $('#field-hint').hidden = true; builder.refresh(); return; }
     state.plan = null;
     state.lastEvent = null;
-    const building = state.pm === 'build';
-    view.showReady(window.Field.readyPositions(geo, situation()), state.runners,
-      building && state.build.what !== 'hit' ? buildLeads() : null,
-      building && state.build.what === 'pitch' && (state.build.result === 'passed' || state.build.result === 'dropped') ? (state.build.ballTo || DEFAULT_BALL_TO()) : null);
+    state.openStart = null;
+    const building = false;
+    view.showReady(window.Field.readyPositions(geo, situation()), state.runners, null, null);
     svg.classList.toggle('building', building);
     const hint = $('#field-hint .fh-text');
-    if (hint) hint.textContent = !building || state.build.what === 'hit' ? "Drag the ball from home plate to where it's hit"
-      : state.build.what === 'pickoff' ? 'Set the lead, then press Set play'
-      : state.build.result === 'passed' || state.build.result === 'dropped' ? 'Tap where the ball ends up, then Set play'
-      : 'Hold a base, runner or player to set it up, then Set play';
-    $('#field-hint').classList.toggle('top', building && state.build.what !== 'hit');
+    if (hint) hint.textContent = "Drag the ball from home plate to where it's hit";
+    $('#field-hint').classList.remove('top');
     view.showRollHandle(null);
     $('#result').hidden = true;
     $('#tv-caption').textContent = '';
@@ -479,6 +474,8 @@
       notes.appendChild(li);
     }
     $('#result').classList.toggle('drawn', !!plan.drawn);
+    // A built play is changed in Build a play, which only tablets and computers have; phones watch and share it.
+    $('#btn-edit').hidden = !!plan.script && (state.pm === 'build' || !(builder && builder.canBuild()));
     const jobs = $('#jobs');
     jobs.innerHTML = '';
     for (const j of plan.jobs) {
@@ -943,15 +940,8 @@
     }
     if (cancelled) return;
     if (d.fromPlate && d.moved) {
-      if (state.pm === 'build' && state.build.what !== 'hit') { state.build.what = 'hit'; saveBuild(); renderBuild(); }
+      if (state.pm === 'build') return;   // Build a play: the ball goes where the steps say
       hitTo(d.at);
-    } else if (!d.moved && state.pm === 'build' && !state.plan && state.build.what !== 'hit') {
-      // Building a pitch play: a tap near or behind the plate says where a passed ball ends up.
-      if (state.build.what === 'pitch' && d.at.y < 25) {
-        if (state.build.result !== 'dropped') state.build.result = 'passed';
-        state.build.ballTo = { x: Math.round(d.at.x * 2) / 2, y: Math.round(Math.max(d.at.y, geo.backstop + 2) * 2) / 2 };
-        saveBuild(); renderBuild(); showReady();
-      }
     } else if (!d.moved && !d.fromPlate) {
       // A plain tap on an empty field hits the ball there (easier with a mouse). Once a play is loaded a tap
       // is a coach pointing at something, so it never throws the play away.
@@ -1317,8 +1307,6 @@
     state.batter = 'R';
     state.depth = 'auto'; state.d13 = 'auto'; state.buntD = 'auto';
     state.lastEvent = null;
-    state.build = { what: 'pitch', result: 'caught', pickoff: 'first', ballTo: null, runners: {}, start: {} };
-    saveBuild();
   }
   function setLeague(key) {
     if (!LEAGUES[key]) return;
@@ -1753,99 +1741,14 @@
   $('#db-dur').addEventListener('change', (e) => { drawing.steps[drawing.cur].dur = Number(e.target.value); });
   $('#db-cap').addEventListener('input', (e) => { drawing.steps[drawing.cur].cap = e.target.value; });
   $('#db-finish').addEventListener('click', () => { syncStep(); closeBoard(); });
-  $('#build-draw').addEventListener('click', () => startDrawing('scratch'));
-  $('#btn-edit').addEventListener('click', () => startDrawing('plan'));
+  $('#btn-edit').addEventListener('click', () => {
+    if (state.plan && state.plan.script && state.lastEvent) { builder.load(state.lastEvent, state.playName, state.savedId); setPanelMode('build'); return; }
+    startDrawing('plan');
+  });
 
-  // ------------------------------------------------------------------------------------ the scenario builder
-  const baseName = (x) => ({ first: '1st', second: '2nd', third: '3rd', home: 'home' })[x];
-  const DEFAULT_BALL_TO = () => ({ x: 12, y: Math.max(geo.backstop + 4, -40) });
-  function leadMax() {
-    const L = LEAGUES[state.league];
-    if (geo.rules.leave === 'contact') return 0; // 8U: runners leave on contact
-    if (L.sport === 'softball') return geo.older ? 16 : 12;   // off the base on the release
-    if (!state.leadoffs) return 0;               // 60 ft Little League: no leadoffs
-    return geo.base >= 90 ? 30 : 22;
-  }
-  function defaultLead() {
-    if (LEAGUES[state.league].sport === 'softball') return 6;
-    return state.leadoffs ? Math.round(geo.tempo.lead.steal) : 0;
-  }
-  function buildRunner(base) {
-    const r = state.build.runners[base] || (state.build.runners[base] = { lead: defaultLead(), go: false });
-    r.lead = Math.min(r.lead, leadMax());
-    return r;
-  }
-  function buildLeads() {
-    const out = {};
-    for (const base of ['first', 'second', 'third']) if (state.runners[base]) out[base] = buildRunner(base).lead;
-    return out;
-  }
-  function saveBuild() { store.set('build', state.build); }
-  function buildEvent() {
-    const b = state.build;
-    const runners = {};
-    const canSteal = geo.rules.stealing !== 'none';
-    for (const base of ['first', 'second', 'third']) if (state.runners[base]) runners[base] = { lead: buildRunner(base).lead, go: canSteal && b.what === 'pitch' && buildRunner(base).go };
-    return b.what === 'pickoff'
-      ? { kind: 'pitch', move: 'pickoff', pickoff: state.runners[b.pickoff] ? b.pickoff : Object.keys(runners)[0], runners }
-      : { kind: 'pitch', move: 'pitch', result: b.result, ballTo: b.result === 'passed' || b.result === 'dropped' ? (b.ballTo || DEFAULT_BALL_TO()) : undefined, runners };
-  }
-  function renderBuild() {
-    const b = state.build;
-    const bases = ['first', 'second', 'third'].filter((x) => state.runners[x]);
-    // No leadoffs (Little League 60 ft, 8U): nobody is off the base, so there's no pickoff to build.
-    const canLead = leadMax() > 0;
-    if (!canLead && b.what === 'pickoff') b.what = 'pitch';
-    $('#build-what [data-what="pickoff"]').hidden = !canLead;
-    for (const x of $$('#build-what button')) x.classList.toggle('on', x.dataset.what === b.what);
-    for (const x of $$('#build-result button')) x.classList.toggle('on', x.dataset.res === b.result);
-    $('#build-pitch').hidden = b.what !== 'pitch';
-    $('#build-passed-tip').hidden = b.result !== 'passed' && b.result !== 'dropped';
-    $('#build-pickoff').hidden = b.what !== 'pickoff';
-    $('#build-hit-tip').hidden = b.what !== 'hit';
-    document.body.classList.toggle('build-hit', b.what === 'hit');
-    // Pickoff: which base (only bases with a runner).
-    const pk = $('#build-pickoff-bases');
-    pk.innerHTML = '';
-    if (!bases.includes(b.pickoff) && bases.length) b.pickoff = bases[0];
-    for (const x of bases) {
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.textContent = `Throw to ${baseName(x)}`;
-      btn.classList.toggle('on', x === b.pickoff);
-      btn.addEventListener('click', () => { b.pickoff = x; saveBuild(); renderBuild(); showReady(); });
-      pk.appendChild(btn);
-    }
-    // Runners: lead and whether they go.
-    const box = $('#build-runners');
-    box.innerHTML = '';
-    const max = leadMax();
-    for (const x of bases) {
-      const r = buildRunner(x);
-      const row = document.createElement('div');
-      row.className = 'br-row';
-      row.innerHTML = `<span class="br-base">${baseName(x)}</span>
-        <label class="br-lead"><input type="range" min="0" max="${max}" step="1" value="${r.lead}" ${max ? '' : 'disabled'} aria-label="Lead off ${baseName(x)}"><span></span></label>
-        <button type="button" class="br-go" aria-pressed="${r.go}">${r.go ? 'Stealing' : 'Holding'}</button>`;
-      const inp = row.querySelector('input'), lbl = row.querySelector('.br-lead span');
-      const label = () => { lbl.textContent = max ? `${r.lead} ft lead` : 'No lead'; };
-      label();
-      inp.addEventListener('input', () => { r.lead = Number(inp.value); label(); saveBuild(); if (!state.plan) view.setRunners(state.runners, buildLeads()); else showReady(); });
-      const go = row.querySelector('.br-go');
-      go.hidden = b.what !== 'pitch';
-      go.classList.toggle('on', r.go);
-      go.addEventListener('click', () => { r.go = !r.go; saveBuild(); renderBuild(); showReady(); });
-      box.appendChild(row);
-    }
-    $('#build-no-runners').hidden = bases.length > 0;
-    const L = LEAGUES[state.league];
-    $('#build-lead-note').textContent = !bases.length ? ''
-      : L.sport === 'softball' ? 'Softball runners leave on the release: the lead is how far off the base they are when the pitch arrives.'
-      : !state.leadoffs ? 'No leadoffs on this field: runners can go when the pitch reaches the batter. Turn on leadoffs in Settings, or pick a 50/70 or 90 ft field.'
-      : 'The lead is where the runner stands as the pitcher comes set. They shuffle a few more steps as the pitch is thrown.';
-    $('#build-go').hidden = b.what === 'hit';
-    $('#build-go').disabled = b.what === 'pickoff' && !bases.length;
-  }
+  // ------------------------------------------------------------------------------------ Build a play (builder.js)
+  function renderBuild() { if (builder) builder.render(); }
+
   function setPanelMode(pm) {
     state.pm = pm === 'build' ? 'build' : 'plays';
     store.set('panelMode', state.pm);
@@ -1856,14 +1759,6 @@
     showReady();
   }
   for (const x of $$('#panel-mode button')) x.addEventListener('click', () => setPanelMode(x.dataset.pm));
-  for (const x of $$('#build-what button')) x.addEventListener('click', () => { state.build.what = x.dataset.what; saveBuild(); renderBuild(); showReady(); });
-  for (const x of $$('#build-result button')) x.addEventListener('click', () => { state.build.result = x.dataset.res; saveBuild(); renderBuild(); showReady(); });
-  $('#build-go').addEventListener('click', () => { runEvent(buildEvent(), { name: '' }); scrollToResultOnPhone(); });
-  $('#build-reset').addEventListener('click', () => {
-    state.build = { what: 'pitch', result: 'caught', pickoff: 'first', ballTo: null, runners: {}, start: {} };
-    saveBuild(); renderBuild(); showReady();
-  });
-  $('#build-fielders-reset').addEventListener('click', () => { state.build.start = {}; saveBuild(); showReady(); });
 
   // The trainer's drag: while a lesson play is frozen, drag your own player the way you'd run (see answerPlay).
   let qdrag = null;
@@ -2175,188 +2070,6 @@
   }
 
 
-  // Builder, on the field: drag a fielder to where they start. (Registered in the capture phase so it wins over
-  // tapping a player; only while building and before a play is set.)
-  let fdrag = null;
-  svg.addEventListener('pointerdown', (e) => {
-    if (state.pm !== 'build' || state.plan || board.on) return;
-    const pl = e.target.closest && e.target.closest('.player');
-    if (!pl) return;
-    e.stopImmediatePropagation();
-    e.preventDefault();
-    const pos = pl.dataset.pos;
-    const p = view.toField(e.clientX, e.clientY);
-    const at = view.actorAt(pos);
-    fdrag = { id: e.pointerId, pos, off: { x: at.x - p.x, y: at.y - p.y }, moved: false, x0: e.clientX, y0: e.clientY };
-    svg.setPointerCapture(e.pointerId);
-  }, true);
-  svg.addEventListener('pointermove', (e) => {
-    if (!fdrag || e.pointerId !== fdrag.id) return;
-    e.stopImmediatePropagation();
-    if (!fdrag.moved && Math.hypot(e.clientX - fdrag.x0, e.clientY - fdrag.y0) < 5) return;
-    fdrag.moved = true;
-    view.cancelHolds();
-    const p = view.toField(e.clientX, e.clientY);
-    const q = { x: Math.round((p.x + fdrag.off.x) * 2) / 2, y: Math.round((p.y + fdrag.off.y) * 2) / 2 };
-    const r = Math.hypot(q.x, q.y);
-    const max = geo.fenceAt(q) - 5;
-    const spot = r > max ? { x: q.x * max / r, y: q.y * max / r } : q;
-    state.build.start[fdrag.pos] = spot;
-    view.place(view.actors[fdrag.pos], spot);
-  }, true);
-  const endF = (e) => {
-    if (!fdrag || e.pointerId !== fdrag.id) return;
-    e.stopImmediatePropagation();
-    const d = fdrag; fdrag = null;
-    if (d.moved) { saveBuild(); showReady(); }
-  };
-  svg.addEventListener('pointerup', endF, true);
-  svg.addEventListener('pointercancel', endF, true);
-
-  // Builder, on the field: press and hold (or right-click) a fielder, a base or runner, or home plate for a menu
-  // of what can be set there. The same settings as the Build a play card, where the thing is.
-  const fmenu = $('#field-menu');
-  const building = () => state.pm === 'build' && !state.plan && !board.on && !state.trainer;
-  let fhold = null;
-  // What's under a point on the field: a fielder, a base (with or without its runner), or home plate.
-  function menuTarget(e, p) {
-    const pl = e.target.closest && e.target.closest('.player');
-    const tol = 12 * view.us;
-    const leads = buildLeads();
-    const b = geo.bases;
-    const next = { first: b.second, second: b.third, third: { x: 0, y: 0 } };
-    for (const base of ['first', 'second', 'third']) {
-      const L = state.runners[base] && state.build.what !== 'hit' ? leads[base] || 0 : 0;
-      const dx = next[base].x - b[base].x, dy = next[base].y - b[base].y, d = Math.hypot(dx, dy) || 1;
-      const at = { x: b[base].x + dx / d * L, y: b[base].y + dy / d * L };
-      if (Math.hypot(p.x - at.x, p.y - at.y) < tol || Math.hypot(p.x - b[base].x, p.y - b[base].y) < tol) return { base };
-    }
-    if (pl && pl.dataset.pos !== 'C') return { pos: pl.dataset.pos };
-    if (Math.hypot(p.x, p.y - 1) < 16 * view.us) return { plate: true };
-    if (pl) return { pos: pl.dataset.pos };
-    return null;
-  }
-  function closeFieldMenu() { fmenu.hidden = true; fmenu.innerHTML = ''; }
-  function openFieldMenu(target, clientX, clientY) {
-    const b = state.build;
-    const canLead = leadMax() > 0;
-    const canSteal = geo.rules.stealing !== 'none';
-    const withRunners = ['first', 'second', 'third'].filter((x) => state.runners[x]);
-    const items = [];   // [label, action, { on, danger }] or a heading string
-    const after = () => { saveBuild(); renderBuild(); showReady(); };
-    const pitchResult = (res) => () => { b.what = 'pitch'; b.result = res; after(); };
-    const pickoffTo = (base) => () => { b.what = 'pickoff'; b.pickoff = base; after(); };
-    let title = '', lead = null;
-    if (target.base) {
-      const base = target.base;
-      title = state.runners[base] ? `Runner on ${baseName(base)}` : `${baseName(base)} base`;
-      if (!state.runners[base]) items.push([`Put a runner on ${baseName(base)}`, () => toggleRunner(base)]);
-      else {
-        const r = buildRunner(base);
-        if (b.what !== 'hit') lead = { base, r };
-        if (canSteal && b.what === 'pitch') items.push(['Steals on the pitch', () => { r.go = !r.go; after(); }, { on: r.go }]);
-        if (canLead && b.what !== 'hit') items.push([`Pickoff throw to ${baseName(base)}`, pickoffTo(base), { on: b.what === 'pickoff' && b.pickoff === base }]);
-        items.push(['Take the runner off', () => toggleRunner(base), { danger: true }]);
-      }
-    } else if (target.plate || target.pos === 'C') {
-      title = 'What happens?';
-      items.push(['Catcher catches it', pitchResult('caught'), { on: b.what === 'pitch' && b.result === 'caught' }]);
-      items.push(['It gets by (passed ball / wild pitch)', pitchResult('passed'), { on: b.what === 'pitch' && b.result === 'passed' }]);
-      if (geo.rules.droppedThird !== false) items.push(['Strike 3 in the dirt', pitchResult('dropped'), { on: b.what === 'pitch' && b.result === 'dropped' }]);
-      items.push(['Ball in play (drag it from the plate)', () => { b.what = 'hit'; after(); }, { on: b.what === 'hit' }]);
-      if (target.pos === 'C' && state.build.start.C) items.push(['Catcher back to the normal spot', () => { delete state.build.start.C; after(); }]);
-    } else if (target.pos) {
-      const pos = target.pos;
-      title = `${pos} · ${Field.PLAYERS[pos]}`;
-      if (pos === 'P' && canLead) for (const x of withRunners) items.push([`Pickoff throw to ${baseName(x)}`, pickoffTo(x), { on: b.what === 'pickoff' && b.pickoff === x }]);
-      if (pos === 'P' && b.what === 'pickoff') items.push(['Pitch instead', pitchResult(b.result || 'caught')]);
-      if (state.build.start[pos]) items.push(['Back to the normal spot', () => { delete state.build.start[pos]; after(); }]);
-      else items.push(['Drag to move where they start', null]);
-      if (state.mode === 'coach') items.push(["Player's name…", () => { stop(); window.TeamUI.openPosition(pos); }]);
-    }
-    if (!title) return;
-    fmenu.innerHTML = '';
-    const h = document.createElement('div'); h.className = 'fm-title'; h.textContent = title; fmenu.appendChild(h);
-    if (lead) {
-      const max = leadMax();
-      const row = document.createElement('label'); row.className = 'fm-lead';
-      row.innerHTML = `<span></span><input type="range" min="0" max="${max}" step="1" ${max ? '' : 'disabled'}>`;
-      const inp = row.querySelector('input'), lbl = row.querySelector('span');
-      inp.value = lead.r.lead;
-      inp.setAttribute('aria-label', `Lead off ${baseName(lead.base)}`);
-      const label = () => { lbl.textContent = max ? `Lead: ${lead.r.lead} ft` : 'No lead on this field'; };
-      label();
-      inp.addEventListener('input', () => { lead.r.lead = Number(inp.value); label(); saveBuild(); renderBuild(); view.setRunners(state.runners, buildLeads()); });
-      fmenu.appendChild(row);
-    }
-    for (const [label, act, o = {}] of items) {
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.setAttribute('role', 'menuitem');
-      btn.textContent = label;
-      btn.className = (o.on ? 'on ' : '') + (o.danger ? 'danger' : '');
-      if (!act) btn.disabled = true;
-      else btn.addEventListener('click', () => { closeFieldMenu(); act(); });
-      fmenu.appendChild(btn);
-    }
-    if (b.what !== 'hit' && !(b.what === 'pickoff' && !withRunners.length)) {
-      const go = document.createElement('button');
-      go.type = 'button'; go.className = 'fm-go'; go.textContent = 'Set play ▶';
-      go.addEventListener('click', () => { closeFieldMenu(); $('#build-go').click(); });
-      fmenu.appendChild(go);
-    }
-    // Beside the press, kept inside the field.
-    fmenu.hidden = false;
-    const wrap = $('#field-wrap').getBoundingClientRect();
-    const w = fmenu.offsetWidth, hgt = fmenu.offsetHeight;
-    let x = clientX - wrap.left + 14, y = clientY - wrap.top - 20;
-    if (x + w > wrap.width - 8) x = clientX - wrap.left - w - 14;
-    x = Math.max(8, Math.min(x, wrap.width - w - 8));
-    y = Math.max(8, Math.min(y, wrap.height - hgt - 8));
-    fmenu.style.left = `${x}px`; fmenu.style.top = `${y}px`;
-    const first = fmenu.querySelector('button:not(:disabled), input');
-    if (first) first.focus({ preventScroll: true });
-  }
-  // Opening the menu ends whatever the press had started (a drag of the ball or a fielder, a passed-ball tap).
-  function menuFromPress(e, target, x, y) {
-    fdrag = null; drag = null;
-    svg.classList.remove('dragging');
-    view.cancelHolds();
-    view.hideDrag();
-    showReady();
-    swallowClick = true;
-    openFieldMenu(target, x, y);
-  }
-  let swallowClick = false;
-  // On the field's frame, in the capture phase: it sees a press before the fielder drag and the ball drag do.
-  const fwrap = $('#field-wrap');
-  fwrap.addEventListener('pointerdown', (e) => {
-    if (fmenu.contains(e.target)) return;
-    clearTimeout(fhold && fhold.t); fhold = null;
-    if (!fmenu.hidden) closeFieldMenu();
-    if (!building()) return;
-    const p = view.toField(e.clientX, e.clientY);
-    const target = menuTarget(e, p);
-    if (!target) return;
-    if (e.button === 2) { e.stopImmediatePropagation(); e.preventDefault(); menuFromPress(e, target, e.clientX, e.clientY); return; }
-    fhold = { id: e.pointerId, x0: e.clientX, y0: e.clientY };
-    fhold.t = setTimeout(() => { const h = fhold; fhold = null; if (h && building()) menuFromPress(e, target, h.x0, h.y0); }, 500);
-  }, true);
-  fwrap.addEventListener('pointermove', (e) => {
-    if (fhold && e.pointerId === fhold.id && Math.hypot(e.clientX - fhold.x0, e.clientY - fhold.y0) > 8) { clearTimeout(fhold.t); fhold = null; }
-  }, true);
-  const endHold = (e) => {
-    if (fhold && e.pointerId === fhold.id) { clearTimeout(fhold.t); fhold = null; }
-    if (swallowClick && !fmenu.contains(e.target)) { e.stopImmediatePropagation(); setTimeout(() => { swallowClick = false; }, 400); }
-  };
-  fwrap.addEventListener('pointerup', endHold, true);
-  fwrap.addEventListener('pointercancel', endHold, true);
-  // The click that ends a long press on a base would toggle its runner: that press opened the menu instead.
-  svg.addEventListener('click', (e) => { if (swallowClick) { swallowClick = false; e.stopImmediatePropagation(); } }, true);
-  svg.addEventListener('contextmenu', (e) => { if (building()) e.preventDefault(); });
-  document.addEventListener('pointerdown', (e) => { if (!fmenu.hidden && !fmenu.contains(e.target) && !svg.contains(e.target)) closeFieldMenu(); });
-  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !fmenu.hidden) { closeFieldMenu(); e.stopPropagation(); } }, true);
-
   // ------------------------------------------------------------------------------------ share links, My plays
   function shareCode() {
     if (!state.lastEvent) return null;
@@ -2389,21 +2102,18 @@
       state.kind = d.event.kind; state.result = d.event.result || 'auto';
       if (d.event.error) { state.errType = d.event.error.type; state.errTo = d.event.error.to || null; }
     }
-    if (d.event.kind === 'pitch' || s.start) {
-      const e = d.event;
-      state.build.start = s.start || {};
-      if (e.kind === 'pitch') {
-        state.build.what = e.move === 'pickoff' ? 'pickoff' : 'pitch';
-        state.build.result = e.result === 'passed' || e.result === 'dropped' ? e.result : 'caught';
-        state.build.pickoff = e.pickoff || 'first';
-        state.build.ballTo = e.ballTo || null;
-        state.build.runners = JSON.parse(JSON.stringify(e.runners || {}));
-      } else state.build.what = 'hit';
-      saveBuild();
-      if (state.pm !== 'build') setPanelMode('build'); else renderBuild();
-    }
+    state.openStart = s.start || null;
     renderSituation();
     const name = nameOverride || d.name || '';
+    if (d.event.kind === 'script') {
+      builder.load(d.event, name, savedId);
+      if (state.pm !== 'build') setPanelMode('build'); else builder.refresh();
+      if (name) state.playName = name;
+      for (const x of $$('#quick-list .lib-item.mine')) x.classList.toggle('on', x.dataset.mine === savedId);
+      scrollToResultOnPhone();
+      return true;
+    }
+    if (state.pm === 'build') setPanelMode('plays');
     if (d.event.kind === 'drawn' && name) d.event.title = name;
     runEvent(d.event, { name, savedId });
     if (name) { setTitle(name); state.playName = name; }
@@ -2450,6 +2160,7 @@
     saveAsNew = false;
     const saved = code && (editing ? window.Share.update(localStorage, state.savedId, name, code) : window.Share.add(localStorage, name, code));
     if (saved) state.savedId = saved.id;
+    if (saved && builder && state.pm === 'build') builder.setSavedId(saved.id);
     closeSheet(saveSheet);
     if (!saved) { toast("Couldn't save on this device — use Share to keep it as a link."); return; }
     setTitle(name);
@@ -2618,6 +2329,15 @@
   setAskFirst(state.askFirst);
   document.body.classList.toggle('pm-build', state.pm === 'build');
   for (const x of $$('#panel-mode button')) x.classList.toggle('on', x.dataset.pm === state.pm);
+  builder = window.Builder.create({
+    $, view, svg, state, store, geo: () => geo, situation, runEvent, play, toast,
+    seek: (t) => { if (state.plan) { stop(); endAsk(); state.t = Math.max(0, Math.min(t, state.plan.timeline.duration)); view.seek(state.t); updateTransport(); } },
+    blocked: () => board.on || !!state.trainer,
+    save: () => $('#btn-save').click(),
+    share: () => sharePlay(),
+    // The frame-by-frame drawing tool, from a clean field (not the play being built).
+    drawByHand: () => { state.pm = 'plays'; try { startDrawing('scratch'); } finally { state.pm = 'build'; } },
+  });
   setGeometry();
   renderSituation();
   renderBuild();
