@@ -352,6 +352,20 @@ test('defensive calls: 1st & 3rd (through, cut, to the pitcher, to 3rd) and bunt
   assert.equal(f3('pitcher').target, 'mound');
   assert.equal(f3('third').target, 'third');
   assert.equal(f3('through').throws.length, 2, 'through, then home');
+  // The shortstop cut (requested 2026-10-09): catcher to SS, SS home, the runner from 3rd out at the plate.
+  for (const league of ['littleLeague', 'highSchool', 'softball']) {
+    const ss = f3('cutSS', league);
+    assert.match(ss.title, /shortstop cuts it/, league);
+    assert.deepEqual(ss.throws, [{ fromPos: 'C', via: 'SS', to: 'home' }], league);
+    const outs = ss.timeline.events.filter((e) => e.type === 'out');
+    assert.equal(outs.length, 1, league + ': one out');
+    const g = Field.geometry(league);
+    // The runner from 3rd is tagged on the way home: on the 3rd-base line, nearer home than 3rd
+    // (on a 90 ft field the throw is in so early the tag comes well up the line).
+    const at = outs[0].at;
+    const dh = Math.hypot(at.x - g.bases.home.x, at.y - g.bases.home.y), d3 = Math.hypot(at.x - g.bases.third.x, at.y - g.bases.third.y);
+    assert.ok(Math.abs(at.x + at.y) < 3 && dh < d3, league + ': the runner from 3rd is out going home');
+  }
   const wheel = Engine.planPlay({ league: 'littleLeague', runners: on('first', 'second'), outs: 0, buntD: 'wheel' }, { kind: 'bunt', at: { x: -14, y: 26 } });
   assert.equal(wheel.target, 'third');
   const std = Engine.planPlay({ league: 'littleLeague', runners: on('first', 'second'), outs: 0 }, { kind: 'bunt', at: { x: -14, y: 26 } });

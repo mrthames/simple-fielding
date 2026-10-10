@@ -2567,6 +2567,9 @@
     state.outs = s.outs || 0;
     state.batter = s.batter === 'L' ? 'L' : 'R';
     if (typeof s.leadoffs === 'boolean') { state.leadoffs = s.leadoffs; $('#leadoffs').checked = s.leadoffs; }
+    // The coach's calls travel in the link too (the position pages link plays that set them, such
+    // as the shortstop cut); without these a replay quietly fell back to Auto.
+    state.depth = s.depth || 'auto'; state.d13 = s.d13 || 'auto'; state.buntD = s.buntD || 'auto';
     if (r.event.at) { state.kind = r.event.kind; state.result = r.event.result || 'auto'; }
     renderSituation();
     runEvent(r.event);

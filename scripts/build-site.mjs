@@ -227,7 +227,7 @@ function positionPlays(pos) {
     const items = [];
     for (const sc of g.items) {
       if (!Scenarios.fits(sc, league)) continue;
-      const situation = { runners: Object.assign({}, sc.runners), outs: sc.outs || 0, batter: sc.batter || 'R', league, depth: sc.depth, buntD: sc.buntD, leadoffs: sc.leadoffs };
+      const situation = { runners: Object.assign({}, sc.runners), outs: sc.outs || 0, batter: sc.batter || 'R', league, depth: sc.depth, buntD: sc.buntD, d13: sc.d13, leadoffs: sc.leadoffs };
       const plan = Engine.planPlay(situation, sc.event);
       const a = plan.assignments[pos];
       total++;

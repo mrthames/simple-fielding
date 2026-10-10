@@ -2,6 +2,16 @@
 
 ---
 
+## [2026-10-09] v0.41.0 — 1st & 3rd: the shortstop cut
+
+- **A new 1st & 3rd defense: SS cut.** The catcher fakes a throw to 2nd and throws it to the shortstop instead, standing in front of the bag. The runner on 3rd, thinking the ball is going to 2nd, breaks for home, and the shortstop throws home to get them. The second baseman covers 2nd so the runner from 1st believes the throw is coming. It's in the 1st & 3rd picker (**SS cut**) and in the play library under Steals & leads: "1st & 3rd — fake to 2nd, shortstop throws home".
+- The existing cut play is unchanged: the second baseman cuts, and only throws home if the runner breaks.
+- Share links and My plays carry the new call; older links open as before.
+- **Fixed: play links dropped the coach's calls.** A replay link (the plays listed on the position pages, and tester reports) opened with the infield depth, bunt defense and 1st & 3rd defense back on Auto, so a play like "Bases loaded — force at home" (infield in) could open with the infield back. They now open exactly as written, and the position pages count each fielder's job with the call in place.
+- The README's play count was stale: the library has 86 plays in eleven groups.
+
+---
+
 ## [2026-09-29] v0.40.0 — Errors you can see
 
 Errors worked out the right result, but the field didn't show it: the kind was picked silently, the only sign on the field was a small bubble for under two seconds, and the explanation sat out of sight in the side panel.

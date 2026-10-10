@@ -281,6 +281,15 @@ test('replay link reopens the exact play', async ({ page }) => {
   await expect(page.locator('#batter-seg [data-batter="L"]')).toHaveClass(/on/);
 });
 
+test('replay link keeps the coach\'s call: the 1st & 3rd shortstop cut', async ({ page }) => {
+  const code = await page.evaluate(() => (window as any).PlayLog.encodeReplay(
+    { runners: { first: true, second: false, third: true }, outs: 1, batter: 'R', league: 'littleLeague', d13: 'cutSS' },
+    { kind: 'firstThirdSteal' }));
+  await page.goto('/#replay=' + code);
+  await expect(page.locator('#play-title .pt-name')).toContainText('shortstop cuts it');
+  await expect(page.locator('#d13-seg [data-d13="cutSS"]')).toHaveClass(/on/);
+});
+
 test('the logo goes back to the website homepage', async ({ page }) => {
   await expect(page.locator('.topbar .brand')).toHaveAttribute('href', '../');
   await page.locator('#btn-settings').click();
@@ -768,6 +777,10 @@ test('defensive calls: the 1st & 3rd and bunt defense buttons change the play', 
   await page.locator('#d13-seg [data-d13="pitcher"]').click();
   await page.locator('#other-plays [data-play="firstThirdSteal"]').click();
   await expect(page.locator('#play-title .pt-name')).toContainText('pitcher');
+  // The shortstop cut: the catcher fakes to 2nd and throws to the shortstop, who throws home.
+  await page.locator('#d13-seg [data-d13="cutSS"]').click();
+  await page.locator('#other-plays [data-play="firstThirdSteal"]').click();
+  await expect(page.locator('#play-title .pt-name')).toContainText('shortstop cuts it');
   await expect(page.locator('#buntd-row')).toBeHidden();
   await page.locator('#kind-chips [data-kind="bunt"]').click();
   await expect(page.locator('#buntd-row')).toBeVisible();

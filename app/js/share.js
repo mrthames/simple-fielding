@@ -18,7 +18,7 @@
   const KINDS = ['ground', 'line', 'fly', 'pop', 'bunt', 'steal2', 'steal3', 'firstThirdSteal', 'passedBall', 'primaryLead', 'secondaryLead', 'pitch', 'drawn', 'lookBack', 'delayedSteal', 'droppedThird', 'rundown'];
   const ACTIONS = ['return', 'hesitate', 'break', 'drift'];
   const DEPTHS = ['auto', 'normal', 'dp', 'in', 'cornersIn'];
-  const D13 = ['auto', 'through', 'cut', 'pitcher', 'third'];
+  const D13 = ['auto', 'through', 'cut', 'pitcher', 'third', 'cutSS'];
   const BUNTD = ['auto', 'standard', 'wheel', 'crash'];
   const BASES = ['first', 'second', 'third'];
   const POS = ['P', 'C', '1B', '2B', 'SS', '3B', 'LF', 'CF', 'RF'];
