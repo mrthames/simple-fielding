@@ -2,6 +2,30 @@
 
 ---
 
+## [2026-10-10] v0.43.0 — Build a play: endings, mistakes, and coaching on the whiteboard
+
+Trick plays like the 1st & 3rd cut now build in full, with every way they can go, and share as one link.
+
+- **Endings.** Select a step and choose **Add another ending after this step**: the play forks there. The new ending
+  keeps every step up to that point and goes its own way from it, so "He commits: out at home" and "He turns back:
+  rundown" are one play. Endings can fork again ("Bad toss: he heads home", off the rundown). An **Endings** bar
+  above the steps picks which one you are working on or watching, names it, or deletes it (with any ending that
+  forks from it). Steps shared with other endings say so; changing one changes it in each of them, and new steps
+  go into the ending you are on.
+- **Mistakes on a throw.** In a throw's step, **The throw**: Good throw, **Wild throw** (tap where it ends up) or
+  **Dropped**. The ball is loose, nobody has it, the next question is who gets it, and the player at fault gets the
+  scorebook badge (E2 for the catcher's wild toss).
+- **Play it as built.** Pause a play, open the Whiteboard (everyone is frozen where they are), drag players to where
+  they should have been and draw it out, then tap **Play it as built**: the board closes, the drawing stays, and the
+  play runs on from that moment as it was built.
+- **Links carry it all.** Endings, their names and mistakes ride at the end of the link, so links made before
+  today open exactly as they did, and an older copy of the app opens the main play of a new link.
+- Watching on a phone: the Endings bar is there too, to switch between them.
+- Selecting a step in the middle of a play where the ball is loose no longer jumps straight into "Who gets the
+  ball?"; it offers **Someone gets the ball** instead, so a tap meant to change a step never adds one.
+
+---
+
 ## [2026-10-10] v0.42.1 — Build a play: a runner's lead, by tap or drag
 
 - **"Stop partway" no longer leaves you stuck.** It waited for one tap on the base path, and a drag did nothing, with

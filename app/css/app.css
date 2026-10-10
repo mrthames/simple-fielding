@@ -1041,3 +1041,16 @@ body.training #btn-3d, body.training #cam-bar { display: none !important; }
 .bp-ring.bp-mark { fill: var(--amber); stroke: #fff; animation: none; }
 @keyframes bp-pulse { 0%, 100% { opacity: 1; } 50% { opacity: .35; } }
 @media (prefers-reduced-motion: reduce) { .bp-ring { animation: none; } }
+
+/* Build a play: endings (a play that forks), shared steps, mistakes on a throw. */
+.bp-endings { background: var(--chip); border-radius: 12px; padding: 10px 12px; margin: 0 0 12px; }
+.bp-endings h4 { margin: 0 0 6px; font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-2); }
+.bp-endings .bp-ending-name { margin: 10px 0 4px; }
+.bp-step .bp-shared { color: var(--ink-2); font-size: 12px; font-style: italic; }
+.bp-step.shared .n { background: var(--chip); color: var(--ink-2); }
+.bp-fork { display: block; margin: 2px 0 10px; }
+.bp-err .bp-chip.on { background: #B42318; border-color: #B42318; color: #fff; }
+
+/* The whiteboard: play on as built from the paused moment. */
+.board-bar .bb-play { background: var(--amber); color: #1b1300; padding: 0 14px; flex: none; font-weight: 700; }
+body.drawing .board-bar .bb-play { display: none; }

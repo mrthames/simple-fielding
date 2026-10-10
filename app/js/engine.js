@@ -2771,7 +2771,8 @@
     const geo = Field.geometry(s.league, s.park);
     if (s.leadoffs === undefined) s.leadoffs = geo.league.leadoffs;
     if (event.kind === 'drawn') return planDrawn(geo, s, event);
-    if (event.kind === 'script') return Script.plan(geo, s, event, { newPlan, throwTime, hangTime, computeLooks });
+    // A play with endings plays one of them: event.branch (-1 or missing: the main play).
+    if (event.kind === 'script') return Script.plan(geo, s, Object.assign({}, event, { steps: Script.resolve(event, Number.isInteger(event.branch) ? event.branch : -1) }), { newPlan, throwTime, hangTime, computeLooks });
     if (event.kind === 'rundown') return planRundown(geo, s, event);
     const batted = event.at && ['ground', 'line', 'fly', 'pop', 'bunt'].includes(event.kind);
     const plan = batted ? planBattedBall(geo, s, event) : planSituationPlay(geo, s, event);

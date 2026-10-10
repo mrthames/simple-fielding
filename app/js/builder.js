@@ -8,6 +8,10 @@
  * planned again at once, so the field always shows the play as written, at the end of the selected step.
  *
  * Phones watch and share built plays; building needs a tablet or a computer (his call, 2026-10-09).
+ *
+ * Endings (2026-10-10): a play can fork after any step ("Add another ending after this step"). The coach works on one
+ * path at a time, picked in the endings bar; steps shared with other endings are marked, and changing one changes
+ * it in every ending that has it. New steps go into the ending being worked on. Throws can be wild or dropped.
  */
 (function (root) {
   'use strict';
@@ -28,7 +32,8 @@
     const canBuildQ = root.matchMedia ? root.matchMedia('(min-width: 700px) and (min-height: 500px)') : { matches: true };
     const draft = store.get('buildDraft', null);
     const B = {
-      script: draft && Array.isArray(draft.steps) ? { title: draft.title || '', steps: draft.steps } : { title: '', steps: [] },
+      script: draft && Array.isArray(draft.steps) ? { title: draft.title || '', steps: draft.steps, main: draft.main || '', alts: Array.isArray(draft.alts) ? draft.alts : [] } : { title: '', steps: [], main: '', alts: [] },
+      alt: draft && Number.isInteger(draft.alt) ? draft.alt : -1,   // the ending being worked on: -1 the main play
       sel: draft && Number.isInteger(draft.sel) ? draft.sel : -1,
       pending: null,       // { type: 'fielder' | 'target' | 'spot' | 'path', prompt, done(answer), runner? }
       choosing: null,      // a half-made step: { a: 'pitch', r: 'hit' } while picking how it's hit, etc.
@@ -36,11 +41,75 @@
       savedId: null,
       plan: null,
     };
-    B.sel = Math.min(B.sel, B.script.steps.length - 1);
+    if (!B.script.alts[B.alt]) B.alt = -1;
+    B.sel = Math.min(B.sel, S().resolve(B.script, B.alt).length - 1);
 
     const canBuild = () => !!canBuildQ.matches;
     const active = () => state.pm === 'build' && canBuild() && !ctx.blocked();
-    const steps = () => B.script.steps;
+    // The steps of the path being worked on: the very step objects of the main play and its endings, so changing one
+    // changes it wherever it is shared. Adding and deleting go through insertAt / removeAt.
+    const steps = () => S().resolve(B.script, B.alt);
+    const alts = () => B.script.alts || (B.script.alts = []);
+    const ownSteps = (owner) => (owner < 0 ? B.script.steps : alts()[owner].steps);
+    // Whose step is step i of this path, and where it sits in their own list.
+    function locate(i) {
+      const segs = S().segments(B.script, B.alt);
+      for (const sg of segs) if (i >= sg.start && i < sg.start + sg.use) return { owner: sg.owner, index: i - sg.start };
+      const last = segs[segs.length - 1];
+      return { owner: last.owner, index: last.use };
+    }
+    // An ending forks after its parent's step `at`; keep that pointing at the same step when the parent changes.
+    function shiftForks(owner, from, by) {
+      for (const a of alts()) if ((Number.isInteger(a.from) ? a.from : -1) === owner && a.at >= from) a.at += by;
+    }
+    function insertAt(q, st) {
+      const end = steps().length;
+      const where = q >= end ? (() => { const segs = S().segments(B.script, B.alt); const l = segs[segs.length - 1]; return { owner: l.owner, index: l.use }; })() : locate(q);
+      ownSteps(where.owner).splice(where.index, 0, st);
+      shiftForks(where.owner, where.index, 1);
+    }
+    function removeAt(i) {
+      const w = locate(i);
+      ownSteps(w.owner).splice(w.index, 1);
+      for (const a of alts()) if ((Number.isInteger(a.from) ? a.from : -1) === w.owner && a.at >= w.index) a.at -= 1;
+    }
+    // Shared with how many other paths: a step of the main play or of an ending that others fork from.
+    function sharedBy(i) {
+      if (!alts().length) return 0;
+      const w = locate(i);
+      let n = 0;
+      for (let k = -1; k < alts().length; k++) {
+        if (k === B.alt) continue;
+        const segs = S().segments(B.script, k);
+        if (segs.some((sg) => sg.owner === w.owner && w.index < sg.use)) n++;
+      }
+      return n;
+    }
+    function addEnding() {
+      const w = locate(B.sel);
+      change(() => {
+        alts().push({ name: `Ending ${alts().length + 1}`, from: w.owner, at: w.index, steps: [] });
+        B.alt = alts().length - 1;
+      });
+    }
+    // An ending and every ending that forks from it.
+    function removeEnding(k) {
+      change(() => {
+        const gone = new Set([k]);
+        alts().forEach((a, j) => { if (gone.has(Number.isInteger(a.from) ? a.from : -1)) gone.add(j); });
+        const keep = alts().map((a, j) => j).filter((j) => !gone.has(j));
+        const renum = new Map(keep.map((j, n) => [j, n]));
+        B.script.alts = keep.map((j) => { const a = alts()[j]; const f = Number.isInteger(a.from) ? a.from : -1; return Object.assign({}, a, { from: f < 0 ? -1 : renum.get(f) }); });
+        B.alt = -1;
+        B.sel = Math.min(B.sel, steps().length - 1);
+      });
+    }
+    function pickEnding(k) {
+      B.alt = k; B.pending = null; B.choosing = null;
+      B.sel = Math.min(B.sel, steps().length - 1);
+      saveDraft();
+      refresh();
+    }
     const states = () => (B.plan && B.plan.scriptStates) || [];
     const geo = () => ctx.geo();
     // The field before the selected step, and after it.
@@ -55,9 +124,9 @@
     }
 
     // ------------------------------------------------------------------------------------------- changes
-    function saveDraft() { store.set('buildDraft', { title: B.script.title, steps: B.script.steps, sel: B.sel }); }
+    function saveDraft() { store.set('buildDraft', { title: B.script.title, steps: B.script.steps, main: B.script.main, alts: alts(), alt: B.alt, sel: B.sel }); }
     function change(fn, opts) {
-      B.undo.push(JSON.stringify({ script: B.script, sel: B.sel }));
+      B.undo.push(JSON.stringify({ script: B.script, sel: B.sel, alt: B.alt }));
       if (B.undo.length > 80) B.undo.shift();
       B.redo = [];
       fn();
@@ -66,21 +135,21 @@
     }
     function undo() {
       if (!B.undo.length) return;
-      B.redo.push(JSON.stringify({ script: B.script, sel: B.sel }));
+      B.redo.push(JSON.stringify({ script: B.script, sel: B.sel, alt: B.alt }));
       const s = JSON.parse(B.undo.pop());
-      B.script = s.script; B.sel = s.sel; B.pending = null; B.choosing = null;
+      B.script = s.script; B.sel = s.sel; B.alt = s.alt ?? -1; B.pending = null; B.choosing = null;
       saveDraft(); refresh();
     }
     function redo() {
       if (!B.redo.length) return;
-      B.undo.push(JSON.stringify({ script: B.script, sel: B.sel }));
+      B.undo.push(JSON.stringify({ script: B.script, sel: B.sel, alt: B.alt }));
       const s = JSON.parse(B.redo.pop());
-      B.script = s.script; B.sel = s.sel; B.pending = null; B.choosing = null;
+      B.script = s.script; B.sel = s.sel; B.alt = s.alt ?? -1; B.pending = null; B.choosing = null;
       saveDraft(); refresh();
     }
     function addStep(st) {
       B.pending = null; B.choosing = null;
-      change(() => { steps().splice(B.sel + 1, 0, st); B.sel += 1; }, { playStep: true });
+      change(() => { insertAt(B.sel + 1, st); B.sel += 1; }, { playStep: true });
     }
     function editStep(fn, opts) { change(() => fn(steps()[B.sel]), opts); }
 
@@ -89,7 +158,9 @@
     function refresh(opts) {
       opts = opts || {};
       if (state.pm !== 'build') return;
-      const ev = { kind: 'script', title: B.script.title, steps: clone(steps()) };
+      const ev = { kind: 'script', title: B.script.title, steps: clone(B.script.steps) };
+      if (alts().length) { ev.alts = clone(alts()); ev.branch = B.alt; }
+      if (B.script.main) ev.main = B.script.main;
       ctx.runEvent(ev, { autoplay: false, name: B.script.title || '', savedId: B.savedId });
       B.plan = state.plan;
       const st = B.sel >= 0 ? states()[B.sel] : null;
@@ -269,6 +340,7 @@
       panel.append(head);
       if (!editable) {
         panel.append(h('p', { class: 'bp-phone' }, 'Building a play works on a tablet or a computer. Here you can watch built plays and share them: open one from My plays or a link.'));
+        if (alts().length) panel.append(endingsBar(false));
         if (steps().length) panel.append(stepList(false));
         // Drawing frame by frame already worked on phones before Build a play, so it stays here.
         panel.append(h('button', { type: 'button', class: 'text-btn small bp-draw', id: 'build-draw', onclick: () => ctx.drawByHand() }, '✎ Draw a play by hand, frame by frame'));
@@ -277,6 +349,7 @@
       panel.append(h('label', { class: 'bp-name', for: 'bp-title' }, 'Name',
         h('input', { id: 'bp-title', type: 'text', maxlength: '60', placeholder: 'Name this play', value: B.script.title,
           onchange: (e) => change(() => { B.script.title = e.target.value.trim(); }) })));
+      if (alts().length) panel.append(endingsBar(true));
       panel.append(stepList(true));
       panel.append(nextBox());
       if (B.sel >= 0 && steps()[B.sel]) panel.append(details());
@@ -288,6 +361,20 @@
       if (issues.length) panel.querySelector('.bp-save').prepend(h('p', { class: 'bp-warn' }, `${issues.length} step${issues.length === 1 ? ' needs' : 's need'} fixing before this play is right.`));
     }
 
+    // Which path is showing: the main play or one of its endings. Tap one to watch or work on it.
+    function endingsBar(editable) {
+      const box = h('div', { class: 'bp-endings', id: 'bp-endings' }, h('h4', {}, 'Endings'));
+      box.append(h('div', { class: 'bp-chips' }, S().endings(B.script).map((e) => chip(e.name, () => pickEnding(e.k), e.k === B.alt, { 'data-ending': String(e.k) }))));
+      if (editable) {
+        const cur = B.alt < 0 ? B.script.main || '' : alts()[B.alt].name || '';
+        box.append(h('label', { class: 'bp-name bp-ending-name', for: 'bp-ending-name' }, 'This ending',
+          h('input', { id: 'bp-ending-name', type: 'text', maxlength: '40', placeholder: B.alt < 0 ? 'Main play' : 'Name this ending', value: cur,
+            onchange: (e) => change(() => { const v = e.target.value.trim(); if (B.alt < 0) B.script.main = v; else alts()[B.alt].name = v; }) })));
+        if (B.alt >= 0) box.append(h('button', { type: 'button', class: 'text-btn small danger', id: 'bp-ending-delete', onclick: () => removeEnding(B.alt) }, 'Delete this ending'));
+      }
+      return box;
+    }
+
     function stepList(editable) {
       const issues = (B.plan && B.plan.scriptIssues) || [];
       const ol = h('ol', { class: 'bp-steps', id: 'bp-steps' });
@@ -297,9 +384,11 @@
       steps().forEach((st, i) => {
         const d = S().describe(st, before(i));
         const bad = issues.find((x) => x.step === i);
-        ol.append(h('li', { class: 'bp-step' + (B.sel === i ? ' on' : '') + (bad ? ' bad' : ''), 'data-step': i, onclick: () => select(i) },
+        const shared = sharedBy(i);
+        ol.append(h('li', { class: 'bp-step' + (B.sel === i ? ' on' : '') + (bad ? ' bad' : '') + (shared ? ' shared' : ''), 'data-step': i, onclick: () => select(i) },
           h('span', { class: 'n' }, String(i + 1)),
           h('span', { class: 'txt' }, h('b', {}, d.text), d.meanwhile ? h('span', { class: 'mw' }, d.meanwhile) : null,
+            shared ? h('span', { class: 'bp-shared' }, `Shared with ${shared} other ending${shared === 1 ? '' : 's'}`) : null,
             bad ? h('span', { class: 'fix' }, 'Fix this: ' + bad.text) : null)));
       });
       if (!editable && !steps().length) return h('p', {}, '');
@@ -318,7 +407,7 @@
       render(); drawOverlay();
     }
     function startOver() {
-      change(() => { B.script = { title: '', steps: [] }; B.sel = -1; B.savedId = null; });
+      change(() => { B.script = { title: '', steps: [], main: '', alts: [] }; B.alt = -1; B.sel = -1; B.savedId = null; });
     }
 
     // "What happens next?": only what fits who has the ball after the selected step.
@@ -361,9 +450,12 @@
           const leads = sit.leadoffs && !document.body.classList.contains('softball');
           if (leads && live.some((r) => r.base && r.base !== 'home')) grid.append(btn('Pickoff throw', () => { B.choosing = { prompt: 'Throw to which base?', body: pickoffChoices }; render(); }));
         } else if (o === 'field') {
-          // The only thing that can happen to a loose ball: ask straight away (the overlay is drawn after render).
+          // The only thing that can happen to a loose ball. At the end of the play, ask straight away (the overlay is
+          // drawn after render); on a step in the middle, a button, so selecting a step to change it never adds one.
           const suggest = nearestTo(now.loose && now.loose.at, now.fielders);
-          B.pending = { type: 'fielder', prompt: 'Who gets the ball? Tap them on the field.', suggest, done: (by) => addStep(Object.assign({ a: 'field', by }, now.loose && now.loose.air ? { call: 'out' } : {})) };
+          const ask1 = { type: 'fielder', prompt: 'Who gets the ball? Tap them on the field.', suggest, done: (by) => addStep(Object.assign({ a: 'field', by }, now.loose && now.loose.air ? { call: 'out' } : {})) };
+          if (!atEnd) { grid.append(btn('Someone gets the ball', () => ask(ask1), true)); continue; }
+          B.pending = ask1;
           return nextBox();
         } else if (o === 'throw') {
           grid.append(btn('Throw', () => ask({ type: 'target', exclude: now.holder, prompt: 'Who catches it? Tap a player or a base.', done: (t) => addStep({ a: 'throw', to: t.to, at: t.at }) }), true));
@@ -421,7 +513,9 @@
       const prev = before(i);
       const box = h('div', { class: 'bp-detail', id: 'bp-detail' });
       box.append(h('div', { class: 'bp-detail-head' }, h('h3', {}, `Step ${i + 1}`),
-        h('button', { type: 'button', class: 'text-btn small danger', id: 'bp-delete', onclick: () => change(() => { steps().splice(i, 1); B.sel = Math.min(i - 1, steps().length - 1); }) }, 'Delete step')));
+        h('button', { type: 'button', class: 'text-btn small danger', id: 'bp-delete', onclick: () => change(() => { removeAt(i); B.sel = Math.min(i - 1, steps().length - 1); }) }, 'Delete step')));
+      // Another way it could go from here: "he turns back", "bad toss".
+      box.append(h('button', { type: 'button', class: 'bp-link bp-fork', id: 'bp-fork', onclick: addEnding }, `+ Add another ending after step ${i + 1}`));
       const row = (label, ...kids) => h('div', { class: 'bp-row' }, h('span', { class: 'bp-label' }, label), h('div', { class: 'bp-row-body' }, ...kids));
       const calls = (key = 'call') => h('div', { class: 'bp-chips calls' },
         chip('Out', () => editStep((s) => { s[key] = 'out'; }), (st[key] || 'out') === 'out', { class: 'bp-chip call-out' + ((st[key] || 'out') === 'out' ? ' on' : '') }),
@@ -450,6 +544,11 @@
         box.append(row('Where', h('button', { type: 'button', class: 'bp-link', onclick: () => ask({ type: 'spot', prompt: `Tap where the ${S().PLAYER[st.to]} catches it.`, done: (at) => { B.pending = null; editStep((s) => { s.at = at; }); } }) }, 'Move where they catch it')));
         box.append(row('Fake first', h('div', { class: 'bp-chips' }, chip('No fake', () => editStep((s) => { delete s.fake; }), !st.fake),
           ['first', 'second', 'third', 'home'].map((b) => chip('To ' + BASE_WORD[b], () => editStep((s) => { s.fake = b; }), st.fake === b)))));
+        // A mistake: the throw sails past to where the coach taps, or the catch gets away. Either way the ball is loose.
+        box.append(row('The throw', h('div', { class: 'bp-chips bp-err' },
+          chip('Good throw', () => editStep((s) => { delete s.err; delete s.miss; }), !st.err),
+          chip('Wild throw', () => ask({ type: 'spot', prompt: 'Tap where the wild throw ends up.', done: (at) => { B.pending = null; editStep((s) => { s.err = 'wild'; s.miss = at; }); } }), st.err === 'wild'),
+          chip('Dropped', () => editStep((s) => { s.err = 'dropped'; delete s.miss; }), st.err === 'dropped'))));
       } else if (st.a === 'run') {
         box.append(row('Where', h('button', { type: 'button', class: 'bp-link', onclick: () => ask({ type: 'spot', prompt: 'Tap where they run.', done: (at) => { B.pending = null; editStep((s) => { s.at = at; }); } }) }, 'Move where they run')));
       } else if (st.a === 'tag') {
@@ -510,8 +609,9 @@
       refresh, render, active, canBuild,
       // A built play from a link or My plays.
       load(event, name, savedId) {
-        B.script = { title: event.title || name || '', steps: clone(event.steps || []) };
-        B.sel = B.script.steps.length - 1;
+        B.script = { title: event.title || name || '', steps: clone(event.steps || []), main: event.main || '', alts: clone(event.alts || []) };
+        B.alt = Number.isInteger(event.branch) && B.script.alts[event.branch] ? event.branch : -1;
+        B.sel = steps().length - 1;
         B.savedId = savedId || null;
         B.undo = []; B.redo = []; B.pending = null; B.choosing = null;
         saveDraft();
@@ -519,6 +619,7 @@
       // For tests and the app: the script and the selection.
       get script() { return clone(B.script); },
       get sel() { return B.sel; },
+      get alt() { return B.alt; },
       select,
       setSavedId(id) { B.savedId = id; },
     };

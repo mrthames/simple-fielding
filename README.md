@@ -31,6 +31,12 @@ A companion to [Simple Pitch Counter](https://github.com/mrthames/simple-pitch-c
   it, on the field or in the list; tap where a ball goes or a fielder runs. In each step, send runners on, back, or
   partway, and drag fielders to move them. The coach calls every safe and out. Undo, redo, a name, then Save to
   My plays or Share as a link. Phones watch and share built plays.
+  - **Endings:** a play can fork after any step ("he commits" or "he turns back"), and endings can fork again
+    ("bad toss"). Steps shared by endings are marked; the link carries every ending, and anyone watching can switch.
+  - **Mistakes:** a throw can be wild (tap where it ends up) or dropped. The ball is loose, the player at fault gets
+    the E badge, and the next step is whoever gets it.
+  - **Coaching it:** pause, open the Whiteboard, move players to where they should have been and draw, then
+    **Play it as built** to watch the rest of the play from that moment.
 - **Eighty-six ready-made plays** in the play library, in eleven groups (some only for softball or the 90 ft field), for running a practice. Press `N` for the next one.
 - **Fields:** Little League baseball (60 ft, no leadoffs), 50/70 (leadoffs), fastpitch softball.
 - **Whiteboard mode** (`W`): freeze any play, or the starting positions, and change it by hand. Drag fielders,
