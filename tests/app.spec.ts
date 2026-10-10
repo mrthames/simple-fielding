@@ -544,6 +544,10 @@ test('build a play: endings, a wild throw, and coaching it on the whiteboard', a
   await page.locator('.bp-act', { hasText: 'Tag a runner' }).click();
   await page.locator('.bp-chip', { hasText: 'The runner from 3rd' }).click();
   await expect(page.locator('#bp-endings')).toHaveCount(0);
+  // Not on the last step: there it read as "add the next step" (his iPad, 2026-10-10).
+  await page.locator('.bp-step[data-step="3"]').click();
+  await expect(page.locator('#bp-detail')).toBeVisible();
+  await expect(page.locator('#bp-fork')).toHaveCount(0);
   // Another ending after step 2: he sees the shortstop cut it and turns back.
   await page.locator('.bp-step[data-step="1"]').click();
   await page.locator('#bp-fork').click();

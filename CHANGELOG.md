@@ -2,6 +2,14 @@
 
 ---
 
+## [2026-10-10] v0.43.1: an ending can't swallow the rest of a play
+
+- **Add another ending** only shows on a step with another step after it. On the last step it read like "add the
+  next step", so a play could go out as just the pitch, with everything after it tucked into an ending that a shared
+  link doesn't open on.
+
+---
+
 ## [2026-10-10] v0.43.0 — Build a play: endings, mistakes, and coaching on the whiteboard
 
 Trick plays like the 1st & 3rd cut now build in full, with every way they can go, and share as one link.

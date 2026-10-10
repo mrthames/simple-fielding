@@ -1,0 +1,1008 @@
+/* Simple Fielding — app styles. iPad first, phone second, projector third. */
+
+:root {
+  /* Shared with Simple Pitch Counter: same palette, radii and type, so the two apps read as a family. */
+  --bg: #F2F2F7;
+  --panel: #ffffff;
+  --ink: #000000;
+  --ink-2: rgba(60, 60, 67, .6);
+  --ink-3: rgba(60, 60, 67, .35);
+  --line: rgba(60, 60, 67, .12);
+  --line-2: rgba(60, 60, 67, .22);
+  --brand: #1A6BFF;
+  --brand-bg: #EBF1FF;
+  --brand-deep: #0b1c3a;
+  --brand-deep-2: #142a4f;
+  --chip: rgba(118, 118, 128, .12);
+  --chip-on: #1A6BFF;
+  --green: #34C759;
+  --red: #FF3B30;
+  --amber: #FF9500;
+  --purple: #AF52DE;
+  --ball-red: #C8392B;
+
+  /* field */
+  --foul-grass: #3f8a47;
+  --grass-a: #4ea457;
+  --grass-b: #57ad60;
+  --dirt: #c9925c;
+  --track: #b98552;
+  --chalk: #ffffff;
+
+  /* roles — also used in the job list */
+  --r-field: #FFCC00;
+  --r-cutoff: var(--amber);
+  --r-cover: var(--green);
+  --r-backup: var(--purple);
+  --r-hold: #C7C7CC;
+
+  --team: var(--brand);
+  --runner: var(--red);
+  --throw: #FFE066;
+
+  --r: 12px;
+  --r-lg: 18px;
+  --radius: var(--r-lg);
+  --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", "Segoe UI", Roboto, sans-serif;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  color-scheme: light only;
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { margin: 0; height: 100%; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font);
+  -webkit-tap-highlight-color: transparent;
+  -webkit-text-size-adjust: 100%;
+  overscroll-behavior: none;
+}
+button { font: inherit; color: inherit; cursor: pointer; }
+svg { display: block; }
+
+/* ---------------------------------------------------------------- layout */
+.app {
+  display: grid;
+  grid-template-columns: 1fr;
+  grid-template-rows: auto auto auto;
+  min-height: 100%;
+}
+.topbar {
+  grid-column: 1 / -1;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: calc(8px + var(--safe-top)) 16px 8px;
+  background: var(--brand-deep);
+  color: #fff;
+  position: relative; z-index: 5;
+}
+.brand { display: flex; align-items: center; gap: 10px; color: #fff; text-decoration: none; border-radius: 10px; }
+.brand:active { opacity: .7; }
+/* Inside the native app shells there's no website to go back to. */
+.native .brand { pointer-events: none; }
+.native .home-link { display: none; }
+.brand-icon { width: 34px; height: 34px; border-radius: 9px; }
+.brand-name { font-weight: 800; font-size: 19px; letter-spacing: -0.02em; white-space: nowrap; }
+.topbar-actions { display: flex; gap: 8px; align-items: center; }
+
+.stage { display: flex; flex-direction: column; min-width: 0; }
+.field-wrap {
+  position: relative;
+  background: var(--foul-grass);
+  touch-action: none;
+}
+.field { width: 100%; height: auto; max-height: 70vh; margin: 0 auto; user-select: none; -webkit-user-select: none; }
+.panel { padding: 12px 16px calc(24px + var(--safe-bottom)); display: flex; flex-direction: column; gap: 12px; }
+
+/*
+ * The field never scrolls away. Whatever the screen, the header, the field and the playback bar stay put,
+ * and only the controls panel scrolls.
+ *
+ * Stacked (phones and portrait iPads): header, field and playback bar on top; the panel fills the rest.
+ */
+.app { height: 100vh; height: 100dvh; overflow: hidden; grid-template-rows: auto auto minmax(0, 1fr); }
+.stage { grid-row: 2; }
+.field { max-height: 52vh; max-height: 52dvh; }
+.panel { grid-row: 3; min-height: 0; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
+body { overflow: hidden; }
+
+/* Side by side (iPad landscape, desktop, and phones turned sideways): field left, panel right. */
+@media (min-width: 900px), (orientation: landscape) and (min-width: 560px) {
+  .app {
+    grid-template-columns: minmax(0, 1fr) min(380px, 42vw);
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+  .stage { grid-row: 2; min-height: 0; }
+  .field-wrap { flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; }
+  .field { max-height: 100%; height: 100%; width: 100%; }
+  .panel { grid-row: 2; border-left: 1px solid var(--line); background: var(--bg); }
+  /* Side by side, the play controls are the bottom row: keep them clear of the home indicator / gesture bar. */
+  .transport { padding-bottom: calc(10px + var(--safe-bottom)); }
+}
+
+/* ---------------------------------------------------------------- buttons */
+.icon-btn, .pill-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  min-height: 44px; min-width: 44px; padding: 0 10px;
+  border: 0; border-radius: 10px;
+  background: rgba(255, 255, 255, .1); color: #fff;
+}
+.pill-btn { padding: 0 16px; font-weight: 700; }
+.icon-btn svg, .pill-btn svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+.icon-btn:active, .pill-btn:active { background: rgba(255, 255, 255, 0.25); }
+.sheet .icon-btn { background: var(--chip); color: var(--ink); }
+
+.text-btn { background: none; border: 0; color: var(--brand); font-weight: 700; min-height: 44px; padding: 0 10px; }
+.text-btn.small { min-height: 32px; font-size: 14px; }
+
+/* ---------------------------------------------------------------- field */
+.field .chalk { stroke: var(--chalk); stroke-width: 0.9; }
+.field .fence { fill: none; stroke: #1f3b2a; stroke-width: 3; }
+.field .backstop { fill: none; stroke: #2a3b4d; stroke-width: 2; }
+.field .box { fill: none; stroke: var(--chalk); stroke-width: 0.5; opacity: 0.8; }
+.field .bag { fill: #fff; }
+.field .mound { fill: var(--dirt); stroke: rgba(0, 0, 0, .12); stroke-width: .6; }
+.field .circle-chalk { fill: none; stroke: var(--chalk); stroke-width: .7; }
+.sport-seg { margin-left: auto; }
+.field .base { cursor: pointer; }
+.field .base.occupied .bag { fill: #FFE066; }
+
+.player { cursor: pointer; }
+.player .hit { fill: transparent; }
+.player .body { fill: var(--team); stroke: #fff; stroke-width: 1.1; }
+.player .ring { fill: none; stroke: transparent; stroke-width: 2.2; }
+.player .label { fill: #fff; font: 800 5.4px var(--font); text-anchor: middle; dominant-baseline: middle; pointer-events: none; }
+.player .label.long { font-size: 4.2px; }
+.player .tag { pointer-events: none; }
+.player .tag-bg { fill: rgba(11, 28, 58, .88); }
+.player .tag-text { fill: #fff; font: 700 4.6px var(--font); text-anchor: middle; dominant-baseline: middle; }
+.player.role-field .ring { stroke: var(--r-field); }
+.player.role-cutoff .ring, .player.role-relay .ring, .player.role-trail .ring { stroke: var(--r-cutoff); }
+.player.role-cover .ring { stroke: var(--r-cover); }
+.player.role-backup .ring { stroke: var(--r-backup); }
+
+.runner { pointer-events: none; }
+.runner .body { fill: var(--runner); stroke: #fff; stroke-width: 1; }
+.runner .label { fill: #fff; font: 800 4.6px var(--font); text-anchor: middle; dominant-baseline: middle; }
+
+.ball { cursor: grab; }
+.ball.idle { animation: pulse 1.4s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+@keyframes pulse { 50% { transform: scale(1.5); } }
+.ball-shadow { fill: #000; }
+
+.path { fill: none; stroke-width: 1.1; stroke-dasharray: 3 2.4; stroke-linecap: round; opacity: 0.85; }
+.path.role-field { stroke: var(--r-field); }
+.path.role-cutoff, .path.role-relay, .path.role-trail { stroke: var(--r-cutoff); }
+.path.role-cover { stroke: var(--r-cover); }
+.path.role-backup { stroke: var(--r-backup); }
+.path.role-hold { stroke: var(--r-hold); }
+.dest { fill: none; stroke-width: 0.9; stroke-dasharray: 1.5 1.2; }
+.dest.role-field { stroke: var(--r-field); }
+.dest.role-cutoff, .dest.role-relay, .dest.role-trail { stroke: var(--r-cutoff); }
+.dest.role-cover { stroke: var(--r-cover); }
+.dest.role-backup { stroke: var(--r-backup); }
+.dest.role-hold { stroke: var(--r-hold); }
+.lineup { fill: none; stroke: #fff; stroke-width: 0.8; stroke-dasharray: 1 2.5; stroke-linecap: round; opacity: 0.9; }
+.throw { stroke: var(--throw); stroke-width: 1.2; stroke-dasharray: 4 2; }
+
+.caption rect { fill: var(--brand-deep); opacity: 0.92; }
+.caption.out rect { fill: var(--red); }
+.caption.catch rect { fill: #248A3D; }
+.caption.hold rect { fill: var(--amber); }
+.caption text { fill: #fff; font: 800 6px var(--font); text-anchor: middle; dominant-baseline: middle; }
+/* An error: the moment it happens (orange callout), and E5 on the fielder who made it, to the end of the play. */
+.caption.note.err rect { fill: #D96E14; opacity: 1; stroke: #fff; stroke-width: .6; }
+.ebadge circle { fill: var(--red); stroke: #fff; stroke-width: .9; }
+.ebadge text { fill: #fff; font: 800 5.2px var(--font); text-anchor: middle; dominant-baseline: middle; }
+
+.drag-line { fill: none; stroke: #fff; stroke-width: 1.2; stroke-dasharray: 3 2; }
+.roll-handle { pointer-events: none; }
+.ball-target { fill: none; stroke: #fff; stroke-width: .8; stroke-dasharray: 2 1.6; opacity: .95; }
+.ball-roll { fill: none; stroke: #fff; stroke-width: .6; stroke-dasharray: .5 2.2; stroke-linecap: round; opacity: .9; }
+.ball-target.through { stroke-dasharray: .5 1.8; stroke-linecap: round; stroke-width: .9; }
+.rh-ring { fill: rgba(255, 255, 255, .12); stroke: #fff; stroke-width: .9; stroke-dasharray: 2 1.6; animation: rh-pulse 1.6s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+.rh-text { fill: #fff; font: 700 5.4px var(--font); text-anchor: middle; paint-order: stroke; stroke: rgba(11, 28, 58, .85); stroke-width: 1.4px; }
+@keyframes rh-pulse { 50% { transform: scale(1.18); } }
+body.board-on .layer-handle, body.projector .rh-text { display: none; }
+.drag-target { fill: rgba(255, 255, 255, 0.25); stroke: #fff; stroke-width: 0.8; }
+.field.dragging { cursor: grabbing; }
+
+/* Spotlight: dim everybody else. */
+.field.has-spotlight .player:not(.spot), .field.has-spotlight .path:not(.spot), .field.has-spotlight .dest:not(.spot) { opacity: 0.3; }
+.player.spot .ring { stroke-width: 3; }
+.player.spot .body { fill: var(--brand-deep); }
+
+/* Overlays on the field */
+.field-hint {
+  position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%);
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 16px; border-radius: 999px;
+  background: rgba(11, 28, 58, .88); color: #fff; font-weight: 700; font-size: 15px;
+  white-space: nowrap; pointer-events: none;
+}
+.hint-ball { width: 22px; height: 22px; flex: none; background: url(../img/baseball.svg) center / contain no-repeat; animation: pulse 1.4s ease-in-out infinite; }
+.play-title {
+  position: absolute; left: 12px; top: 12px;
+  padding: 8px 14px; border-radius: 12px;
+  background: rgba(11, 28, 58, .88); color: #fff; font-weight: 800; font-size: 18px;
+  pointer-events: none; max-width: calc(100% - 24px);
+}
+.spot-card {
+  position: absolute; right: 12px; top: 12px; width: min(340px, calc(100% - 24px));
+  display: flex; gap: 10px; align-items: flex-start;
+  padding: 12px; border-radius: 14px;
+  background: rgba(255, 255, 255, 0.96); color: #0f1b2d;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.25);
+  border-left: 6px solid var(--r-hold);
+}
+.spot-card p { margin: 2px 0 0; font-size: 15px; line-height: 1.35; }
+.spot-card.role-field { border-color: var(--r-field); }
+.spot-card.role-cutoff, .spot-card.role-relay, .spot-card.role-trail { border-color: var(--r-cutoff); }
+.spot-card.role-cover { border-color: var(--r-cover); }
+.spot-card.role-backup { border-color: var(--r-backup); }
+.sit-strip {
+  position: absolute; left: 12px; bottom: 12px; padding: 6px 12px; border-radius: 10px;
+  background: rgba(11, 28, 58, .78); color: #fff; font-weight: 700; font-size: 14px; pointer-events: none;
+}
+.sit-strip:empty { display: none; }
+.play-title .pt-ask { display: block; margin-top: 2px; font-size: .72em; font-weight: 700; color: #FFD66B; }
+.play-title .pt-ask[hidden] { display: none; }
+/* After an error play: what it cost. */
+.play-title .pt-outcome { display: block; margin-top: 3px; font-size: .74em; font-weight: 700; color: #FFB870; }
+.play-title .pt-outcome[hidden] { display: none; }
+/* The pointer from Error to passed balls and wild pitches, and the card it lands on. */
+.inline-link { background: none; border: 0; padding: 0; font: inherit; font-weight: 700; color: var(--brand); text-decoration: underline; cursor: pointer; }
+.card.flash { animation: card-flash 1.4s ease-out; }
+@keyframes card-flash { 0%, 30% { box-shadow: 0 0 0 3px var(--brand); } 100% { box-shadow: 0 0 0 3px transparent; } }
+.field-next {
+  position: absolute; right: 12px; top: 12px; z-index: 2; border: 0; border-radius: 12px;
+  padding: 10px 16px; background: var(--brand); color: #fff; font-weight: 800; font-size: 16px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, .3);
+}
+.field-wrap.has-next .spot-card { top: 64px; }
+body.projector .field-next { font-size: 22px; padding: 12px 20px; }
+.ask-btn[aria-pressed="true"] { background: var(--chip-on); color: #fff; border-radius: var(--r); padding: 6px 10px; }
+body.projector .sit-strip { font-size: 22px; padding: 10px 16px; }
+body.board-on .sit-strip, body.board-on .field-next { display: none !important; }
+body:has(#field-hint:not([hidden])) .sit-strip { display: none; }
+@media (max-width: 899px) {
+  .sit-strip { font-size: 12px; left: 8px; bottom: 8px; padding: 4px 9px; }
+  .field-next { right: 8px; top: 8px; font-size: 14px; padding: 8px 12px; }
+  .play-title { font-size: 15px; top: 8px; left: 8px; }
+  .spot-card { top: auto; bottom: 8px; right: 8px; }
+}
+
+/* ---------------------------------------------------------------- transport */
+.transport {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 16px; background: var(--panel); border-top: 1px solid var(--line);
+}
+.transport.idle { opacity: 0.55; }
+.round-btn {
+  width: 52px; height: 52px; flex: none; border-radius: 50%; border: 0;
+  background: var(--brand); color: #fff; display: grid; place-items: center;
+}
+.round-btn:disabled { background: var(--ink-2); }
+.round-btn svg { width: 26px; height: 26px; fill: currentColor; display: none; }
+.round-btn[data-mode="play"] .i-play, .round-btn[data-mode="pause"] .i-pause, .round-btn[data-mode="replay"] .i-replay { display: block; }
+.round-btn:not([data-mode]) .i-play { display: block; }
+#scrub { flex: 1; min-width: 60px; accent-color: var(--brand); height: 32px; }
+
+.seg { display: inline-flex; background: var(--chip); border-radius: 12px; padding: 3px; }
+.seg button { border: 0; background: none; min-height: 38px; min-width: 44px; padding: 0 10px; border-radius: 9px; font-weight: 700; color: var(--ink-2); }
+.seg button.on { background: var(--panel); color: var(--ink); box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15); }
+.seg.small button { min-height: 34px; font-size: 14px; }
+
+/* ---------------------------------------------------------------- panel */
+.card { background: var(--panel); border-radius: var(--r-lg); padding: 14px 16px; border: 0.5px solid var(--line); }
+.card h2 { margin: 0 0 10px; font-size: 17px; font-weight: 700; }
+.card h3 { margin: 14px 0 8px; font-size: 12px; font-weight: 700; color: var(--ink-2); text-transform: uppercase; letter-spacing: .6px; }
+.card-head { display: flex; align-items: center; justify-content: space-between; }
+.card-head h2 { margin: 0; }
+
+.sit-row { display: flex; gap: 18px; align-items: center; margin-top: 8px; }
+.mini-diamond { position: relative; width: 112px; height: 112px; flex: none; }
+.mini-diamond::before {
+  content: ''; position: absolute; inset: 24px; transform: rotate(45deg);
+  border: 3px solid var(--line); border-radius: 4px;
+}
+.mini-base, .mini-home {
+  position: absolute; width: 34px; height: 34px; border-radius: 6px; transform: rotate(45deg);
+  border: 3px solid var(--ink-2); background: var(--panel); padding: 0;
+}
+.mini-base.on { background: var(--brand); border-color: var(--brand); }
+.mini-base.b2 { left: 39px; top: 6px; }
+.mini-base.b3 { left: 6px; top: 39px; }
+.mini-base.b1 { left: 72px; top: 39px; }
+.mini-home { left: 44px; top: 80px; width: 24px; height: 24px; border-color: var(--line); }
+.sit-controls { display: flex; flex-direction: column; gap: 10px; }
+.ctl { display: flex; align-items: center; gap: 10px; }
+.ctl-label { width: 52px; font-weight: 700; color: var(--ink-2); font-size: 14px; }
+.outs { display: inline-flex; gap: 8px; background: var(--chip); border: 0; border-radius: 12px; padding: 10px 12px; }
+.outs span { width: 18px; height: 18px; border-radius: 50%; border: 3px solid var(--ink-2); }
+.outs span.on { background: var(--amber); border-color: var(--amber); }
+.sit-hint { margin: 10px 0 0; color: var(--ink-2); font-size: 13px; }
+
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chips button {
+  border: 0; background: var(--chip); color: var(--ink);
+  min-height: 44px; padding: 0 14px; border-radius: var(--r); font-weight: 600; font-size: 15px;
+}
+.chips button.on { background: var(--chip-on); color: #fff; }
+.chips.small button { min-height: 38px; font-size: 14px; padding: 0 12px; }
+.chips button.dim { opacity: 0.55; }
+
+.result .summary { margin: 0 0 8px; font-size: 16px; line-height: 1.4; }
+.notes { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 6px; }
+.notes li { background: #FFF5E6; color: #8a4b00; border-radius: 12px; padding: 8px 12px; font-size: 14px; line-height: 1.4; }
+.jobs { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.job {
+  display: flex; gap: 10px; align-items: flex-start; padding: 8px 10px; border-radius: var(--r);
+  cursor: pointer; border-left: 5px solid var(--r-hold); background: var(--bg);
+  font-size: 15px; line-height: 1.35;
+}
+.job strong { display: block; font-size: 13px; color: var(--ink-2); }
+.job.spot { outline: 3px solid var(--brand); }
+.badge {
+  flex: none; width: 34px; height: 34px; border-radius: 50%;
+  display: grid; place-items: center; background: var(--team); color: #fff; font-weight: 800; font-size: 13px;
+}
+.role-field { border-color: var(--r-field) !important; }
+.role-cutoff, .role-relay, .role-trail { border-color: var(--r-cutoff) !important; }
+.role-cover { border-color: var(--r-cover) !important; }
+.role-backup { border-color: var(--r-backup) !important; }
+
+.legend { display: flex; flex-wrap: wrap; gap: 6px 12px; margin-top: 12px; font-size: 13px; color: var(--ink-2); }
+.lg::before { content: ''; display: inline-block; width: 12px; height: 12px; border-radius: 50%; margin-right: 5px; vertical-align: -1px; border: 3px solid var(--r-hold); }
+.lg.role-field::before { border-color: var(--r-field); }
+.lg.role-cutoff::before { border-color: var(--r-cutoff); }
+.lg.role-cover::before { border-color: var(--r-cover); }
+.lg.role-backup::before { border-color: var(--r-backup); }
+
+.panel-foot { font-size: 13px; color: var(--ink-2); text-align: center; line-height: 1.6; padding: 4px 0 8px; }
+.panel-foot a { color: var(--brand); font-weight: 700; display: inline-block; }
+
+/* ---------------------------------------------------------------- sheets */
+.sheet {
+  border: 0; padding: 0; border-radius: var(--r-lg); width: min(620px, calc(100% - 24px)); max-height: 86vh;
+  background: var(--panel); color: var(--ink); box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+}
+.sheet::backdrop { background: rgba(0, 0, 0, .4); }
+.sheet-head { display: flex; justify-content: space-between; align-items: center; padding: 14px 16px; border-bottom: 1px solid var(--line); position: sticky; top: 0; background: var(--panel); }
+.sheet-head h2 { margin: 0; font-size: 20px; }
+.sheet-body { padding: 8px 16px 20px; overflow-y: auto; max-height: calc(86vh - 72px); }
+.sheet-body h3 { margin: 16px 0 8px; font-size: 14px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--ink-2); }
+.lib-list { display: flex; flex-direction: column; gap: 6px; }
+.lib-item {
+  display: flex; justify-content: space-between; align-items: center; gap: 10px; text-align: left;
+  min-height: 52px; padding: 8px 14px; border: 0; border-radius: var(--r); background: var(--bg); font-weight: 600; font-size: 15px;
+}
+.lib-item:active { background: var(--line); }
+
+/* ---------------------------------------------------------------- Basic / Coach mode */
+body.mode-basic .coach-only { display: none !important; }
+body:not(.mode-basic) .basic-only { display: none !important; }
+body.mode-basic .notes li:nth-child(n+2) { display: none; }
+.quick-wrap { position: relative; margin-top: 10px; }
+.quick-wrap::after {
+  content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 36px; pointer-events: none;
+  background: linear-gradient(transparent, var(--panel)); transition: opacity .2s;
+}
+.quick-wrap.at-end::after, .quick-wrap.open::after { opacity: 0; }
+.quick-wrap.open .quick-list { max-height: none; }
+.quick-list::-webkit-scrollbar { width: 6px; }
+.quick-list::-webkit-scrollbar-thumb { background: var(--line); border-radius: 3px; }
+.quick-more { display: block; margin: 8px auto 0; }
+.quick-list {
+  max-height: 272px; scrollbar-width: thin; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch;
+  display: flex; flex-direction: column; gap: 6px; padding-right: 2px;
+}
+.quick-list h4 {
+  position: sticky; top: 0; z-index: 1; margin: 6px 0 0; padding: 4px 0; background: var(--panel);
+  font-size: 12px; font-weight: 700; color: var(--ink-2); text-transform: uppercase; letter-spacing: .6px;
+}
+.quick-list h4:first-child { margin-top: 0; }
+.quick-list .lib-item { min-height: 48px; }
+.quick-list .lib-item.on { background: var(--chip-on); color: #fff; }
+.quick-list .lib-item.on .lib-sit { color: #fff; }
+.quick-list .lib-item.on .lib-bases i { border-color: #fff; }
+.quick-list .lib-item.on .lib-bases i.on { background: #fff; }
+.drag-tip { margin: -4px 0 10px; }
+#to-coach { display: block; margin: 0 auto 8px; }
+.lib-sit { display: flex; align-items: center; gap: 8px; flex: none; color: var(--ink-2); font-size: 12px; font-weight: 700; }
+.lib-bases { position: relative; width: 30px; height: 20px; }
+.lib-bases i { position: absolute; width: 9px; height: 9px; transform: rotate(45deg); border: 2px solid var(--ink-2); }
+.lib-bases i.on { background: var(--brand); border-color: var(--brand); }
+.lib-bases i:nth-child(1) { left: 1px; top: 9px; }
+.lib-bases i:nth-child(2) { left: 10px; top: 1px; }
+.lib-bases i:nth-child(3) { left: 19px; top: 9px; }
+
+.field-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; min-height: 52px; border-bottom: 1px solid var(--line); font-weight: 700; }
+.field-row select { font: inherit; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--chip); color: var(--ink); max-width: 60%; }
+.switch { width: 24px; height: 24px; accent-color: var(--brand); }
+.fine { color: var(--ink-2); font-size: 14px; line-height: 1.5; }
+.fine a { color: var(--brand); font-weight: 700; }
+kbd { background: var(--chip); border-radius: 5px; padding: 1px 6px; font-family: inherit; font-size: 12px; }
+
+/* ---------------------------------------------------------------- projector mode */
+body.projector .app { grid-template-columns: 1fr; height: 100vh; height: 100dvh; grid-template-rows: 0 1fr; }
+body.projector .topbar { position: fixed; top: 8px; right: 8px; left: auto; background: transparent; padding: 0; }
+body.projector .brand { display: none; }
+body.projector .panel { display: none; }
+body.projector .stage { grid-row: 2; height: 100%; }
+body.projector .field-wrap { flex: 1; min-height: 0; display: flex; }
+body.projector .field { max-height: 100%; height: 100%; }
+body.projector .play-title { font-size: 28px; padding: 12px 20px; }
+body.projector .spot-card { top: auto; bottom: 12px; font-size: 18px; }
+body.projector .icon-btn, body.projector .pill-btn { background: rgba(11, 28, 58, .6); }
+
+
+/* Phones: tighter header. */
+@media (max-width: 520px) {
+  .brand-name { font-size: 17px; }
+  .brand-icon { width: 30px; height: 30px; }
+  .pill-btn span { display: none; }
+  .pill-btn { padding: 0 10px; }
+  /* Bigger players and runners on a small screen; the field itself stays to scale. */
+  .field .actor { transform: scale(1.35); }
+}
+
+body.projector .field .actor { transform: scale(1.2); }
+
+/* ---------------------------------------------------------------- whiteboard */
+.field { -webkit-touch-callout: none; }
+.board-bar {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 12px; overflow-x: auto; scrollbar-width: none;
+  background: var(--brand-deep); color: #fff;
+}
+.board-bar::-webkit-scrollbar { display: none; }
+.bb-group { display: flex; gap: 4px; align-items: center; }
+.bb-group + .bb-group { padding-left: 8px; border-left: 1px solid rgba(255, 255, 255, .15); }
+.board-bar button {
+  display: inline-flex; align-items: center; gap: 6px;
+  min-height: 44px; min-width: 44px; padding: 0 10px; border-radius: 10px;
+  background: rgba(255, 255, 255, .1); color: rgba(255, 255, 255, .85); font-size: 14px; font-weight: 600;
+}
+.board-bar button svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.board-bar button.on { background: var(--brand); color: #fff; }
+.board-bar button:disabled { opacity: .35; }
+.board-bar .swatches button { min-width: 36px; width: 36px; height: 36px; min-height: 36px; padding: 0; border-radius: 50%; background: var(--swatch); border: 2px solid rgba(255, 255, 255, .35); }
+.board-bar .swatches button.on { outline: 3px solid #fff; outline-offset: 2px; background: var(--swatch); }
+.board-bar .bb-done { background: #fff; color: var(--brand-deep); padding: 0 18px; margin-left: auto; flex: none; }
+.bb-group { flex: none; }
+.pill-btn[aria-pressed="true"] { background: var(--brand); }
+
+body.board-on .transport { display: none; }
+body.board-on .play-title, body.board-on .spot-card, body.board-on .field-hint { display: none !important; }
+body.board-on .field-wrap { box-shadow: inset 0 0 0 4px var(--brand); }
+.field[data-tool="pen"], .field[data-tool="arrow"] { cursor: crosshair; }
+.field[data-tool="eraser"] { cursor: cell; }
+body.board-on .field[data-tool="move"] { cursor: grab; }
+
+@media (max-width: 1280px) {
+  .board-bar [data-tool] span { display: none; }
+}
+@media (max-width: 700px) {
+  .board-bar { gap: 6px; padding: 6px 8px; flex-wrap: wrap; justify-content: center; }
+  .board-bar .bb-done { margin-left: 0; }
+  .board-bar button:not(.keep) span { display: none; }
+  .board-bar button { min-width: 40px; min-height: 40px; padding: 0 8px; }
+  .board-bar .swatches button { width: 30px; min-width: 30px; height: 30px; min-height: 30px; }
+  .bb-group + .bb-group { padding-left: 6px; }
+}
+@media (max-width: 520px) {
+  #btn-board span { display: none; }
+  .topbar-actions { gap: 6px; }
+  .topbar .icon-btn, .topbar .pill-btn { min-width: 40px; min-height: 40px; }
+}
+@media (max-width: 400px) {
+  .brand-name { font-size: 16px; }
+}
+
+/* Phones: the hint goes to the top so it never covers the ball waiting at home plate. */
+@media (max-width: 700px) {
+  .field-hint { top: 8px; bottom: auto; font-size: 13px; padding: 8px 12px; gap: 8px; }
+  .field-hint .hint-ball { width: 18px; height: 18px; }
+}
+
+/* ---------------------------------------------------------------- team */
+.sheet.wide { width: min(760px, calc(100% - 24px)); }
+.team-label { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin: 10px 0 4px; font-weight: 600; }
+.team-label .seg { flex-wrap: wrap; }
+.team-help { margin: 6px 0 12px; }
+
+.lineup {
+  display: grid; gap: 8px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-areas:
+    "lf cf rf"
+    "ss .  sb"
+    "tb p  fb"
+    ".  c  .";
+  padding: 12px; border-radius: var(--r-lg);
+  background: linear-gradient(180deg, #4EA457 0 55%, #C9925C 55% 100%);
+}
+.slot {
+  min-width: 0;
+  min-height: 68px; padding: 6px; border-radius: var(--r);
+  background: rgba(255, 255, 255, .92); border: 2px solid transparent;
+  display: flex; flex-direction: column; gap: 4px;
+}
+.slot-pos { font-size: 12px; color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.slot-pos b { color: var(--brand); margin-right: 2px; }
+.slot-open { font-size: 13px; color: var(--ink-3); padding: 6px 4px; }
+.slot-oneoff { font-size: 14px; font-weight: 600; padding: 6px 4px; }
+.slot-oneoff small { font-weight: 400; color: var(--ink-3); }
+.drop.over { border-color: var(--brand); background: var(--brand-bg); }
+
+.bench-head { display: flex; align-items: baseline; justify-content: space-between; }
+.bench {
+  display: flex; flex-wrap: wrap; gap: 8px; min-height: 60px; padding: 10px;
+  border-radius: var(--r-lg); background: var(--bg); border: 2px dashed var(--line-2);
+}
+.bench-empty { margin: 0; color: var(--ink-3); font-size: 14px; align-self: center; }
+
+.chip {
+  display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 4px 4px 4px 6px;
+  border-radius: 10px; background: var(--panel); border: 0.5px solid var(--line-2);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, .08);
+  font-size: 14px; font-weight: 600; cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none;
+  max-width: 100%;
+}
+.slot .chip { width: 100%; }
+.chip-num {
+  flex: none; min-width: 26px; height: 26px; padding: 0 4px; border-radius: 13px;
+  display: grid; place-items: center; background: var(--brand); color: #fff; font-size: 12px; font-weight: 800;
+}
+.chip-num:empty { background: var(--chip); }
+.chip-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.chip-edit { flex: none; width: 32px; height: 32px; display: grid; place-items: center; border-radius: 8px; color: var(--ink-3); cursor: pointer; }
+.chip-edit svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.chip.selected { outline: 3px solid var(--brand); }
+.chip.dragging { opacity: .35; }
+.chip.ghost { position: fixed; left: 0; top: 0; z-index: 1000; pointer-events: none; box-shadow: 0 10px 30px rgba(0, 0, 0, .3); opacity: .95; }
+
+.add-player { display: flex; gap: 8px; margin-top: 14px; }
+.add-player input, .pe-name input, .player-form input {
+  flex: 1; min-width: 0; font: inherit; font-size: 16px; padding: 10px 12px;
+  border-radius: 10px; border: 0.5px solid var(--line-2); background: var(--panel); color: var(--ink);
+}
+.add-player input.num { flex: 0 0 64px; }
+.add-player button, .pe-name button {
+  flex: none; padding: 0 16px; min-height: 44px; border: 0; border-radius: 10px; background: var(--brand); color: #fff; font-weight: 700;
+}
+
+.pe-list { display: flex; flex-direction: column; gap: 6px; margin: 8px 0 12px; }
+.pe-player {
+  display: flex; align-items: center; gap: 10px; min-height: 48px; padding: 6px 12px; text-align: left;
+  border: 0; border-radius: var(--r); background: var(--bg); font-size: 15px; font-weight: 600;
+}
+.pe-player small { margin-left: auto; color: var(--ink-3); font-weight: 500; }
+.pe-player.on { background: var(--brand-bg); outline: 2px solid var(--brand); }
+.pe-name { display: flex; gap: 8px; }
+.pe-generic { width: 100%; margin-top: 10px; min-height: 44px; border: 0.5px solid var(--line-2); border-radius: 10px; background: var(--panel); font-weight: 600; }
+
+.player-form label { display: flex; flex-direction: column; gap: 4px; margin: 8px 0; font-size: 13px; color: var(--ink-2); font-weight: 600; }
+.player-actions { display: flex; gap: 8px; margin-top: 16px; }
+.player-actions button { flex: 1; min-height: 44px; border-radius: 10px; font-weight: 700; border: 0.5px solid var(--line-2); background: var(--panel); }
+.player-actions .primary { background: var(--brand); color: #fff; border-color: var(--brand); }
+.player-actions .danger { color: var(--red); }
+
+@media (max-width: 520px) {
+  .lineup { gap: 5px; padding: 8px; }
+  .slot { min-height: 60px; padding: 4px; }
+  .slot-pos { font-size: 11px; }
+  .chip { font-size: 13px; gap: 4px; }
+  .chip-edit { width: 26px; }
+  #btn-team span { display: none; }
+  .slot .chip-edit { display: none; }
+  .slot .chip { padding-right: 6px; }
+}
+
+/* Narrow phones: the header keeps its buttons and drops the wordmark. */
+@media (max-width: 430px) {
+  .brand-name { display: none; }
+  .topbar { padding-left: 12px; padding-right: 12px; }
+}
+@media (max-width: 520px) {
+  .team-label .seg { width: 100%; display: grid; grid-template-columns: repeat(5, 1fr); }
+  .team-label .seg button { padding: 0 2px; font-size: 12px; min-width: 0; }
+  .add-player { flex-wrap: wrap; }
+  .add-player input { flex: 1 1 40%; }
+  .add-player input.num { flex: 0 0 60px; }
+  .add-player button { flex: 1 1 auto; }
+}
+
+/* ---------------------------------------------------------------- tester reports */
+.report-btn { display: inline-flex; align-items: center; gap: 4px; color: var(--red); }
+.report-btn svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.report-play { margin: 8px 0 12px; padding: 10px 12px; border-radius: var(--r); background: var(--bg); font-size: 14px; line-height: 1.4; }
+.report-label { display: block; margin: 12px 0 6px; font-weight: 700; font-size: 15px; }
+.report-form textarea {
+  width: 100%; font: inherit; font-size: 16px; padding: 10px 12px; border-radius: 10px;
+  border: 0.5px solid var(--line-2); background: var(--panel); color: var(--ink); resize: vertical;
+}
+.report-actions { display: flex; justify-content: flex-end; align-items: center; gap: 8px; margin-top: 12px; }
+.report-actions .primary { min-height: 44px; padding: 0 18px; border: 0; border-radius: 10px; background: var(--brand); color: #fff; font-weight: 700; }
+.report-actions .primary:disabled { opacity: .5; }
+.report-status { min-height: 1.4em; margin: 8px 0 0; font-size: 14px; color: var(--ink-2); }
+.tester { margin-top: 12px; padding-top: 4px; border-top: 0.5px solid var(--line); }
+.tester h3 { margin: 12px 0 4px; font-size: 12px; text-transform: uppercase; letter-spacing: .6px; color: var(--red); }
+.tester input { flex: 1; min-width: 0; font: inherit; font-size: 15px; padding: 8px 10px; border-radius: 10px; border: 0.5px solid var(--line-2); }
+#version { cursor: default; user-select: none; -webkit-user-select: none; }
+@media (max-width: 520px) { .report-btn span { display: none; } }
+.text-btn.small.inline { min-height: 0; padding: 0 0 0 6px; font-size: 13px; }
+
+/* ---------------------------------------------------------------- scrubbing */
+.scrub-hint {
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  display: flex; align-items: center; gap: 12px; padding: 12px 18px; border-radius: 999px;
+  background: rgba(11, 28, 58, .88); color: #fff; font-weight: 700; font-size: 15px; pointer-events: none;
+}
+.scrub-track { width: 120px; height: 6px; border-radius: 3px; background: rgba(255, 255, 255, .25); overflow: hidden; }
+.scrub-track span { display: block; height: 100%; width: 0; background: #fff; }
+#scrub-hint-time { font-variant-numeric: tabular-nums; min-width: 3.2em; text-align: right; }
+.field.scrubbing { cursor: ew-resize; }
+
+/* A timeline slider you can actually grab with a thumb. */
+#scrub { -webkit-appearance: none; appearance: none; background: transparent; height: 44px; cursor: pointer; }
+#scrub::-webkit-slider-runnable-track { height: 8px; border-radius: 4px; background: linear-gradient(var(--brand), var(--brand)) 0 / var(--pct, 0%) 100% no-repeat, rgba(60, 60, 67, .18); }
+#scrub::-moz-range-track { height: 8px; border-radius: 4px; background: rgba(60, 60, 67, .18); }
+#scrub::-moz-range-progress { height: 8px; border-radius: 4px; background: var(--brand); }
+#scrub:disabled { cursor: default; }
+
+/* ---------------------------------------------------------------- color key on the field */
+.field-key {
+  position: absolute; right: 10px; bottom: 10px; z-index: 1;
+  display: flex; flex-wrap: wrap; gap: 4px 10px; max-width: 280px; justify-content: center;
+  padding: 6px 10px; border-radius: 10px; background: rgba(11, 28, 58, .72); color: #fff;
+  font-size: 12px; font-weight: 600; pointer-events: none;
+}
+.fk { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; }
+/* The level and field the play is shown at, heading the key. */
+.fk-level {
+  flex-basis: 100%; text-align: center; font-weight: 800; padding-bottom: 4px; margin-bottom: 1px;
+  border-bottom: 1px solid rgba(255, 255, 255, .22); text-wrap: balance;
+}
+.fk-level:empty { display: none; }
+.fk::before { content: ''; width: 10px; height: 10px; border-radius: 50%; border: 3px solid var(--r-hold); }
+.fk.role-field::before { border-color: var(--r-field); }
+.fk.role-cutoff::before { border-color: var(--r-cutoff); }
+.fk.role-cover::before { border-color: var(--r-cover); }
+.fk.role-backup::before { border-color: var(--r-backup); }
+body.board-on .field-key { display: none; }
+body.projector .field-key { font-size: 15px; max-width: none; }
+/* Stacked (phone portrait): below the field, above the timeline, fitted to the width. */
+@media (max-width: 899px) and (orientation: portrait) {
+  .field-key {
+    position: static; max-width: none; justify-content: space-between; flex-wrap: wrap;
+    border-radius: 0; padding: 6px 12px; background: var(--brand-deep); font-size: clamp(10px, 3vw, 13px); gap: 6px;
+  }
+  .fk::before { width: 8px; height: 8px; border-width: 2.5px; }
+  .field-wrap { display: flex; flex-direction: column; }
+}
+
+/* ---------------------------------------------------------------- timeline fader */
+/* A mixing-desk fader cap: a rectangle with grip ridges you push sideways. */
+#scrub::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 22px; height: 36px; margin-top: -14px; border-radius: 5px;
+  border: 1px solid rgba(0, 0, 0, .25);
+  background:
+    repeating-linear-gradient(90deg, transparent 0 4px, rgba(0, 0, 0, .28) 4px 5px, rgba(255, 255, 255, .7) 5px 6px) 4px 7px / 14px 22px no-repeat,
+    linear-gradient(#fdfdfd, #d9dde3);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, .3), inset 0 1px 0 #fff;
+  cursor: grab;
+}
+#scrub::-moz-range-thumb {
+  width: 22px; height: 36px; border-radius: 5px; border: 1px solid rgba(0, 0, 0, .25);
+  background:
+    repeating-linear-gradient(90deg, transparent 0 4px, rgba(0, 0, 0, .28) 4px 5px, rgba(255, 255, 255, .7) 5px 6px) 4px 7px / 14px 22px no-repeat,
+    linear-gradient(#fdfdfd, #d9dde3);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, .3); cursor: grab;
+}
+#scrub:active::-webkit-slider-thumb { cursor: grabbing; }
+#scrub::-webkit-slider-runnable-track { height: 8px; border-radius: 4px; box-shadow: inset 0 1px 2px rgba(0, 0, 0, .25); }
+
+.caption.safe rect { fill: #248A3D; }
+
+/* Phone: keep the timeline usable next to the extra transport buttons. */
+.ask-btn { white-space: nowrap; }
+#scrub { min-width: 90px; }
+@media (max-width: 599px) {
+  .wide-only { display: none; }
+  .transport { gap: 8px; padding: 8px 12px; }
+}
+/* The situation rides in the title card on a phone, so nothing stacks on the top of the field. */
+.play-title .pt-sit { display: none; }
+@media (max-width: 899px) and (orientation: portrait) {
+  .sit-strip { display: none !important; }
+  .play-title .pt-sit { display: block; margin-top: 2px; font-size: .78em; font-weight: 600; opacity: .85; }
+  .field-wrap.has-next .play-title { max-width: calc(100% - 132px); }
+}
+
+/* Fence distances painted on the warning track. */
+.wall-dist { fill: #fff; font-family: var(--font); font-weight: 800; text-anchor: middle; dominant-baseline: central; opacity: .9; pointer-events: none; paint-order: stroke; stroke: rgba(0, 0, 0, .25); stroke-width: .6px; }
+
+/* Big fields (90 ft levels, ballparks) set --u > 1 so lines stay as bold as on a youth field. A browser that can't
+   do calc() here keeps the plain widths above. */
+.field .chalk { stroke-width: calc(.9 * var(--u, 1)); }
+.field .fence { stroke-width: calc(3 * var(--u, 1)); }
+.field .backstop { stroke-width: calc(2 * var(--u, 1)); }
+.path { stroke-width: calc(1.1 * var(--u, 1)); stroke-dasharray: calc(3 * var(--u, 1)) calc(2.4 * var(--u, 1)); }
+.dest { stroke-width: calc(.9 * var(--u, 1)); }
+.lineup { stroke-width: calc(.8 * var(--u, 1)); stroke-dasharray: calc(1 * var(--u, 1)) calc(2.5 * var(--u, 1)); }
+.throw { stroke-width: calc(1.2 * var(--u, 1)); stroke-dasharray: calc(4 * var(--u, 1)) calc(2 * var(--u, 1)); }
+.drag-line { stroke-width: calc(1.2 * var(--u, 1)); }
+.ball-target { stroke-width: calc(.8 * var(--u, 1)); stroke-dasharray: calc(2 * var(--u, 1)) calc(1.6 * var(--u, 1)); }
+.ball-target.through { stroke-width: calc(.9 * var(--u, 1)); stroke-dasharray: calc(.5 * var(--u, 1)) calc(1.8 * var(--u, 1)); }
+.ball-roll { stroke-width: calc(.6 * var(--u, 1)); stroke-dasharray: calc(.5 * var(--u, 1)) calc(2.2 * var(--u, 1)); }
+
+/* ---------------------------------------------------------------- saving and sharing plays */
+.result-actions { float: right; display: flex; gap: 4px; margin: -4px -6px 0 8px; }
+.result-actions .text-btn { display: inline-flex; align-items: center; gap: 4px; }
+.result-actions svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.result-actions .saved svg { fill: currentColor; }
+.text-input { width: 100%; font: inherit; font-size: 16px; padding: 10px 12px; border-radius: 10px; border: 0.5px solid var(--line-2); background: var(--panel); color: var(--ink); }
+.mp-list { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
+.mp-row { display: flex; align-items: center; gap: 6px; padding: 6px 6px 6px 12px; border-radius: var(--r); background: var(--bg); }
+.mp-row .mp-name { flex: 1; min-width: 0; font-weight: 600; font-size: 15px; border: 0; background: none; text-align: left; color: var(--ink); padding: 8px 0; }
+.mp-row .icon-btn { width: 38px; height: 38px; background: transparent; color: var(--ink-2); }
+.mp-row .icon-btn svg { stroke: currentColor; }
+.mp-row .icon-btn.danger { color: var(--red); }
+.mp-actions label { cursor: pointer; display: inline-flex; align-items: center; min-height: 44px; }
+.quick-list .lib-item.mine span:first-child::before { content: '★ '; color: var(--amber); }
+.toast {
+  position: absolute; left: 50%; bottom: 56px; transform: translateX(-50%); z-index: 3;
+  padding: 10px 16px; border-radius: 12px; background: rgba(11, 28, 58, .92); color: #fff; font-weight: 700; font-size: 15px;
+  pointer-events: none; max-width: calc(100% - 32px); text-align: center;
+}
+
+/* ---------------------------------------------------------------- scenario builder */
+.panel-mode { display: flex; }
+.panel-mode button { flex: 1; min-height: 40px; font-weight: 700; }
+body.pm-build #quick, body.pm-build #other-card, body:not(.pm-build) #build { display: none; }
+body.pm-build:not(.build-hit) #hit-card { display: none; }
+.build-sub[hidden] { display: none; }
+.build-runners { display: flex; flex-direction: column; gap: 8px; }
+.br-row { display: grid; grid-template-columns: 44px 1fr auto; align-items: center; gap: 10px; padding: 8px 10px; border-radius: var(--r); background: var(--bg); }
+.br-base { font-weight: 800; }
+.br-lead { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.br-lead input { width: 100%; }
+.br-lead span { font-size: 13px; color: var(--ink-2); font-weight: 600; }
+.br-go { min-height: 38px; padding: 0 12px; border: 0; border-radius: var(--r); background: var(--chip); color: var(--ink); font-weight: 700; }
+.br-go.on { background: var(--red); color: #fff; }
+.build-go { display: block; width: 100%; margin-top: 14px; min-height: 48px; border: 0; border-radius: 12px; background: var(--brand); color: #fff; font-weight: 800; font-size: 17px; }
+.build-go:disabled { opacity: .45; }
+.field.building .player { cursor: grab; }
+.ball-spot { fill: rgba(255, 255, 255, .2); stroke: #fff; stroke-width: calc(.8 * var(--u, 1)); stroke-dasharray: calc(2 * var(--u, 1)) calc(1.6 * var(--u, 1)); }
+/* While building a pitch play the hint sits at the top, out of the way of the plate. */
+.field-hint.top { top: 12px; bottom: auto; }
+.caption.note rect { fill: #2b4a7e; }
+
+/* ---------------------------------------------------------------- drawing a play, step by step */
+.draw-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 10px 16px; background: var(--panel); border-top: 1px solid var(--line); }
+.draw-bar[hidden] { display: none; }
+.db-steps { display: flex; align-items: center; gap: 6px; }
+.db-steps .icon-btn { font-size: 22px; font-weight: 800; }
+.db-label { min-width: 88px; text-align: center; font-weight: 800; }
+.db-step-opts { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 260px; }
+.db-step-opts label { display: flex; align-items: center; gap: 6px; font-weight: 700; font-size: 14px; white-space: nowrap; }
+.db-step-opts select { font: inherit; padding: 6px; border-radius: 8px; }
+.db-step-opts .text-input { flex: 1; min-width: 0; padding: 8px 10px; font-size: 15px; }
+.db-tip { flex-basis: 100%; margin: 0; }
+.db-finish { margin-left: auto; }
+.text-btn.danger { color: var(--red); }
+body.drawing .board-bar .bb-done { display: none; }
+.draw-own { display: block; margin: 10px 0 0; }
+.ghost { fill: none; stroke: #fff; stroke-width: calc(.8 * var(--u, 1)); stroke-dasharray: calc(1 * var(--u, 1)) calc(2 * var(--u, 1)); opacity: .7; }
+.ghost-dot { fill: rgba(255, 255, 255, .35); }
+#result.drawn .legend, #result.drawn h3, #result.drawn .jobs { display: none; }
+.db-steps .icon-btn { width: 40px; height: 40px; border: 0; border-radius: 10px; background: var(--chip); color: var(--ink); }
+.db-steps .icon-btn:disabled { opacity: .35; }
+.db-steps .text-btn { white-space: nowrap; }
+.db-finish { min-height: 44px; padding: 0 18px; border: 0; border-radius: 10px; background: var(--brand); color: #fff; font-weight: 800; font-size: 16px; }
+.db-finish:disabled { opacity: .45; }
+@media (max-width: 520px) {
+  .db-label { min-width: 0; font-size: 15px; }
+  .db-steps { flex-wrap: wrap; width: 100%; }
+  .db-step-opts { min-width: 0; flex-basis: 100%; }
+}
+
+/* Softball: pitchers don't throw over, so the builder has no pickoff. 8U has no stealing at all. */
+body.softball #build-what [data-what="pickoff"] { display: none; }
+body.no-steals #other-card, body.no-steals .br-go { display: none; }
+.coach-marker { fill: #f5f1e6; stroke: #2a3b4d; stroke-width: calc(1 * var(--u, 1)); }
+.coach-marker-text { fill: #2a3b4d; font: 800 2.6px var(--font); text-anchor: middle; dominant-baseline: central; }
+/* Three batter choices in softball: keep them on one line in the panel. */
+#batter-seg button { padding: 0 9px; }
+body.softball #batter-seg button { font-size: 13px; padding: 0 7px; }
+.panel { overflow-x: hidden; }
+/* The first-run hint sits to the left so it never covers the color key. */
+@media (min-width: 900px) { .field-hint:not(.top) { left: 12px; transform: none; } }
+body.no-dropped #other-plays [data-play="droppedThird"], body.no-dropped #build-result [data-res="dropped"] { display: none; }
+body:not(.softball) #other-plays [data-play="delayedSteal"] { display: none; }
+
+/* Where each player is looking. */
+.look { pointer-events: none; }
+.look.fielder { fill: rgba(255, 255, 255, .2); }
+.look.fielder.spot { fill: rgba(255, 214, 107, .35); }
+.look.runner { fill: rgba(255, 120, 110, .28); }
+body.board-on .layer-looks { display: none; }
+body.no-steals #build-result [data-res="passed"], body.no-steals #build-result [data-res="dropped"] { display: none; }
+
+/* ---------------------------------------------------------------- 3D */
+.field3d { position: absolute; inset: 0; display: block; touch-action: none; cursor: ew-resize; }
+body.view3d #field { visibility: hidden; }
+body.view3d .field-hint, body.view3d .sit-strip { display: none !important; }
+.cam-bar {
+  position: absolute; left: 50%; top: 12px; transform: translateX(-50%); z-index: 2;
+  display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-radius: 12px;
+  background: rgba(11, 28, 58, .85); color: #fff; font-weight: 700; font-size: 14px;
+}
+.cam-bar[hidden] { display: none; }
+.cam-bar select { font: inherit; font-weight: 600; padding: 4px 6px; border-radius: 8px; border: 0; }
+.view3d-btn[aria-pressed="true"] { background: var(--chip-on); color: #fff; border-radius: var(--r); padding: 6px 10px; }
+body.view3d .play-title { top: 58px; }
+@media (max-width: 899px) { .cam-bar { top: auto; bottom: 8px; font-size: 12px; } body.view3d .play-title { top: 8px; } }
+.depth-ctl { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
+.depth-ctl .seg button { padding: 0 9px; font-size: 13px; }
+.defense-ctl { display: flex; align-items: center; gap: 8px; margin: 4px 0 10px; }
+.defense-ctl .ctl-label { width: auto; min-width: 52px; }
+.defense-ctl .seg button { padding: 0 8px; font-size: 13px; }
+body:not(.kind-bunt) #buntd-row { display: none; }
+
+/* Projector / TV: the play's summary and first teaching note in the margin beside a 16:9 field. */
+.tv-caption { display: none; }
+@media (min-aspect-ratio: 3/2) {
+  body.projector .tv-caption:not(:empty) {
+    display: block; position: absolute; left: 16px; top: 96px; width: min(24vw, 420px); white-space: pre-line;
+    padding: 16px 18px; border-radius: 14px; background: rgba(11, 28, 58, .82); color: #fff;
+    font-size: clamp(16px, 1.25vw, 24px); line-height: 1.4; font-weight: 600; pointer-events: none;
+  }
+  body.projector .spot-card { left: 16px; right: auto; top: auto; bottom: 90px; width: min(24vw, 420px); }
+  body.projector .has-spotlight ~ .tv-caption { display: none; }
+}
+
+/* Quiz: drag a player to answer. */
+.pt-quiz { font-weight: 600; opacity: .85; }
+.quiz-line { stroke: #fff; stroke-width: calc(.8 * var(--u, 1)); stroke-dasharray: calc(1.5 * var(--u, 1)) calc(1.5 * var(--u, 1)); fill: none; }
+.quiz-guess { fill: rgba(255, 255, 255, .15); stroke: #fff; stroke-width: calc(1 * var(--u, 1)); }
+.quiz-guess.right { stroke: #34c759; fill: rgba(52, 199, 89, .3); }
+.quiz-guess.close { stroke: #ffcc00; fill: rgba(255, 204, 0, .25); }
+.quiz-guess.miss { stroke: #ff453a; fill: rgba(255, 69, 58, .2); }
+.quiz-answer { fill: none; stroke: #34c759; stroke-width: calc(1.2 * var(--u, 1)); stroke-dasharray: calc(2 * var(--u, 1)) calc(1.4 * var(--u, 1)); }
+
+/* Timeline markers: each catch, throw, out and safe, tap to jump there. */
+.scrub-wrap { position: relative; flex: 1; min-width: 60px; display: flex; align-items: center; }
+.scrub-wrap #scrub { flex: 1; width: 100%; }
+.scrub-marks { position: absolute; left: 11px; right: 11px; bottom: -2px; height: 12px; pointer-events: none; }
+.scrub-mark { position: absolute; transform: translateX(-50%); bottom: 0; width: 14px; height: 14px; padding: 0; border: 0; background: none; pointer-events: auto; cursor: pointer; }
+.scrub-mark::after { content: ''; position: absolute; left: 50%; bottom: 1px; width: 3px; height: 9px; margin-left: -1.5px; border-radius: 2px; background: var(--ink-2); }
+.scrub-mark.throw::after { background: #ff9500; }
+.scrub-mark.out::after { background: #ff3b30; }
+.scrub-mark.safe::after { background: #34c759; }
+.scrub-mark.catch::after { background: #ffcc00; }
+@media (max-width: 520px) { .transport .seg button[data-speed="0.25"] { display: none; } }
+.scrub-wrap { min-width: 90px; }
+.scrub-wrap #scrub { min-width: 0; }
+/* Phones: one speed button instead of three. */
+.speed-cycle { display: none; min-width: 40px; font-weight: 800; }
+@media (max-width: 520px) {
+  .transport .seg { display: none; }
+  .speed-cycle { display: inline-flex; justify-content: center; }
+}
+
+/* Projector mode that the browser dropped out of full screen: a way back in, and a clear way out. */
+.fs-back { position: absolute; left: 50%; top: 12px; transform: translateX(-50%); z-index: 4; }
+.fs-back button { border: 0; border-radius: 12px; padding: 10px 16px; background: var(--brand); color: #fff; font-weight: 800; font-size: 16px; box-shadow: 0 4px 14px rgba(0, 0, 0, .3); }
+.fs-exit { display: none; }
+body.projector .fs-exit {
+  display: block; position: fixed; left: 8px; bottom: 76px; z-index: 5; width: 36px; height: 36px; border: 0; border-radius: 50%;
+  background: rgba(11, 28, 58, .55); color: #fff; font-weight: 800;
+}
+/* Drawing: no text selection or callouts from a long press. */
+body.board-on, body.projector { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+body.board-on .field-wrap, body.projector .field-wrap { overscroll-behavior: none; }
+.mp-row [data-act="up"], .mp-row [data-act="down"] { width: 30px; font-size: 12px; }
+body.nohit #hit-card { opacity: .55; }
+body.nohit #hit-card:hover, body.nohit #hit-card:focus-within { opacity: 1; }
+.vr-btn { border: 0; border-radius: 8px; padding: 5px 10px; background: #a855f7; color: #fff; font-weight: 800; }
+
+/* Paths off (and while a play asks "where does everybody go?"): only the tapped player's route shows. */
+.field.paths-off .path:not(.spot), .field.paths-off .dest:not(.spot), .field.paths-off .lineup,
+.field.paths-off .ghost, .field.paths-off .ghost-dot { display: none; }
+
+/* ---------------------------------------------------------------- the fielding trainer */
+.learn-sub { margin: 14px 0 6px; font-size: 13px; font-weight: 700; color: var(--ink-2); text-transform: uppercase; letter-spacing: .04em; }
+.learn-pos { display: flex; flex-wrap: wrap; gap: 6px; }
+.learn-pos button { border: 0; border-radius: 999px; padding: 7px 12px; background: var(--chip); color: var(--ink); font-weight: 700; }
+.learn-pos button.on { background: var(--brand); color: #fff; }
+.learn-item { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; width: 100%; text-align: left; border: 0; border-radius: 12px; padding: 12px 14px; margin: 6px 0; background: var(--chip); color: var(--ink); }
+.learn-item strong { font-size: 16px; }
+.learn-item .li-tags { grid-column: 1; font-size: 13px; color: var(--ink-2); }
+.learn-item .li-done { grid-column: 2; grid-row: 1 / span 2; align-self: center; font-weight: 800; color: #1a9d4b; }
+.learn-empty { color: var(--ink-2); }
+.learn-intro p { font-size: 16px; line-height: 1.5; }
+.learn-intro .learn-meta { font-size: 14px; color: var(--ink-2); }
+.learn-actions { display: flex; gap: 12px; align-items: center; margin-top: 12px; }
+.primary-btn { border: 0; border-radius: 12px; padding: 12px 18px; background: var(--brand); color: #fff; font-weight: 800; font-size: 16px; }
+.trainer-bar {
+  position: absolute; left: 50%; top: 12px; transform: translateX(-50%); z-index: 3; width: min(460px, calc(100% - 24px));
+  padding: 12px 14px; border-radius: 14px; background: rgba(255, 255, 255, .97); color: #0f1b2d; box-shadow: 0 6px 24px rgba(0, 0, 0, .28);
+}
+.trainer-bar[hidden] { display: none; }
+.tb-head { display: flex; justify-content: space-between; align-items: center; font-size: 12px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; color: #5b6b82; }
+.tb-x { border: 0; background: none; font-size: 16px; color: #5b6b82; padding: 2px 4px; }
+.tb-q { margin: 6px 0 4px; font-size: 17px; font-weight: 700; }
+.tb-hint { margin: 0 0 6px; font-size: 14px; color: #44546b; }
+.tb-verdict { margin: 6px 0 2px; font-size: 20px; font-weight: 900; }
+.tb-verdict.right { color: #16863f; }
+.tb-verdict.close { color: #b07b00; }
+.tb-verdict.miss { color: #c62c3a; }
+.tb-why { margin: 0 0 8px; font-size: 15px; }
+.tb-options { display: flex; flex-wrap: wrap; gap: 8px; }
+.tb-options button { border: 0; border-radius: 10px; padding: 10px 14px; background: #e9eef6; color: #0f1b2d; font-weight: 700; font-size: 15px; text-align: left; }
+.tb-options button.primary { background: var(--brand); color: #fff; }
+/* Your player, in a lesson: a pulsing ring, so you know who to drag. */
+.player.trainee .ring { stroke: #ffd60a !important; stroke-width: calc(2.6 * var(--u, 1)); animation: trainee 1s ease-in-out infinite alternate; }
+.you-tag { fill: #ffd60a; font-weight: 900; font-size: 4.4px; text-anchor: middle; paint-order: stroke; stroke: rgba(0, 0, 0, .55); stroke-width: 0.9px; pointer-events: none; }
+@keyframes trainee { from { stroke-opacity: .35; } to { stroke-opacity: 1; } }
+body.training .field-hint, body.training #field-next, body.training .sit-strip, body.training #play-title { display: none !important; }
+/* In a lesson the bar shows the job, so the job card and, while you decide, the job list stay out of sight. */
+body.training .spot-card { display: none !important; }
+body.tr-waiting #result { visibility: hidden; }
+/* Phone, portrait: the field is small, so the lesson bar sits under it instead of over it. */
+@media (max-width: 899px) and (orientation: portrait) {
+  .trainer-bar { position: static; transform: none; width: auto; border-radius: 0; box-shadow: none; border-bottom: 1px solid var(--line); padding: 10px 14px; }
+  .tb-q { font-size: 16px; }
+  .tb-verdict { font-size: 18px; }
+}
+/* While you decide, nobody's role color shows: it would hint at your own job. */
+body.tr-waiting .player:not(.trainee) .ring { stroke: transparent !important; }
+
+.learn-key { display: flex; gap: 12px; align-items: center; margin: 8px 0; }
+.learn-key svg { flex: none; width: 40px; height: 40px; }
+.tb-nav { margin-top: 6px; }
+.tb-nav .text-btn { padding: 4px 0; color: #44546b; font-weight: 700; }
+.tb-choices button { width: 100%; }
+.tb-what { margin: 6px 0 0; font-size: 15px; color: #0f1b2d; }
+.tb-what span { color: #44546b; white-space: nowrap; }
+.learn-note { margin-top: 18px; }
+body.training #btn-3d, body.training #cam-bar { display: none !important; }
+/* Side by side (iPad landscape, desktop): the lesson bar sits over the top of the side panel, off the field
+   entirely, so it never hides where the ball is going. (The panel's own contents are hidden while you decide.) */
+@media (min-width: 900px), (orientation: landscape) and (min-width: 560px) {
+  .trainer-bar { position: fixed; left: auto; right: 12px; top: 72px; transform: none; background: #fff; width: calc(min(380px, 42vw) - 24px); max-height: calc(100dvh - 90px); overflow-y: auto; }
+  body.training .panel { padding-top: 12px; }
+}
+
+/* The builder's press-and-hold menu on the field. */
+.field-menu {
+  position: absolute; z-index: 30; min-width: 220px; max-width: min(300px, calc(100% - 16px));
+  display: flex; flex-direction: column; gap: 2px; padding: 8px;
+  background: var(--panel); color: var(--ink); border-radius: 14px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, .28), 0 0 0 1px var(--line);
+}
+.field-menu[hidden] { display: none; }
+.field-menu .fm-title { font-weight: 800; font-size: 14px; color: var(--ink-2); padding: 4px 10px 6px; }
+.field-menu button {
+  min-height: 44px; padding: 0 12px; border: 0; border-radius: 10px; background: none; color: var(--ink);
+  font: inherit; font-weight: 600; text-align: left;
+}
+.field-menu button:hover:not(:disabled), .field-menu button:focus-visible { background: var(--chip); }
+.field-menu button.on { color: var(--brand); }
+.field-menu button.on::after { content: ' ✓'; }
+.field-menu button.danger { color: var(--red); }
+.field-menu button:disabled { color: var(--ink-3); font-size: 14px; }
+.field-menu .fm-go { margin-top: 4px; background: var(--brand); color: #fff; text-align: center; font-weight: 800; }
+.field-menu .fm-go:hover { background: var(--brand); filter: brightness(1.08); }
+.fm-lead { display: flex; flex-direction: column; gap: 4px; padding: 4px 10px 8px; font-size: 14px; font-weight: 700; }
+.fm-lead input { width: 100%; }
+
+/* The kind of error, under "What happens?" once Error is picked. */
+.error-chips { margin-top: 8px; }
+.error-chips[hidden] { display: none; }
+.error-chips button.on { background: var(--red); color: #fff; }

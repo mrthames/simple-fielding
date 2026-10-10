@@ -514,8 +514,9 @@
       const box = h('div', { class: 'bp-detail', id: 'bp-detail' });
       box.append(h('div', { class: 'bp-detail-head' }, h('h3', {}, `Step ${i + 1}`),
         h('button', { type: 'button', class: 'text-btn small danger', id: 'bp-delete', onclick: () => change(() => { removeAt(i); B.sel = Math.min(i - 1, steps().length - 1); }) }, 'Delete step')));
-      // Another way it could go from here: "he turns back", "bad toss".
-      box.append(h('button', { type: 'button', class: 'bp-link bp-fork', id: 'bp-fork', onclick: addEnding }, `+ Add another ending after step ${i + 1}`));
+      // Another way it could go from here: "he turns back", "bad toss". Only once something follows this step: on the
+      // last step it read as "add the next step", and a play went out as just the pitch with the rest in an ending.
+      if (i < steps().length - 1) box.append(h('button', { type: 'button', class: 'bp-link bp-fork', id: 'bp-fork', onclick: addEnding }, `+ Add another ending after step ${i + 1}`));
       const row = (label, ...kids) => h('div', { class: 'bp-row' }, h('span', { class: 'bp-label' }, label), h('div', { class: 'bp-row-body' }, ...kids));
       const calls = (key = 'call') => h('div', { class: 'bp-chips calls' },
         chip('Out', () => editStep((s) => { s[key] = 'out'; }), (st[key] || 'out') === 'out', { class: 'bp-chip call-out' + ((st[key] || 'out') === 'out' ? ' on' : '') }),
