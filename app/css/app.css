@@ -1038,5 +1038,6 @@ body.training #btn-3d, body.training #cam-bar { display: none !important; }
 .bp-ring.suggest { stroke: #FFCC00; stroke-width: calc(2.4px * var(--u, 1)); }
 .bp-ring.base { stroke: #fff; stroke-dasharray: 2 2; }
 .bp-path { fill: none; stroke: var(--amber); stroke-width: calc(3px * var(--u, 1)); stroke-dasharray: 4 3; opacity: .9; }
+.bp-ring.bp-mark { fill: var(--amber); stroke: #fff; animation: none; }
 @keyframes bp-pulse { 0%, 100% { opacity: 1; } 50% { opacity: .35; } }
 @media (prefers-reduced-motion: reduce) { .bp-ring { animation: none; } }

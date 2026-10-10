@@ -2,6 +2,16 @@
 
 ---
 
+## [2026-10-10] v0.42.1 — Build a play: a runner's lead, by tap or drag
+
+- **"Stop partway" no longer leaves you stuck.** It waited for one tap on the base path, and a drag did nothing, with
+  no word why. Now it shows only the runner's own baseline (3rd to home for the runner on 3rd); tap it, or drag along
+  it and a dot follows your finger. Letting go sets where they stop. Use it for a lead, then **Run home** in the step
+  where they break: a delayed steal on the catcher's throw now builds start to finish.
+- **No "Back to 2nd" for a runner standing on 3rd.** "Back to" is offered only to a runner caught between bases.
+
+---
+
 ## [2026-10-09] v0.42.0 — Build a play, step by step
 
 Build a play is new from the ground up. The old card stopped at the pitch, hid its setup behind press-and-hold, and

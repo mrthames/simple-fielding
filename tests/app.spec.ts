@@ -472,6 +472,61 @@ test('a share link opens the same play on the right field, and the address is ti
   expect(page.url()).not.toContain('#p=');
 });
 
+// Drags on the field between two points given in feet.
+async function dragField(page: Page, from: [number, number], to: [number, number]) {
+  const [a, b] = await page.evaluate(([f, t]) => {
+    const svg = document.getElementById('field') as unknown as SVGSVGElement;
+    const m = svg.getScreenCTM()!;
+    const pt = ([x, y]: number[]) => { const p = svg.createSVGPoint(); p.x = x; p.y = -y; const q = p.matrixTransform(m); return { x: q.x, y: q.y }; };
+    return [pt(f), pt(t)];
+  }, [from, to]);
+  await page.mouse.move(a.x, a.y);
+  await page.mouse.down();
+  await page.mouse.move((a.x + b.x) / 2, (a.y + b.y) / 2, { steps: 4 });
+  await page.mouse.move(b.x, b.y, { steps: 4 });
+  await page.mouse.up();
+}
+
+test('build a play: a lead off 3rd by dragging, then the delayed steal and the cut home', async ({ page }, info) => {
+  test.skip(info.project.name === 'phone', 'building a play is for tablets and computers');
+  await page.locator('#panel-mode [data-pm="build"]').click();
+  await page.locator('.mini-base.b1').click();
+  await page.locator('.mini-base.b3').click();
+  await page.locator('.bp-act', { hasText: 'Pitch' }).click();
+  await page.locator('.bp-chip', { hasText: 'Catcher catches it' }).click();
+  await page.locator('.bp-runner[data-runner="first"] .bp-chip', { hasText: 'Run to 2nd' }).click();
+  // The lead: "Stop partway" shows only the 3rd-to-home line; dragging along it answers.
+  await page.locator('.bp-runner[data-runner="third"] .bp-chip', { hasText: 'Stop partway' }).click();
+  await expect(page.locator('.bp-q')).toContainText('drag along the orange line');
+  await expect(page.locator('.bp-runner[data-runner="third"] .bp-chip', { hasText: 'Back to' })).toHaveCount(0);
+  const third = await page.evaluate(() => { const b = (window as any).SimpleFielding.geo().bases; return [b.third.x, b.third.y, b.home.x, b.home.y]; });
+  const at = (f: number): [number, number] => [third[0] + (third[2] - third[0]) * f, third[1] + (third[3] - third[1]) * f];
+  await dragField(page, at(0.05), at(0.2));
+  await expect(page.locator('.bp-runner[data-runner="third"] .bp-chip', { hasText: 'Stop partway' })).toHaveAttribute('aria-pressed', 'true');
+  const stop = await page.evaluate(() => (window as any).SimpleFielding.builder.script.steps[0].runners.third.stop);
+  expect(stop).toBeGreaterThan(3.1);
+  expect(stop).toBeLessThan(3.35);
+  // The shortstop cheats in during the pitch.
+  const ss = await page.evaluate(() => { const p = (window as any).SimpleFielding.view.actorAt('SS'); return [p.x, p.y]; });
+  await dragField(page, [ss[0], ss[1]], [ss[0] * 0.6, ss[1] * 0.8]);
+  // The catcher throws to the shortstop; the runner on 3rd breaks as it leaves.
+  await page.locator('.bp-act', { hasText: 'Throw' }).click();
+  await page.locator('.bp-chips.pos [data-pos="SS"]').click();
+  await page.locator('.bp-runner[data-runner="third"] .bp-chip', { hasText: 'Run home' }).click();
+  // The shortstop throws home and the catcher tags him.
+  await page.locator('.bp-act', { hasText: 'Throw' }).click();
+  await tapOnField(page, '.player[data-pos="C"]');
+  await page.locator('.bp-act', { hasText: 'Tag a runner' }).click();
+  await page.locator('.bp-chip', { hasText: 'The runner from 3rd' }).click();
+  expect(await page.locator('.bp-step:not(.setup) b').allTextContents()).toEqual([
+    'Pitch. The catcher catches it.',
+    'The catcher throws to the shortstop.',
+    'The shortstop throws to the catcher.',
+    'The catcher tags the runner from 3rd. Out.',
+  ]);
+  await expect(page.locator('.bp-step .fix')).toHaveCount(0);
+});
+
 test('build a play: the 1st & 3rd trap, step by step, with taps on the field', async ({ page }, info) => {
   test.skip(info.project.name === 'phone', 'building a play is for tablets and computers');
   await page.locator('#panel-mode [data-pm="build"]').click();

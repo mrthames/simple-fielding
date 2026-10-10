@@ -124,9 +124,13 @@
       if (p.type === 'path') {
         const path = document.createElementNS(NS, 'path');
         const bs = geo().bases;
-        path.setAttribute('d', `M${bs.home.x},${-bs.home.y} L${bs.first.x},${-bs.first.y} L${bs.second.x},${-bs.second.y} L${bs.third.x},${-bs.third.y} Z`);
+        if (Number.isFinite(p.leg)) {
+          const a = S().pathPoint(geo(), p.leg), b = S().pathPoint(geo(), p.leg + 1);
+          path.setAttribute('d', `M${a.x},${-a.y} L${b.x},${-b.y}`);
+        } else path.setAttribute('d', `M${bs.home.x},${-bs.home.y} L${bs.first.x},${-bs.first.y} L${bs.second.x},${-bs.second.y} L${bs.third.x},${-bs.third.y} Z`);
         path.setAttribute('class', 'bp-path');
         g.appendChild(path);
+        if (Number.isFinite(B.preview)) ring(g, S().pathPoint(geo(), B.preview), 4 * u, 'bp-ring bp-mark');
       }
     }
     function pxPerFt() {
@@ -154,7 +158,7 @@
     }
 
     function ask(p) { B.pending = p; render(); drawOverlay(); }
-    function cancelAsk() { B.pending = null; B.choosing = null; render(); drawOverlay(); }
+    function cancelAsk() { B.pending = null; B.choosing = null; B.preview = null; render(); drawOverlay(); }
     function answer(pt) {
       const p = B.pending;
       if (!p) return;
@@ -177,10 +181,18 @@
       } else if (p.type === 'spot') {
         p.done({ x: r1(pt.x), y: r1(pt.y) });
       } else if (p.type === 'path') {
+        if (Number.isFinite(p.leg)) { B.preview = null; return p.done(onLeg(p.leg, pt)); }
         const q = S().progressNear(geo(), pt);
         if (q.d > 14) return ctx.toast('Tap on the base path');
         p.done(Math.round(q.p * 100) / 100);
       }
+    }
+    // Progress along one baseline (leg 3 is 3rd to home) nearest a field point, kept just off both bases.
+    function onLeg(leg, pt) {
+      const a = S().pathPoint(geo(), leg), b = S().pathPoint(geo(), leg + 1);
+      const L2 = (b.x - a.x) ** 2 + (b.y - a.y) ** 2 || 1;
+      const f = Math.max(0.03, Math.min(0.97, ((pt.x - a.x) * (b.x - a.x) + (pt.y - a.y) * (b.y - a.y)) / L2));
+      return Math.round((leg + f) * 100) / 100;
     }
     // Where a fielder is at the end of the selected step.
     function spotOf(pos) { const f = after(B.sel).fielders[pos]; return { x: r1(f.x), y: r1(f.y) }; }
@@ -202,6 +214,11 @@
       e.stopImmediatePropagation();
       if (!drag.moved && Math.hypot(e.clientX - drag.x0, e.clientY - drag.y0) < 6) return;
       drag.moved = true;
+      if (B.pending && B.pending.type === 'path' && Number.isFinite(B.pending.leg)) {
+        B.preview = onLeg(B.pending.leg, view.toField(e.clientX, e.clientY));
+        drawOverlay();
+        return;
+      }
       if (!drag.pos) return;
       const p = view.toField(e.clientX, e.clientY);
       drag.at = { x: r1(p.x + drag.off.x), y: r1(p.y + drag.off.y) };
@@ -217,7 +234,8 @@
         editStep((st) => { st.move = st.move || {}; st.move[pos] = at; });
         return;
       }
-      if (!d.moved) answer(view.toField(e.clientX, e.clientY));
+      // A tap answers; so does the end of a drag while the question wants a place on the field.
+      if (!d.moved || (B.pending && (B.pending.type === 'path' || B.pending.type === 'spot'))) answer(view.toField(e.clientX, e.clientY));
     };
     svg.addEventListener('pointerup', (e) => up(e, false), true);
     svg.addEventListener('pointercancel', (e) => up(e, true), true);
@@ -457,8 +475,11 @@
           const behind = p % 1 > 0.02 ? BASE_OF[Math.floor(p)] : BASE_OF[Math.max(0, Math.round(p) - 1)];
           const chips = [chip('As before', () => set(null), !o)];
           if (ahead && p < 4) chips.push(chip(ahead === 'home' ? 'Run home' : 'Run to ' + BASE_WORD[ahead], () => set({ go: ahead }), o && o.go === ahead && !(behind === ahead)));
-          if (behind && p > 1 && behind !== 'home') chips.push(chip('Back to ' + BASE_WORD[behind], () => set({ go: behind }), o && o.go === behind));
-          chips.push(chip('Stop partway', () => ask({ type: 'path', prompt: `Tap the base path where ${r.word} stops.`, done: (v) => { B.pending = null; set({ stop: v }); } }), o && Number.isFinite(o.stop)));
+          // Back is for a runner caught between bases; one standing on a base has nowhere to go back to.
+          if (behind && p > 1 && p % 1 > 0.02 && behind !== 'home') chips.push(chip('Back to ' + BASE_WORD[behind], () => set({ go: behind }), o && o.go === behind));
+          // Their own baseline only, toward the next base: a lead, or stopping short. Tap it or drag along it.
+          const leg = Math.max(0, Math.min(3, Math.floor(p + 1e-6)));
+          chips.push(chip('Stop partway', () => ask({ type: 'path', leg, prompt: `Tap or drag along the orange line: where does ${r.word} stop?`, done: (v) => { B.pending = null; set({ stop: v }); } }), o && Number.isFinite(o.stop)));
           chips.push(chip('Hold', () => set({ hold: true }), o && o.hold));
           rbox.append(h('div', { class: 'bp-runner', 'data-runner': r.id }, h('span', { class: 'bp-label' }, cap(r.word)), h('div', { class: 'bp-chips' }, chips)));
         }

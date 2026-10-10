@@ -4,7 +4,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '0.42.0';
+  const VERSION = '0.42.1';
   const Field = window.Field;
   const BATTED = ['ground', 'line', 'fly', 'pop', 'bunt'];
   const { POSITIONS, NAMES, LEAGUES } = Field;
@@ -2318,6 +2318,8 @@
     // The frame-by-frame drawing tool, from a clean field (not the play being built).
     drawByHand: () => { state.pm = 'plays'; try { startDrawing('scratch'); } finally { state.pm = 'build'; } },
   });
+  // For tests: the builder, the field geometry and the view.
+  Object.assign(window.SimpleFielding, { builder, geo: () => geo, view });
   setGeometry();
   renderSituation();
   renderBuild();
