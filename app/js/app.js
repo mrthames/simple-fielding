@@ -2300,7 +2300,6 @@
   function back() {
     const open = $$('dialog[open]');
     if (open.length) { closeSheet(open[open.length - 1]); return true; }
-    if (!fmenu.hidden) { closeFieldMenu(); return true; }
     if (board.on) { closeBoard(); return true; }
     if (document.body.classList.contains('projector')) { toggleProjector(); return true; }
     if (state.trainer) { exitTrainer(); return true; }
