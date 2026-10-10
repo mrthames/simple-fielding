@@ -61,35 +61,36 @@
     const title = event.title ? utf8(String(event.title).slice(0, 60)).slice(0, 90) : [];
     out.push(title.length); out.push(...title);
     out.push(steps.length);
-    for (const st of steps) {
-      const a = Math.max(0, S_ACT.indexOf(st.a));
-      const runners = Object.entries(st.runners || {}).filter(([id, o]) => S_RUN.includes(id) && o);
-      const moves = Object.entries(st.move || {}).filter(([p, v]) => POS.includes(p) && v && Number.isFinite(v.x));
-      const cap = st.cap ? utf8(String(st.cap).slice(0, 40)).slice(0, 60) : [];
-      const spot = st.a === 'pitch' ? (st.r === 'hit' ? st.hit && st.hit.at : st.at) : st.at;
-      const hasSpot = !!(spot && Number.isFinite(spot.x)) && st.a !== 'pickoff';
-      out.push(a | (runners.length ? 8 : 0) | (moves.length ? 16 : 0) | (cap.length ? 32 : 0) | (st.call === 'safe' ? 64 : 0) | (hasSpot ? 128 : 0));
-      if (st.a === 'pitch') out.push(Math.max(0, S_RES.indexOf(st.r || 'caught')) | (Math.max(0, S_HIT.indexOf((st.hit || {}).kind)) << 2));
-      else if (st.a === 'pickoff') out.push(Math.max(0, S_BASE.indexOf(st.base)));
-      else if (st.a === 'field') out.push(Math.max(0, POS.indexOf(st.by)) | (st.call === 'out' ? 16 : 0));
-      else if (st.a === 'throw') out.push(Math.max(0, POS.indexOf(st.to)) | ((S_BASE.indexOf(st.fake) + 1) << 4));
-      else if (st.a === 'tag') out.push(Math.max(0, S_RUN.indexOf(st.runner)));
-      else if (st.a === 'base') out.push(Math.max(0, S_BASE.indexOf(st.base)) | ((S_RUN.indexOf(st.runner) + 1) << 2));
-      if (hasSpot) { put16(out, spot.x); put16(out, spot.y); }
-      if (runners.length) {
-        out.push(runners.length);
-        for (const [id, o] of runners) {
-          const kind = o.hold ? 0 : o.go ? 1 : 2;
-          out.push(S_RUN.indexOf(id) | (kind << 2) | ((o.go ? Math.max(0, S_BASE.indexOf(o.go)) : 0) << 4));
-          if (kind === 2) put16(out, (Number(o.stop) || 0) * 10);
-        }
+    for (const st of steps) packStep(out, st);
+  }
+  function packStep(out, st) {
+    const a = Math.max(0, S_ACT.indexOf(st.a));
+    const runners = Object.entries(st.runners || {}).filter(([id, o]) => S_RUN.includes(id) && o);
+    const moves = Object.entries(st.move || {}).filter(([p, v]) => POS.includes(p) && v && Number.isFinite(v.x));
+    const cap = st.cap ? utf8(String(st.cap).slice(0, 40)).slice(0, 60) : [];
+    const spot = st.a === 'pitch' ? (st.r === 'hit' ? st.hit && st.hit.at : st.at) : st.at;
+    const hasSpot = !!(spot && Number.isFinite(spot.x)) && st.a !== 'pickoff';
+    out.push(a | (runners.length ? 8 : 0) | (moves.length ? 16 : 0) | (cap.length ? 32 : 0) | (st.call === 'safe' ? 64 : 0) | (hasSpot ? 128 : 0));
+    if (st.a === 'pitch') out.push(Math.max(0, S_RES.indexOf(st.r || 'caught')) | (Math.max(0, S_HIT.indexOf((st.hit || {}).kind)) << 2));
+    else if (st.a === 'pickoff') out.push(Math.max(0, S_BASE.indexOf(st.base)));
+    else if (st.a === 'field') out.push(Math.max(0, POS.indexOf(st.by)) | (st.call === 'out' ? 16 : 0));
+    else if (st.a === 'throw') out.push(Math.max(0, POS.indexOf(st.to)) | ((S_BASE.indexOf(st.fake) + 1) << 4));
+    else if (st.a === 'tag') out.push(Math.max(0, S_RUN.indexOf(st.runner)));
+    else if (st.a === 'base') out.push(Math.max(0, S_BASE.indexOf(st.base)) | ((S_RUN.indexOf(st.runner) + 1) << 2));
+    if (hasSpot) { put16(out, spot.x); put16(out, spot.y); }
+    if (runners.length) {
+      out.push(runners.length);
+      for (const [id, o] of runners) {
+        const kind = o.hold ? 0 : o.go ? 1 : 2;
+        out.push(S_RUN.indexOf(id) | (kind << 2) | ((o.go ? Math.max(0, S_BASE.indexOf(o.go)) : 0) << 4));
+        if (kind === 2) put16(out, (Number(o.stop) || 0) * 10);
       }
-      if (moves.length) {
-        out.push(moves.length);
-        for (const [p, v] of moves) { out.push(POS.indexOf(p)); put16(out, v.x); put16(out, v.y); }
-      }
-      if (cap.length) { out.push(cap.length); out.push(...cap); }
     }
+    if (moves.length) {
+      out.push(moves.length);
+      for (const [p, v] of moves) { out.push(POS.indexOf(p)); put16(out, v.x); put16(out, v.y); }
+    }
+    if (cap.length) { out.push(cap.length); out.push(...cap); }
   }
   function unpackScript(b, i) {
     const tl = b[i++];
@@ -97,40 +98,105 @@
     i += tl;
     const n = b[i++];
     const steps = [];
-    for (let k = 0; k < n; k++) {
-      const h = b[i++];
-      const st = { a: S_ACT[h & 7] };
-      if (h & 64) st.call = 'safe';
-      let spot = null;
-      const x = st.a === 'run' || st.a === 'hold' ? null : b[i++];
-      if (st.a === 'pitch') { st.r = S_RES[x & 3]; if (st.r === 'hit') st.hit = { kind: S_HIT[(x >> 2) & 7] || 'ground' }; }
-      else if (st.a === 'pickoff') st.base = S_BASE[x & 3];
-      else if (st.a === 'field') { st.by = POS[x & 15]; if (x & 16) st.call = 'out'; }
-      else if (st.a === 'throw') { st.to = POS[x & 15]; const fk = (x >> 4) & 7; if (fk) st.fake = S_BASE[fk - 1]; }
-      else if (st.a === 'tag') { st.runner = S_RUN[x & 3]; if (!st.call) st.call = 'out'; }
-      else if (st.a === 'base') { st.base = S_BASE[x & 3]; const r = (x >> 2) & 7; if (r) { st.runner = S_RUN[r - 1]; if (!st.call) st.call = 'out'; } }
-      if (h & 128) { spot = { x: get16(b, i), y: get16(b, i + 2) }; i += 4; }
-      if (spot) { if (st.a === 'pitch' && st.hit) st.hit.at = spot; else st.at = spot; }
-      if (h & 8) {
-        const m = b[i++];
-        st.runners = {};
-        for (let j = 0; j < m; j++) {
-          const v = b[i++];
-          const id = S_RUN[v & 3], kind = (v >> 2) & 3;
-          if (kind === 0) st.runners[id] = { hold: true };
-          else if (kind === 1) st.runners[id] = { go: S_BASE[(v >> 4) & 3] };
-          else { st.runners[id] = { stop: get16(b, i) / 10 }; i += 2; }
-        }
-      }
-      if (h & 16) {
-        const m = b[i++];
-        st.move = {};
-        for (let j = 0; j < m; j++) { const p = POS[b[i]]; st.move[p] = { x: get16(b, i + 1), y: get16(b, i + 3) }; i += 5; }
-      }
-      if (h & 32) { const cl = b[i++]; st.cap = unutf8(b.slice(i, i + cl)); i += cl; }
-      steps.push(st);
-    }
+    for (let k = 0; k < n; k++) { const u = unpackStep(b, i); steps.push(u.st); i = u.i; }
     return { title, steps, i };
+  }
+  function unpackStep(b, i) {
+    const h = b[i++];
+    const st = { a: S_ACT[h & 7] };
+    if (h & 64) st.call = 'safe';
+    let spot = null;
+    const x = st.a === 'run' || st.a === 'hold' ? null : b[i++];
+    if (st.a === 'pitch') { st.r = S_RES[x & 3]; if (st.r === 'hit') st.hit = { kind: S_HIT[(x >> 2) & 7] || 'ground' }; }
+    else if (st.a === 'pickoff') st.base = S_BASE[x & 3];
+    else if (st.a === 'field') { st.by = POS[x & 15]; if (x & 16) st.call = 'out'; }
+    else if (st.a === 'throw') { st.to = POS[x & 15]; const fk = (x >> 4) & 7; if (fk) st.fake = S_BASE[fk - 1]; }
+    else if (st.a === 'tag') { st.runner = S_RUN[x & 3]; if (!st.call) st.call = 'out'; }
+    else if (st.a === 'base') { st.base = S_BASE[x & 3]; const r = (x >> 2) & 7; if (r) { st.runner = S_RUN[r - 1]; if (!st.call) st.call = 'out'; } }
+    if (h & 128) { spot = { x: get16(b, i), y: get16(b, i + 2) }; i += 4; }
+    if (spot) { if (st.a === 'pitch' && st.hit) st.hit.at = spot; else st.at = spot; }
+    if (h & 8) {
+      const m = b[i++];
+      st.runners = {};
+      for (let j = 0; j < m; j++) {
+        const v = b[i++];
+        const id = S_RUN[v & 3], kind = (v >> 2) & 3;
+        if (kind === 0) st.runners[id] = { hold: true };
+        else if (kind === 1) st.runners[id] = { go: S_BASE[(v >> 4) & 3] };
+        else { st.runners[id] = { stop: get16(b, i) / 10 }; i += 2; }
+      }
+    }
+    if (h & 16) {
+      const m = b[i++];
+      st.move = {};
+      for (let j = 0; j < m; j++) { const p = POS[b[i]]; st.move[p] = { x: get16(b, i + 1), y: get16(b, i + 3) }; i += 5; }
+    }
+    if (h & 32) { const cl = b[i++]; st.cap = unutf8(b.slice(i, i + cl)); i += cl; }
+    return { st, i };
+  }
+
+  // What came after the first Build a play links (2026-10-10), in a block at the very end so an older app opens the
+  // main play and ignores the rest: the main play's name, mistakes on throws, and the endings.
+  //   0xB1, name, mistakes, endings count, then per ending: name, parent + 1, fork step + 1, steps, mistakes
+  //   mistakes: count, then per one: step, kind (bit 0: 0 wild, 1 dropped; bit 1: a spot follows), spot
+  const EXTRAS = 0xb1;
+  const S_ERR = ['wild', 'dropped'];
+  const putText = (out, t, max) => { const u = t ? utf8(String(t).slice(0, max)).slice(0, max * 2) : []; out.push(u.length); out.push(...u); };
+  const getText = (b, i) => { const n = b[i++]; return { t: n ? unutf8(b.slice(i, i + n)) : '', i: i + n }; };
+  function packMistakes(out, steps) {
+    const errs = steps.map((st, k) => [k, st]).filter(([, st]) => st && st.a === 'throw' && S_ERR.includes(st.err));
+    out.push(errs.length);
+    for (const [k, st] of errs) {
+      const miss = st.err === 'wild' && st.miss && Number.isFinite(st.miss.x);
+      out.push(k, S_ERR.indexOf(st.err) | (miss ? 2 : 0));
+      if (miss) { put16(out, st.miss.x); put16(out, st.miss.y); }
+    }
+  }
+  function unpackMistakes(b, i, steps) {
+    const n = b[i++];
+    for (let j = 0; j < n; j++) {
+      const st = steps[b[i++]], v = b[i++];
+      let miss = null;
+      if (v & 2) { miss = { x: get16(b, i), y: get16(b, i + 2) }; i += 4; }
+      if (st && st.a === 'throw') { st.err = S_ERR[v & 1]; if (miss) st.miss = miss; }
+    }
+    return i;
+  }
+  function hasExtras(event) {
+    return event.kind === 'script' && !!(event.main || (event.alts && event.alts.length) || (event.steps || []).some((st) => st && st.err));
+  }
+  function packExtras(out, event) {
+    out.push(EXTRAS);
+    putText(out, event.main, 40);
+    const main = (event.steps || []).slice(0, 40);
+    packMistakes(out, main);
+    const alts = (event.alts || []).slice(0, 12);
+    out.push(alts.length);
+    for (const a of alts) {
+      const steps = (a.steps || []).slice(0, 40);
+      putText(out, a.name, 40);
+      out.push((Number.isInteger(a.from) ? a.from : -1) + 1, Math.max(-1, Math.min(254, Number.isInteger(a.at) ? a.at : -1)) + 1);
+      out.push(steps.length);
+      for (const st of steps) packStep(out, st);
+      packMistakes(out, steps);
+    }
+  }
+  function unpackExtras(b, i, event) {
+    const nm = getText(b, i); i = nm.i;
+    if (nm.t) event.main = nm.t;
+    i = unpackMistakes(b, i, event.steps || []);
+    const m = b[i++];
+    if (m) event.alts = [];
+    for (let k = 0; k < m; k++) {
+      const an = getText(b, i); i = an.i;
+      const from = b[i++] - 1, at = b[i++] - 1;
+      const n = b[i++];
+      const steps = [];
+      for (let j = 0; j < n; j++) { const u = unpackStep(b, i); steps.push(u.st); i = u.i; }
+      i = unpackMistakes(b, i, steps);
+      event.alts.push({ name: an.t, from, at, steps });
+    }
+    return i;
   }
 
   // A drawn play: a table of runners, then each step. The first step lists everyone; later steps list only who
@@ -247,7 +313,9 @@
     const di = Math.max(0, DEPTHS.indexOf(s.depth || 'auto'));
     const d13 = Math.max(0, D13.indexOf(s.d13 || 'auto'));
     const bd = Math.max(0, BUNTD.indexOf(s.buntD || 'auto'));
-    if (di || d13 || bd) out.push(di | (d13 << 3) | (bd << 6));
+    const extras = hasExtras(event);
+    if (di || d13 || bd || extras) out.push(di | (d13 << 3) | (bd << 6));
+    if (extras) packExtras(out, event);
     return toB64url(out);
   }
 
@@ -320,6 +388,7 @@
         if (e && e !== 'auto') situation.d13 = e;
         if (f2 && f2 !== 'auto') situation.buntD = f2;
       }
+      if (kind === 'script' && i < b.length && b[i] === EXTRAS) unpackExtras(b, i + 1, event);
       return { situation, event, name };
     } catch (e) { return null; }
   }

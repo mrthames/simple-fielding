@@ -7,8 +7,10 @@
  *   { a: 'pitch', r: 'caught' | 'hit' | 'passed' | 'dropped', hit: { kind, at }, at }   (passed / dropped: where it rolls)
  *   { a: 'pickoff', base }                       the pitcher throws to whoever covers that base
  *   { a: 'field', by, call }                     a fielder gets the loose ball; call 'out' = caught in the air, batter out
- *   { a: 'throw', to, at, fake }                 to a fielder; at = where they catch it (a base, or their spot);
- *                                                fake = a base the thrower pump-fakes to first
+ *   { a: 'throw', to, at, fake, err, miss }      to a fielder; at = where they catch it (a base, or their spot);
+ *                                                fake = a base the thrower pump-fakes to first;
+ *                                                err = 'wild' (the ball ends up at miss) or 'dropped' (it gets
+ *                                                away from the catcher of the throw): either way it is loose
  *   { a: 'run', at }                             the fielder with the ball runs with it
  *   { a: 'tag', runner, call }                   chase the runner down and tag them: call 'out' | 'safe'
  *   { a: 'base', base, runner, call }            step on a base for a force: call 'out' | 'safe' on that runner
@@ -21,6 +23,11 @@
  * The coach decides every safe and out; nothing here judges a play. Runners and fielders keep moving across steps
  * until they get where they were sent or are sent somewhere else, so a runner can break for home in one step and
  * turn back in the next.
+ *
+ * Endings (asked for 2026-10-10): a play can fork. script.alts is a list of { name, from, at, steps }: the ending
+ * shares its parent's steps up to and including the parent's own step `at`, then goes its own way. `from` is the
+ * parent: -1 the main play (named script.main), or an earlier ending, so endings can fork again ("he commits" and
+ * "he turns back", then "bad toss" off the second). resolve(script, k) is the plain list of steps for ending k.
  *
  * Runner places are progress along the base path: 0 home, 1 first, 2 second, 3 third, 4 home again (scored).
  * Runner ids: the base they started on ('first', 'second', 'third'), and 'batter'.
@@ -36,6 +43,8 @@
   const RUNNER_WORD = { first: 'the runner from 1st', second: 'the runner from 2nd', third: 'the runner from 3rd', batter: 'the batter' };
   const HIT_WORD = { ground: 'ground ball', line: 'line drive', fly: 'fly ball', pop: 'pop-up', bunt: 'bunt' };
   const ACTIONS = ['pitch', 'pickoff', 'field', 'throw', 'run', 'tag', 'base', 'hold'];
+  // Scorebook numbers, for the error badge (E6 is the shortstop).
+  const NUM = { P: 1, C: 2, '1B': 3, '2B': 4, '3B': 5, SS: 6, LF: 7, CF: 8, RF: 9 };
 
   const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
   const lerp = (a, b, f) => ({ x: a.x + (b.x - a.x) * f, y: a.y + (b.y - a.y) * f });
@@ -212,6 +221,11 @@
       events.push({ t: r1(t0), tEnd: r1(t1), type: 'throw', from, to });
     };
     const runnerById = (id) => R[id];
+    // The play's first error gets the scorebook badge (E6) on whoever made it.
+    const flagError = (pos, ev, label) => {
+      if (plan.error) return;
+      plan.error = { type: 'script', pos, code: `E${NUM[pos]}`, t: ev.t, at: Object.assign({}, ev.at), label, outcome: `E${NUM[pos]}, ${label}.` };
+    };
     // A step's runner orders, plus what happens by default on a batted ball: the batter runs to 1st and forced
     // runners move up one base, unless the coach said otherwise.
     const applyRunners = (step, t, defaults) => {
@@ -336,15 +350,44 @@
             release += 0.45;
           }
           const from = fielderAt(F[holder], release);
-          const tArrive = Math.max(release + H.throwTime(geo, dist(from, spot), holder), recvArrive);
-          throwBall(from, spot, release, tArrive);
-          settleFielder(F[to], tArrive);
-          F[to].at = spot; F[to].move = null;
-          busy[holder] = release; busy[to] = tArrive;
           note(holder, `Step ${i + 1}: throw to ${the(to)}${step.fake ? `, after a fake to ${BASE_WORD[step.fake]}` : ''}.`);
-          note(to, `Step ${i + 1}: catch the throw from ${the(holder)}.`);
-          holder = to;
-          tEnd = tArrive + 0.05;
+          if (step.err === 'wild') {
+            // A wild throw: it sails or skips past to where the coach put it, and nobody has it.
+            const miss = step.miss && Number.isFinite(step.miss.x) ? step.miss : lerp(from, spot, 1 + 25 / Math.max(1, dist(from, spot)));
+            const tMiss = release + H.throwTime(geo, dist(from, miss), holder);
+            throwBall(from, miss, release, tMiss);
+            const ev = { t: r1(release + (tMiss - release) * 0.6), type: 'note', text: 'Wild throw!', at: spot, error: true };
+            events.push(ev);
+            flagError(holder, ev, 'wild throw');
+            settleFielder(F[to], tMiss);
+            busy[holder] = release;
+            note(to, `Step ${i + 1}: the throw gets past.`);
+            holder = null;
+            loose = { at: miss, landT: tMiss, since: release, air: false };
+            tEnd = tMiss + 0.05;
+          } else {
+            const tArrive = Math.max(release + H.throwTime(geo, dist(from, spot), holder), recvArrive);
+            throwBall(from, spot, release, tArrive);
+            settleFielder(F[to], tArrive);
+            F[to].at = spot; F[to].move = null;
+            busy[holder] = release; busy[to] = tArrive;
+            if (step.err === 'dropped') {
+              // It hits the glove and gets away: a few feet on, loose.
+              const away = lerp(from, spot, 1 + 6 / Math.max(1, dist(from, spot)));
+              ballKey(tArrive + 0.35, away, 0.3);
+              const ev = { t: r1(tArrive), type: 'note', text: 'Dropped!', at: spot, error: true };
+              events.push(ev);
+              flagError(to, ev, 'dropped the throw');
+              note(to, `Step ${i + 1}: the throw from ${the(holder)} gets away.`);
+              holder = null;
+              loose = { at: away, landT: tArrive + 0.35, since: tArrive, air: false };
+              tEnd = tArrive + 0.4;
+            } else {
+              note(to, `Step ${i + 1}: catch the throw from ${the(holder)}.`);
+              holder = to;
+              tEnd = tArrive + 0.05;
+            }
+          }
         }
       } else if (a === 'run') {
         if (!holder) fail('Nobody has the ball.');
@@ -506,7 +549,7 @@
       }
       case 'pickoff': text = `Pickoff throw to ${BASE_WORD[step.base || 'first']}.`; break;
       case 'field': text = step.by ? `${cap1(the(step.by))} ${step.call === 'out' ? 'catches it. The batter is out.' : 'gets the ball.'}` : 'Who gets the ball?'; break;
-      case 'throw': text = step.to ? `${h ? cap1(the(h)) : 'They'} throw${h ? 's' : ''} to ${the(step.to)}${step.fake ? ` (fakes to ${BASE_WORD[step.fake]} first)` : ''}.` : `${h ? cap1(the(h)) : 'They'} throw${h ? 's' : ''} to …`; break;
+      case 'throw': text = step.to ? `${h ? cap1(the(h)) : 'They'} throw${h ? 's' : ''} to ${the(step.to)}${step.fake ? ` (fakes to ${BASE_WORD[step.fake]} first)` : ''}.${step.err === 'wild' ? ' Wild throw: it gets past.' : step.err === 'dropped' ? ` ${cap1(the(step.to))} drops it.` : ''}` : `${h ? cap1(the(h)) : 'They'} throw${h ? 's' : ''} to …`; break;
       case 'run': text = `${h ? cap1(the(h)) : 'They'} run${h ? 's' : ''} with the ball.`; break;
       case 'tag': text = step.runner ? `${h ? cap1(the(h)) : 'They'} tag${h ? 's' : ''} ${RUNNER_WORD[step.runner] || 'the runner'}. ${step.call === 'safe' ? 'Safe.' : 'Out.'}` : `${h ? cap1(the(h)) : 'They'} tag …`; break;
       case 'base': text = step.base ? `${h ? cap1(the(h)) : 'They'} step${h ? 's' : ''} on ${BASE_WORD[step.base]}.${step.runner ? ` ${cap1(RUNNER_WORD[step.runner])} is ${step.call === 'safe' ? 'safe' : 'out'}.` : ''}` : `${h ? cap1(the(h)) : 'They'} step on …`; break;
@@ -530,6 +573,34 @@
   }
 
   // ---------------------------------------------------------------------------------------------------------
+  // Endings: one path through a play that forks.
+  // ---------------------------------------------------------------------------------------------------------
+  // The pieces of path k, in order: whose steps they are (-1 the main play, else an ending), where that piece
+  // starts in the path, and how many of its own steps it uses. A parent must come before its ending in the list.
+  function segments(script, k) {
+    const alts = (script && script.alts) || [];
+    const main = (script && script.steps) || [];
+    if (!(k >= 0) || !alts[k]) return [{ owner: -1, start: 0, use: main.length }];
+    const a = alts[k];
+    const parentK = Number.isInteger(a.from) && a.from < k ? a.from : -1;
+    const parent = segments(script, parentK);
+    const last = parent[parent.length - 1];
+    const keep = Math.max(0, Math.min(last.use, (Number.isInteger(a.at) ? a.at : -1) + 1));
+    const segs = parent.slice(0, -1).concat([Object.assign({}, last, { use: keep })]);
+    segs.push({ owner: k, start: last.start + keep, use: (a.steps || []).length });
+    return segs;
+  }
+  const ownSteps = (script, owner) => (owner < 0 ? script.steps : script.alts[owner].steps) || [];
+  function resolve(script, k) {
+    return segments(script, k).flatMap((sg) => ownSteps(script, sg.owner).slice(0, sg.use));
+  }
+  // The names of every path: the main play, then each ending.
+  function endings(script) {
+    const alts = (script && script.alts) || [];
+    return [{ k: -1, name: (script && script.main) || 'Main play' }].concat(alts.map((a, k) => ({ k, name: a.name || `Ending ${k + 1}` })));
+  }
+
+  // ---------------------------------------------------------------------------------------------------------
   // What can happen next, from the state after the last step.
   // ---------------------------------------------------------------------------------------------------------
   function options(state) {
@@ -544,7 +615,7 @@
     return Object.entries((state && state.runners) || {}).filter(([, r]) => r.status === 'on').map(([id, r]) => Object.assign({ id, word: RUNNER_WORD[id] }, r));
   }
 
-  const api = { plan, describe, options, liveRunners, pathPoint, progressNear, coverer, POSITIONS, PLAYER, BASE_WORD, RUNNER_WORD, HIT_WORD, ACTIONS };
+  const api = { plan, describe, options, liveRunners, pathPoint, progressNear, coverer, segments, resolve, endings, POSITIONS, PLAYER, BASE_WORD, RUNNER_WORD, HIT_WORD, ACTIONS };
   if (typeof module !== 'undefined' && module.exports) {
     root.Field = root.Field || require('./field.js');
     module.exports = api;

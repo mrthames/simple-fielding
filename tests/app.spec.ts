@@ -472,6 +472,159 @@ test('a share link opens the same play on the right field, and the address is ti
   expect(page.url()).not.toContain('#p=');
 });
 
+// Drags on the field between two points given in feet.
+async function dragField(page: Page, from: [number, number], to: [number, number]) {
+  const [a, b] = await page.evaluate(([f, t]) => {
+    const svg = document.getElementById('field') as unknown as SVGSVGElement;
+    const m = svg.getScreenCTM()!;
+    const pt = ([x, y]: number[]) => { const p = svg.createSVGPoint(); p.x = x; p.y = -y; const q = p.matrixTransform(m); return { x: q.x, y: q.y }; };
+    return [pt(f), pt(t)];
+  }, [from, to]);
+  await page.mouse.move(a.x, a.y);
+  await page.mouse.down();
+  await page.mouse.move((a.x + b.x) / 2, (a.y + b.y) / 2, { steps: 4 });
+  await page.mouse.move(b.x, b.y, { steps: 4 });
+  await page.mouse.up();
+}
+
+test('build a play: a lead off 3rd by dragging, then the delayed steal and the cut home', async ({ page }, info) => {
+  test.skip(info.project.name === 'phone', 'building a play is for tablets and computers');
+  await page.locator('#panel-mode [data-pm="build"]').click();
+  await page.locator('.mini-base.b1').click();
+  await page.locator('.mini-base.b3').click();
+  await page.locator('.bp-act', { hasText: 'Pitch' }).click();
+  await page.locator('.bp-chip', { hasText: 'Catcher catches it' }).click();
+  await page.locator('.bp-runner[data-runner="first"] .bp-chip', { hasText: 'Run to 2nd' }).click();
+  // The lead: "Stop partway" shows only the 3rd-to-home line; dragging along it answers.
+  await page.locator('.bp-runner[data-runner="third"] .bp-chip', { hasText: 'Stop partway' }).click();
+  await expect(page.locator('.bp-q')).toContainText('drag along the orange line');
+  await expect(page.locator('.bp-runner[data-runner="third"] .bp-chip', { hasText: 'Back to' })).toHaveCount(0);
+  const third = await page.evaluate(() => { const b = (window as any).SimpleFielding.geo().bases; return [b.third.x, b.third.y, b.home.x, b.home.y]; });
+  const at = (f: number): [number, number] => [third[0] + (third[2] - third[0]) * f, third[1] + (third[3] - third[1]) * f];
+  await dragField(page, at(0.05), at(0.2));
+  await expect(page.locator('.bp-runner[data-runner="third"] .bp-chip', { hasText: 'Stop partway' })).toHaveAttribute('aria-pressed', 'true');
+  const stop = await page.evaluate(() => (window as any).SimpleFielding.builder.script.steps[0].runners.third.stop);
+  expect(stop).toBeGreaterThan(3.1);
+  expect(stop).toBeLessThan(3.35);
+  // The shortstop cheats in during the pitch.
+  const ss = await page.evaluate(() => { const p = (window as any).SimpleFielding.view.actorAt('SS'); return [p.x, p.y]; });
+  await dragField(page, [ss[0], ss[1]], [ss[0] * 0.6, ss[1] * 0.8]);
+  // The catcher throws to the shortstop; the runner on 3rd breaks as it leaves.
+  await page.locator('.bp-act', { hasText: 'Throw' }).click();
+  await page.locator('.bp-chips.pos [data-pos="SS"]').click();
+  await page.locator('.bp-runner[data-runner="third"] .bp-chip', { hasText: 'Run home' }).click();
+  // The shortstop throws home and the catcher tags him.
+  await page.locator('.bp-act', { hasText: 'Throw' }).click();
+  await tapOnField(page, '.player[data-pos="C"]');
+  await page.locator('.bp-act', { hasText: 'Tag a runner' }).click();
+  await page.locator('.bp-chip', { hasText: 'The runner from 3rd' }).click();
+  expect(await page.locator('.bp-step:not(.setup) b').allTextContents()).toEqual([
+    'Pitch. The catcher catches it.',
+    'The catcher throws to the shortstop.',
+    'The shortstop throws to the catcher.',
+    'The catcher tags the runner from 3rd. Out.',
+  ]);
+  await expect(page.locator('.bp-step .fix')).toHaveCount(0);
+});
+
+test('build a play: endings, a wild throw, and coaching it on the whiteboard', async ({ page }, info) => {
+  test.skip(info.project.name === 'phone', 'building a play is for tablets and computers');
+  await page.locator('#panel-mode [data-pm="build"]').click();
+  await page.locator('.mini-base.b1').click();
+  await page.locator('.mini-base.b3').click();
+  // The main play: he commits and is tagged at home.
+  await page.locator('.bp-act', { hasText: 'Pitch' }).click();
+  await page.locator('.bp-chip', { hasText: 'Catcher catches it' }).click();
+  await page.locator('.bp-runner[data-runner="first"] .bp-chip', { hasText: 'Run to 2nd' }).click();
+  await page.locator('.bp-act', { hasText: 'Throw' }).click();
+  await page.locator('.bp-chips.pos [data-pos="SS"]').click();
+  await page.locator('.bp-runner[data-runner="third"] .bp-chip', { hasText: 'Run home' }).click();
+  await page.locator('.bp-act', { hasText: 'Throw' }).click();
+  await tapOnField(page, '.player[data-pos="C"]');
+  await page.locator('.bp-act', { hasText: 'Tag a runner' }).click();
+  await page.locator('.bp-chip', { hasText: 'The runner from 3rd' }).click();
+  await expect(page.locator('#bp-endings')).toHaveCount(0);
+  // Another ending after step 2: he sees the shortstop cut it and turns back.
+  await page.locator('.bp-step[data-step="1"]').click();
+  await page.locator('#bp-fork').click();
+  await expect(page.locator('#bp-endings [data-ending]')).toHaveCount(2);
+  await expect(page.locator('#bp-endings [data-ending="0"]')).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.locator('.bp-step:not(.setup)')).toHaveCount(2);
+  await expect(page.locator('.bp-step.shared')).toHaveCount(2);
+  await page.locator('#bp-ending-name').fill('He turns back');
+  await page.locator('#bp-ending-name').press('Tab');
+  await page.locator('#bp-endings [data-ending="-1"]').click();
+  await page.locator('#bp-ending-name').fill('He commits');
+  await page.locator('#bp-ending-name').press('Tab');
+  await expect(page.locator('.bp-step:not(.setup)')).toHaveCount(4);
+  await page.locator('#bp-endings [data-ending="0"]').click();
+  await expect(page.locator('#bp-endings [data-ending="0"]')).toHaveText('He turns back');
+  // The shortstop throws home as he goes back; the catcher runs at him; the toss to 3rd is wild; the left fielder gets it.
+  await page.locator('.bp-act', { hasText: 'Throw' }).click();
+  await tapOnField(page, '.player[data-pos="C"]');
+  await page.locator('.bp-runner[data-runner="third"] .bp-chip', { hasText: 'Back to 3rd' }).click();
+  await page.locator('.bp-act', { hasText: 'Run with it' }).click();
+  await tapField(page, -14, 16);
+  await page.locator('.bp-act', { hasText: 'Throw' }).click();
+  await tapOnField(page, '.base[data-base="third"]');
+  await page.locator('.bp-err .bp-chip', { hasText: 'Wild throw' }).click();
+  await tapField(page, -62, 30);
+  await expect(page.locator('.bp-q')).toHaveText('Who gets the ball? Tap them on the field.');
+  await page.locator('.bp-next .bp-chips.pos [data-pos="LF"]').click();
+  expect(await page.locator('.bp-step:not(.setup) b').allTextContents()).toEqual([
+    'Pitch. The catcher catches it.',
+    'The catcher throws to the shortstop.',
+    'The shortstop throws to the catcher.',
+    'The catcher runs with the ball.',
+    'The catcher throws to the third baseman. Wild throw: it gets past.',
+    'The left fielder gets the ball.',
+  ]);
+  await expect(page.locator('.bp-step .fix')).toHaveCount(0);
+  const err = await page.evaluate(() => (window as any).SimpleFielding.state.plan.error.code);
+  expect(err).toBe('E2');
+  // The main play is untouched, and everything survives a reload.
+  await page.locator('#bp-endings [data-ending="-1"]').click();
+  await expect(page.locator('.bp-step:not(.setup)')).toHaveCount(4);
+  await page.reload();
+  await page.locator('#panel-mode [data-pm="build"]').click();
+  await expect(page.locator('#bp-endings [data-ending]')).toHaveText(['He commits', 'He turns back']);
+  // Coaching: pause partway, open the whiteboard, then play on as built.
+  await page.locator('#bp-endings [data-ending="0"]').click();
+  await page.evaluate(() => (window as any).SimpleFielding.seek(2));
+  await page.locator('#btn-board').click();
+  await expect(page.locator('#bb-play')).toBeVisible();
+  await page.locator('#bb-play').click();
+  await expect(page.locator('#board-bar')).toBeHidden();
+  const t0 = await page.evaluate(() => (window as any).SimpleFielding.state.t);
+  await page.waitForTimeout(400);
+  const t1 = await page.evaluate(() => (window as any).SimpleFielding.state.t);
+  expect(t0).toBeGreaterThanOrEqual(1.9);
+  expect(t1).toBeGreaterThan(t0);
+});
+
+test('a shared play with endings: anyone, on a phone too, can switch endings and watch each', async ({ page }) => {
+  const code = await page.evaluate(() => (window as any).Share.encode(
+    { league: 'littleLeague', runners: { first: true, third: true }, outs: 1, batter: 'R' },
+    { kind: 'script', title: '1st & 3rd cut', main: 'He commits', steps: [
+      { a: 'pitch', r: 'caught', runners: { first: { go: 'second' }, third: { stop: 3.2 } } },
+      { a: 'throw', to: 'SS', at: { x: -12, y: 55 }, runners: { third: { go: 'home' } } },
+      { a: 'throw', to: 'C', at: { x: 0, y: 2 } },
+      { a: 'tag', runner: 'third', call: 'out' },
+    ], alts: [{ name: 'He turns back', from: -1, at: 1, steps: [
+      { a: 'throw', to: 'C', at: { x: 0, y: 2 }, runners: { third: { go: 'third' } } },
+      { a: 'run', at: { x: -14, y: 16 } },
+      { a: 'throw', to: '3B', at: { x: -40, y: 43 } },
+      { a: 'tag', runner: 'third', call: 'out' },
+    ] }] }, '1st & 3rd cut'));
+  await page.goto('/#p=' + code);
+  await expect(page.locator('#bp-endings [data-ending]')).toHaveText(['He commits', 'He turns back']);
+  await expect(page.locator('.bp-step:not(.setup)')).toHaveCount(4);
+  await page.locator('#bp-endings [data-ending="0"]').click();
+  await expect(page.locator('.bp-step:not(.setup)')).toHaveCount(6);
+  const plan = await page.evaluate(() => { const p = (window as any).SimpleFielding.state.plan; return { issues: p.scriptIssues.length, steps: p.scriptStates.length }; });
+  expect(plan).toEqual({ issues: 0, steps: 6 });
+});
+
 test('build a play: the 1st & 3rd trap, step by step, with taps on the field', async ({ page }, info) => {
   test.skip(info.project.name === 'phone', 'building a play is for tablets and computers');
   await page.locator('#panel-mode [data-pm="build"]').click();

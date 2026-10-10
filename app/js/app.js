@@ -4,7 +4,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '0.42.0';
+  const VERSION = '0.43.0';
   // Set by the iPhone/iPad/Android apps (native/plugins/with-web-app.js). The store apps send nothing
   // anywhere, so tester reporting can't be turned on in them.
   const NATIVE = window.SF_NATIVE === true;
@@ -617,6 +617,8 @@
     $('#field-hint').hidden = true;
     view.setBoardMode(true);
     view.showBoard(board.state);
+    // Coaching a play: show where they should have been, then watch it run as built from this moment.
+    $('#bb-play').hidden = !state.plan || !!drawing;
     renderBoardBar();
   }
 
@@ -814,6 +816,12 @@
 
   $('#btn-board').addEventListener('click', () => (board.on ? closeBoard() : openBoard()));
   $('#bb-done').addEventListener('click', closeBoard);
+  $('#bb-play').addEventListener('click', () => {
+    closeBoard();
+    if (!state.plan) return;
+    if (state.t >= state.plan.timeline.duration - 0.01) { state.t = 0; view.seek(0); }
+    play();
+  });
   for (const b of $$('#board-bar [data-tool]')) b.addEventListener('click', () => { board.tool = b.dataset.tool; renderBoardBar(); });
   for (const b of $$('#board-bar [data-color]')) {
     b.style.setProperty('--swatch', b.dataset.color);
@@ -2337,6 +2345,8 @@
     // The frame-by-frame drawing tool, from a clean field (not the play being built).
     drawByHand: () => { state.pm = 'plays'; try { startDrawing('scratch'); } finally { state.pm = 'build'; } },
   });
+  // For tests: the builder, the field geometry and the view.
+  Object.assign(window.SimpleFielding, { builder, geo: () => geo, view });
   setGeometry();
   renderSituation();
   renderBuild();
