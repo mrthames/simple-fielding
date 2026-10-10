@@ -21,6 +21,8 @@
   'use strict';
 
   const Field = (typeof module !== 'undefined' && module.exports) ? require('./field.js') : root.Field;
+  // Build a play: plays the coach writes step by step (script.js).
+  const Script = (typeof module !== 'undefined' && module.exports) ? require('./script.js') : root.Script;
   const { POSITIONS, NAMES, PLAYERS, BASE_NAMES, BASE_ORDER } = Field;
   const the = (p) => 'the ' + PLAYERS[p];
   const The = (p) => 'The ' + PLAYERS[p];
@@ -2769,6 +2771,7 @@
     const geo = Field.geometry(s.league, s.park);
     if (s.leadoffs === undefined) s.leadoffs = geo.league.leadoffs;
     if (event.kind === 'drawn') return planDrawn(geo, s, event);
+    if (event.kind === 'script') return Script.plan(geo, s, event, { newPlan, throwTime, hangTime, computeLooks });
     if (event.kind === 'rundown') return planRundown(geo, s, event);
     const batted = event.at && ['ground', 'line', 'fly', 'pop', 'bunt'].includes(event.kind);
     const plan = batted ? planBattedBall(geo, s, event) : planSituationPlay(geo, s, event);

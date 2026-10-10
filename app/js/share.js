@@ -15,7 +15,7 @@
 
   const LEAGUES = ['littleLeague', 'intermediate', 'softball', 'softball10', 'junior90', 'highSchool', 'college', 'pro',
     'softball8', 'softball14', 'softballHS', 'softballCollege', 'softballPro'];
-  const KINDS = ['ground', 'line', 'fly', 'pop', 'bunt', 'steal2', 'steal3', 'firstThirdSteal', 'passedBall', 'primaryLead', 'secondaryLead', 'pitch', 'drawn', 'lookBack', 'delayedSteal', 'droppedThird', 'rundown'];
+  const KINDS = ['ground', 'line', 'fly', 'pop', 'bunt', 'steal2', 'steal3', 'firstThirdSteal', 'passedBall', 'primaryLead', 'secondaryLead', 'pitch', 'drawn', 'lookBack', 'delayedSteal', 'droppedThird', 'rundown', 'script'];
   const ACTIONS = ['return', 'hesitate', 'break', 'drift'];
   const DEPTHS = ['auto', 'normal', 'dp', 'in', 'cornersIn'];
   const D13 = ['auto', 'through', 'cut', 'pitcher', 'third', 'cutSS'];
@@ -47,6 +47,91 @@
   // Coordinates in half-feet, as signed 16-bit numbers.
   const put16 = (out, v) => { const n = Math.max(-32768, Math.min(32767, Math.round(v * 2))) & 0xffff; out.push(n >> 8, n & 0xff); };
   const get16 = (b, i) => { let n = (b[i] << 8) | b[i + 1]; if (n & 0x8000) n -= 0x10000; return n / 2; };
+
+  // A play built step by step (Build a play, script.js): the title, then each step. Byte 0 of a step is the action
+  // (low 3 bits) and what follows it: bit 3 runner orders, bit 4 fielder moves, bit 5 a caption, bit 6 a "safe" call
+  // (out is the default), bit 7 a spot (where the ball goes, the catch, or the run).
+  const S_ACT = ['pitch', 'pickoff', 'field', 'throw', 'run', 'tag', 'base', 'hold'];
+  const S_RES = ['caught', 'hit', 'passed', 'dropped'];
+  const S_HIT = ['ground', 'line', 'fly', 'pop', 'bunt'];
+  const S_RUN = ['first', 'second', 'third', 'batter'];
+  const S_BASE = ['first', 'second', 'third', 'home'];
+  function packScript(out, event) {
+    const steps = (event.steps || []).slice(0, 40);
+    const title = event.title ? utf8(String(event.title).slice(0, 60)).slice(0, 90) : [];
+    out.push(title.length); out.push(...title);
+    out.push(steps.length);
+    for (const st of steps) {
+      const a = Math.max(0, S_ACT.indexOf(st.a));
+      const runners = Object.entries(st.runners || {}).filter(([id, o]) => S_RUN.includes(id) && o);
+      const moves = Object.entries(st.move || {}).filter(([p, v]) => POS.includes(p) && v && Number.isFinite(v.x));
+      const cap = st.cap ? utf8(String(st.cap).slice(0, 40)).slice(0, 60) : [];
+      const spot = st.a === 'pitch' ? (st.r === 'hit' ? st.hit && st.hit.at : st.at) : st.at;
+      const hasSpot = !!(spot && Number.isFinite(spot.x)) && st.a !== 'pickoff';
+      out.push(a | (runners.length ? 8 : 0) | (moves.length ? 16 : 0) | (cap.length ? 32 : 0) | (st.call === 'safe' ? 64 : 0) | (hasSpot ? 128 : 0));
+      if (st.a === 'pitch') out.push(Math.max(0, S_RES.indexOf(st.r || 'caught')) | (Math.max(0, S_HIT.indexOf((st.hit || {}).kind)) << 2));
+      else if (st.a === 'pickoff') out.push(Math.max(0, S_BASE.indexOf(st.base)));
+      else if (st.a === 'field') out.push(Math.max(0, POS.indexOf(st.by)) | (st.call === 'out' ? 16 : 0));
+      else if (st.a === 'throw') out.push(Math.max(0, POS.indexOf(st.to)) | ((S_BASE.indexOf(st.fake) + 1) << 4));
+      else if (st.a === 'tag') out.push(Math.max(0, S_RUN.indexOf(st.runner)));
+      else if (st.a === 'base') out.push(Math.max(0, S_BASE.indexOf(st.base)) | ((S_RUN.indexOf(st.runner) + 1) << 2));
+      if (hasSpot) { put16(out, spot.x); put16(out, spot.y); }
+      if (runners.length) {
+        out.push(runners.length);
+        for (const [id, o] of runners) {
+          const kind = o.hold ? 0 : o.go ? 1 : 2;
+          out.push(S_RUN.indexOf(id) | (kind << 2) | ((o.go ? Math.max(0, S_BASE.indexOf(o.go)) : 0) << 4));
+          if (kind === 2) put16(out, (Number(o.stop) || 0) * 10);
+        }
+      }
+      if (moves.length) {
+        out.push(moves.length);
+        for (const [p, v] of moves) { out.push(POS.indexOf(p)); put16(out, v.x); put16(out, v.y); }
+      }
+      if (cap.length) { out.push(cap.length); out.push(...cap); }
+    }
+  }
+  function unpackScript(b, i) {
+    const tl = b[i++];
+    const title = tl ? unutf8(b.slice(i, i + tl)) : '';
+    i += tl;
+    const n = b[i++];
+    const steps = [];
+    for (let k = 0; k < n; k++) {
+      const h = b[i++];
+      const st = { a: S_ACT[h & 7] };
+      if (h & 64) st.call = 'safe';
+      let spot = null;
+      const x = st.a === 'run' || st.a === 'hold' ? null : b[i++];
+      if (st.a === 'pitch') { st.r = S_RES[x & 3]; if (st.r === 'hit') st.hit = { kind: S_HIT[(x >> 2) & 7] || 'ground' }; }
+      else if (st.a === 'pickoff') st.base = S_BASE[x & 3];
+      else if (st.a === 'field') { st.by = POS[x & 15]; if (x & 16) st.call = 'out'; }
+      else if (st.a === 'throw') { st.to = POS[x & 15]; const fk = (x >> 4) & 7; if (fk) st.fake = S_BASE[fk - 1]; }
+      else if (st.a === 'tag') { st.runner = S_RUN[x & 3]; if (!st.call) st.call = 'out'; }
+      else if (st.a === 'base') { st.base = S_BASE[x & 3]; const r = (x >> 2) & 7; if (r) { st.runner = S_RUN[r - 1]; if (!st.call) st.call = 'out'; } }
+      if (h & 128) { spot = { x: get16(b, i), y: get16(b, i + 2) }; i += 4; }
+      if (spot) { if (st.a === 'pitch' && st.hit) st.hit.at = spot; else st.at = spot; }
+      if (h & 8) {
+        const m = b[i++];
+        st.runners = {};
+        for (let j = 0; j < m; j++) {
+          const v = b[i++];
+          const id = S_RUN[v & 3], kind = (v >> 2) & 3;
+          if (kind === 0) st.runners[id] = { hold: true };
+          else if (kind === 1) st.runners[id] = { go: S_BASE[(v >> 4) & 3] };
+          else { st.runners[id] = { stop: get16(b, i) / 10 }; i += 2; }
+        }
+      }
+      if (h & 16) {
+        const m = b[i++];
+        st.move = {};
+        for (let j = 0; j < m; j++) { const p = POS[b[i]]; st.move[p] = { x: get16(b, i + 1), y: get16(b, i + 3) }; i += 5; }
+      }
+      if (h & 32) { const cl = b[i++]; st.cap = unutf8(b.slice(i, i + cl)); i += cl; }
+      steps.push(st);
+    }
+    return { title, steps, i };
+  }
 
   // A drawn play: a table of runners, then each step. The first step lists everyone; later steps list only who
   // moved (or left the field). Actors: 0-8 fielders, 9 the ball, 10+ runners; +128 means "not on the field".
@@ -141,6 +226,7 @@
     if (event.kind === 'rundown') out.push(Math.max(0, BASES.indexOf(event.runner)));
     if (event.kind === 'lookBack') out.push(Math.max(0, BASES.indexOf(event.runner)) | (Math.max(0, ACTIONS.indexOf(event.action)) << 2));
     if (event.kind === 'drawn') packDrawn(out, event);
+    if (event.kind === 'script') packScript(out, event);
     if (moved.length) {
       out.push(moved.length);
       for (const p of moved) { out.push(POS.indexOf(p)); put16(out, s.start[p].x); put16(out, s.start[p].y); }
@@ -206,6 +292,7 @@
       if (kind === 'rundown') event.runner = BASES[b[i++] & 3] || 'first';
       if (kind === 'lookBack') { const v = b[i++]; event.runner = BASES[v & 3] || 'first'; event.action = ACTIONS[(v >> 2) & 3]; }
       if (kind === 'drawn') { const u = unpackDrawn(b, i); event.steps = u.steps; i = u.i; }
+      if (kind === 'script') { const u = unpackScript(b, i); event.steps = u.steps; if (u.title) event.title = u.title; i = u.i; }
       if (f & 128) {
         const n = b[i++];
         situation.start = {};
